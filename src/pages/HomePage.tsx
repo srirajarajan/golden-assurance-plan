@@ -19,8 +19,8 @@ const HomePage = () => {
       icon: Users,
       titleEn: 'Family Protection',
       titleTa: 'குடும்ப பாதுகாப்பு',
-      descEn: 'Cover up to 5 family members under one policy',
-      descTa: 'ஒரு பாலிசியில் 5 குடும்ப உறுப்பினர்கள் வரை காப்பீடு',
+      descEn: 'Cover up to 2 family members under one policy',
+      descTa: 'ஒரு பாலிசியில் 2 குடும்ப உறுப்பினர்கள் வரை காப்பீடு',
     },
     {
       icon: Clock,
@@ -119,18 +119,18 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <div className="card-elevated max-w-2xl mx-auto p-8 md:p-12 text-center gold-border">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-secondary mb-4">
-              {useLanguage().language === 'ta' ? 'ஆண்டு பிரீமியம்' : 'Annual Premium'}
+              {useLanguage().language === 'ta' ? 'ஒருமுறை பிரீமியம்' : 'One-time Premium'}
             </h2>
-            <div className="text-5xl md:text-6xl font-bold gradient-gold-text mb-4">₹500</div>
+            <div className="text-5xl md:text-6xl font-bold gradient-gold-text mb-4">₹3,000</div>
             <p className="text-muted-foreground mb-6">
               {useLanguage().language === 'ta'
-                ? 'ஒரு குடும்பத்திற்கு ஆண்டுக்கு'
-                : 'Per family per year'}
+                ? 'ஒரு உறுப்பினருக்கு வாழ்நாள் முழுவதும்'
+                : 'Per member for lifetime'}
             </p>
             <p className="text-lg font-medium text-secondary">
               {useLanguage().language === 'ta'
-                ? 'காப்பீட்டு தொகை: ₹50,000'
-                : 'Coverage Amount: ₹50,000'}
+                ? 'காப்பீட்டு தொகை: ₹10,000 - ₹15,000'
+                : 'Coverage Amount: ₹10,000 - ₹15,000'}
             </p>
           </div>
         </div>

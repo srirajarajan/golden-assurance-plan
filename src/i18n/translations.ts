@@ -7,7 +7,7 @@ export const translations = {
       contact: "Contact"
     },
     hero: {
-      title: "William Carey Funeral Insurance Policy Scheme – 2025-26",
+      title: "William Carey Funeral Insurance Policy Scheme – 2026-27",
       subtitle: "A reliable and affordable funeral insurance support plan for families.",
       applyBtn: "Apply Now",
       benefitsBtn: "View Benefits"
@@ -46,18 +46,16 @@ export const translations = {
       title: "Benefits & Conditions",
       subtitle: "Complete details of the scheme benefits and requirements",
       benefitsList: [
-        "This scheme provides emergency financial support to the family.",
-        "Coverage amount of ₹50,000 for funeral expenses.",
-        "No medical examination required for enrollment.",
-        "Simple documentation process with minimal paperwork.",
-        "Family members up to 5 can be covered under one policy.",
-        "Premium payment can be made annually or semi-annually.",
-        "Claim settlement within 7 working days.",
-        "24/7 customer support helpline available.",
-        "Coverage valid throughout Tamil Nadu.",
-        "Renewal reminder sent 30 days before expiry.",
-        "Grace period of 15 days for premium payment.",
-        "Transferable policy within family members."
+        "One ration card or individual person can enroll in this funeral insurance scheme.",
+        "Only 2 (or) 3 members per ration card can benefit from this scheme.",
+        "Members must be above 40 years of age to benefit from this scheme.",
+        "Each member receives ₹3,000 monthly and ₹10,000 funeral coverage.",
+        "After paying ₹3,000 for one year, full benefits begin; from the 15th month onwards, additional benefits apply.",
+        "Nominee listed in the ration card will receive the insurance amount from the rightful heirs.",
+        "This scheme allocates funds from William Carey Institution for the welfare of poor people.",
+        "After 5 years: ₹10,000 (ten thousand only). After 10 years: ₹15,000 (fifteen thousand only).",
+        "Identity card will be issued to all members under 'William Carey Funeral Insurance Scheme'.",
+        "Insurance amount will be provided only after returning the member ID card. Additionally, any family assistance will be provided through William Carey Institution."
       ],
       documentsTitle: "Required Documents",
       documents: [
@@ -92,7 +90,7 @@ export const translations = {
       contact: "தொடர்பு"
     },
     hero: {
-      title: "வில்லியம் கேரி இறுதிச்சடங்கு காப்பீட்டு திட்டம் 2025-26",
+      title: "வில்லியம் கேரி இறுதிச்சடங்கு காப்பீட்டு திட்டம் 2026-27",
       subtitle: "எளிய செலவில் உறுதியான குடும்ப பாதுகாப்பு திட்டம்",
       applyBtn: "விண்ணப்பிக்க",
       benefitsBtn: "சலுகைகள் பார்க்க"
@@ -128,21 +126,19 @@ export const translations = {
       other: "மற்றவை"
     },
     benefits: {
-      title: "சலுகைகள் & நிபந்தனைகள்",
+      title: "நிபந்தனைகள்",
       subtitle: "திட்ட சலுகைகள் மற்றும் தேவைகளின் முழு விவரங்கள்",
       benefitsList: [
-        "இந்தத்திட்டம் குடும்பத்தினருக்கு அவசர நிதி ஆதரவாக செயல்படுகிறது.",
-        "இறுதிச்சடங்கு செலவுகளுக்கு ₹50,000 காப்பீட்டு தொகை.",
-        "சேர்க்கைக்கு மருத்துவ பரிசோதனை தேவையில்லை.",
-        "குறைந்த ஆவணங்களுடன் எளிய ஆவண செயல்முறை.",
-        "ஒரு பாலிசியின் கீழ் 5 குடும்ப உறுப்பினர்கள் வரை காப்பீடு.",
-        "பிரீமியம் ஆண்டு அல்லது அரையாண்டு செலுத்தலாம்.",
-        "7 வேலை நாட்களுக்குள் உரிமை தீர்வு.",
-        "24/7 வாடிக்கையாளர் ஆதரவு உதவி எண் உள்ளது.",
-        "தமிழ்நாடு முழுவதும் காப்பீடு செல்லுபடியாகும்.",
-        "காலாவதியாவதற்கு 30 நாட்களுக்கு முன் புதுப்பிப்பு நினைவூட்டல்.",
-        "பிரீமியம் செலுத்த 15 நாட்கள் சலுகை காலம்.",
-        "குடும்ப உறுப்பினர்களுக்குள் மாற்றக்கூடிய பாலிசி."
+        "ஈமசடங்கு காப்பீட்டு திட்ட முறை ஒரு குடும்ப அட்டைக்கு (ரேஷன் கார்டு) அல்லது தனிப்பட்ட நபர் இத்திட்டதை பயன்படுத்தி கொள்ளலாம்.",
+        "ஒரு குடும்ப அட்டையில் உள்ள (ரேஷன் கார்டு) இரண்டு (அ) மூன்று நபர்கள் மட்டும் இத்திட்டத்தின் மூலம் பயன் பெறலாம்.",
+        "இத்திட்டத்தின் உறுப்பினராக இணைய அதிக பட்சம் 40-வயதிற்க்கு மேற்பட்டவர்களுக்கு இத்திட்டம் மூலம் பயன்பெறலாம்.",
+        "இத்திட்டத்தின் மூலம் உறுப்பினர் ஒருவருக்கு தொகை ரூ.3000 செலுத்தினால் இறப்பு காப்பீடாக ரூ.10000 வழங்கப்படும்.",
+        "இத்திட்டத்தின் மூலம் ஒரு முறை தொகை ரூ.3000 செலுத்தினால் போதுமானது வாழ்நாள் முழுவதும் உறுப்பினருக்கு இத்திட்டம் செயல்படும், மேலும் தொகை செலுத்தி 15-வது நாட்களிலிருந்து இத்திட்டம் மூலம் பயன்பெறலாம்.",
+        "குடும்ப அட்டையில் (ரேஷன் கார்டு) உள்ள ஒருவர் மூலம் நாமினி (Nominee) போடப்பட்டு தக்க சமையத்தில் உரியவர்களிடம் காப்பீட்டு தொகையை ஒப்படைக்கப்படும்.",
+        "இத்திட்டம் ஏழை எளிய பாமர மக்கள் பயன்பெறும் வகையில் நமது வில்லியம் கேரி நிறுவனத்திலிருந்து தொகையினை ஒதுப்படுக்கிறது.",
+        "இத்திட்டம் (I). 5 வருடத்திற்க்கு மேல் இறப்பு நேரிட்டால் ரூ.10000 (பத்தாயிரம் ரூபாய் மட்டும்) (II). 10 வருடத்திற்க்கு மேல் இறப்பு ரூ.15000 (பதினைந்தாயிரம் ரூபாய் மட்டும்) ஒதுப்படுக்கிறது.",
+        "இத்திட்டத்தின் இணையும் அனைவருக்கு வில்லியம் கேரி ஈமசடங்கு காப்பீட்டு திட்டம் என்ற பெயரில் அடையாள அட்டை சீல் வைத்து கொடுக்கப்படும்.",
+        "இத்திட்டத்தின் மூலம் வழங்கும் காப்பீட்டு தொகையை திரும்ப பெறும் பொழுது கட்டயமாக உறுப்பினர் அடையாள அட்டை திரும்ப கொடுத்த பின்னரே தொகை வழங்கப்படும். மேலும் அந்த குடும்பத்திற்கு தேவையான ஏதேனும் ஒரு உதவி வில்லியம் கேரி காப்பீட்டு நிறுவனத்தின் மூலம் செய்து கொடுக்கப்படும்."
       ],
       documentsTitle: "தேவையான ஆவணங்கள்",
       documents: [
