@@ -12,21 +12,95 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { User, Phone, CreditCard, MapPin, Upload, Users } from 'lucide-react';
+import { User, Phone, CreditCard, MapPin, Upload, Users, IndianRupee } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const ApplicationPage = () => {
   const { t, language } = useLanguage();
   const [photo, setPhoto] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    memberName: '',
+    fatherName: '',
+    gender: '',
+    occupation: '',
+    phone: '',
+    rationCard: '',
+    annualIncome: '',
+    aadharCard: '',
+    address: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: language === 'ta' ? 'விண்ணப்பம் சமர்ப்பிக்கப்பட்டது!' : 'Application Submitted!',
-      description:
-        language === 'ta'
-          ? 'உங்கள் விண்ணப்பம் பெறப்பட்டது. விரைவில் தொடர்பு கொள்வோம்.'
-          : 'Your application has been received. We will contact you soon.',
+  const [nominees, setNominees] = useState([
+    { name: '', gender: '', age: '', relation: '' },
+    { name: '', gender: '', age: '', relation: '' },
+  ]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNomineeChange = (index: number, field: string, value: string) => {
+    setNominees(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
     });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-application', {
+        body: {
+          ...formData,
+          nominees,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: language === 'ta' ? 'விண்ணப்பம் சமர்ப்பிக்கப்பட்டது!' : 'Application Submitted!',
+        description:
+          language === 'ta'
+            ? 'உங்கள் விண்ணப்பம் பெறப்பட்டது. விரைவில் தொடர்பு கொள்வோம்.'
+            : 'Your application has been received. We will contact you soon.',
+      });
+
+      // Reset form
+      setFormData({
+        memberName: '',
+        fatherName: '',
+        gender: '',
+        occupation: '',
+        phone: '',
+        rationCard: '',
+        annualIncome: '',
+        aadharCard: '',
+        address: '',
+      });
+      setNominees([
+        { name: '', gender: '', age: '', relation: '' },
+        { name: '', gender: '', age: '', relation: '' },
+      ]);
+      setPhoto(null);
+    } catch (error: any) {
+      console.error('Error submitting application:', error);
+      toast({
+        title: language === 'ta' ? 'பிழை!' : 'Error!',
+        description: language === 'ta' 
+          ? 'விண்ணப்பத்தை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+          : 'Failed to submit application. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +130,13 @@ const ApplicationPage = () => {
                   <User size={16} className="text-primary" />
                   {t.form.memberName}
                 </Label>
-                <Input id="memberName" required className="rounded-xl" />
+                <Input 
+                  id="memberName" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.memberName}
+                  onChange={(e) => handleInputChange('memberName', e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
@@ -64,7 +144,13 @@ const ApplicationPage = () => {
                   <User size={16} className="text-primary" />
                   {t.form.fatherHusbandName}
                 </Label>
-                <Input id="fatherName" required className="rounded-xl" />
+                <Input 
+                  id="fatherName" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.fatherName}
+                  onChange={(e) => handleInputChange('fatherName', e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
@@ -72,7 +158,11 @@ const ApplicationPage = () => {
                   <Users size={16} className="text-primary" />
                   {t.form.gender}
                 </Label>
-                <Select required>
+                <Select 
+                  required 
+                  value={formData.gender}
+                  onValueChange={(value) => handleInputChange('gender', value)}
+                >
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder={t.form.selectGender} />
                   </SelectTrigger>
@@ -85,7 +175,13 @@ const ApplicationPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="occupation">{t.form.occupation}</Label>
-                <Input id="occupation" required className="rounded-xl" />
+                <Input 
+                  id="occupation" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.occupation}
+                  onChange={(e) => handleInputChange('occupation', e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
@@ -93,7 +189,14 @@ const ApplicationPage = () => {
                   <Phone size={16} className="text-primary" />
                   {t.form.phone}
                 </Label>
-                <Input id="phone" type="tel" required className="rounded-xl" />
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
@@ -101,7 +204,27 @@ const ApplicationPage = () => {
                   <CreditCard size={16} className="text-primary" />
                   {t.form.rationCard}
                 </Label>
-                <Input id="rationCard" required className="rounded-xl" />
+                <Input 
+                  id="rationCard" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.rationCard}
+                  onChange={(e) => handleInputChange('rationCard', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="annualIncome" className="flex items-center gap-2">
+                  <IndianRupee size={16} className="text-primary" />
+                  {t.form.annualIncome}
+                </Label>
+                <Input 
+                  id="annualIncome" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.annualIncome}
+                  onChange={(e) => handleInputChange('annualIncome', e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
@@ -109,7 +232,13 @@ const ApplicationPage = () => {
                   <CreditCard size={16} className="text-primary" />
                   {t.form.aadharCard}
                 </Label>
-                <Input id="aadharCard" required className="rounded-xl" />
+                <Input 
+                  id="aadharCard" 
+                  required 
+                  className="rounded-xl" 
+                  value={formData.aadharCard}
+                  onChange={(e) => handleInputChange('aadharCard', e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
@@ -133,7 +262,13 @@ const ApplicationPage = () => {
                 <MapPin size={16} className="text-primary" />
                 {t.form.permanentAddress}
               </Label>
-              <Textarea id="address" required className="rounded-xl min-h-[100px]" />
+              <Textarea 
+                id="address" 
+                required 
+                className="rounded-xl min-h-[100px]" 
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+              />
             </div>
 
             {/* Nominee Section */}
@@ -165,14 +300,21 @@ const ApplicationPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {[1, 2].map((num) => (
-                      <tr key={num}>
-                        <td className="border border-border p-3 text-center">{num}</td>
+                    {nominees.map((nominee, index) => (
+                      <tr key={index}>
+                        <td className="border border-border p-3 text-center">{index + 1}</td>
                         <td className="border border-border p-2">
-                          <Input className="rounded-lg border-0 bg-transparent" />
+                          <Input 
+                            className="rounded-lg border-0 bg-transparent" 
+                            value={nominee.name}
+                            onChange={(e) => handleNomineeChange(index, 'name', e.target.value)}
+                          />
                         </td>
                         <td className="border border-border p-2">
-                          <Select>
+                          <Select
+                            value={nominee.gender}
+                            onValueChange={(value) => handleNomineeChange(index, 'gender', value)}
+                          >
                             <SelectTrigger className="rounded-lg border-0 bg-transparent">
                               <SelectValue placeholder="-" />
                             </SelectTrigger>
@@ -183,10 +325,18 @@ const ApplicationPage = () => {
                           </Select>
                         </td>
                         <td className="border border-border p-2">
-                          <Input type="number" className="rounded-lg border-0 bg-transparent" />
+                          <Input 
+                            type="number" 
+                            className="rounded-lg border-0 bg-transparent" 
+                            value={nominee.age}
+                            onChange={(e) => handleNomineeChange(index, 'age', e.target.value)}
+                          />
                         </td>
                         <td className="border border-border p-2">
-                          <Select>
+                          <Select
+                            value={nominee.relation}
+                            onValueChange={(value) => handleNomineeChange(index, 'relation', value)}
+                          >
                             <SelectTrigger className="rounded-lg border-0 bg-transparent">
                               <SelectValue placeholder={t.form.selectRelation} />
                             </SelectTrigger>
@@ -219,8 +369,15 @@ const ApplicationPage = () => {
             </div>
 
             {/* Submit */}
-            <Button type="submit" size="lg" className="w-full rounded-xl text-lg py-6 shadow-glow">
-              {t.form.submit}
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="w-full rounded-xl text-lg py-6 shadow-glow"
+              disabled={isSubmitting}
+            >
+              {isSubmitting 
+                ? (language === 'ta' ? 'சமர்ப்பிக்கிறது...' : 'Submitting...') 
+                : t.form.submit}
             </Button>
           </form>
         </div>
