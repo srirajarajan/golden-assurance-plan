@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "William Carey Insurance <onboarding@resend.dev>",
         to: ["williamcareyfuneral99@gmail.com"],
-        subject: `New Application - ${data.memberName}`,
+        subject: "New Insurance Application Received",
         html: emailHtml,
       }),
     });

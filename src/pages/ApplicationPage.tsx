@@ -68,8 +68,8 @@ const ApplicationPage = () => {
         title: language === 'ta' ? 'விண்ணப்பம் சமர்ப்பிக்கப்பட்டது!' : 'Application Submitted!',
         description:
           language === 'ta'
-            ? 'உங்கள் விண்ணப்பம் பெறப்பட்டது. விரைவில் தொடர்பு கொள்வோம்.'
-            : 'Your application has been received. We will contact you soon.',
+            ? 'உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது. விரைவில் தொடர்பு கொள்வோம்.'
+            : 'Your application has been submitted successfully. We will contact you shortly.',
       });
 
       // Reset form
