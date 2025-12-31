@@ -6,32 +6,67 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { Phone, MapPin, Send, MessageCircle } from 'lucide-react';
+import { z } from 'zod';
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(255),
+  phone: z.string().trim().min(6).max(20),
+  message: z.string().trim().min(1).max(1000),
+});
 
 const ContactPage = () => {
   const { t, language } = useLanguage();
-  const [formData, setFormData] = useState({ name: '', phone: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Create WhatsApp message with form data
-    const whatsappMessage = `New Contact Enquiry 🚨
-Name: ${formData.name}
-Phone: ${formData.phone}
-Message: ${formData.message}`;
 
-    // Open WhatsApp with pre-filled message
-    const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(whatsappMessage)}`;
-    window.open(whatsappUrl, '_blank');
+    const parsed = contactSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast({
+        title: language === 'ta' ? 'பிழை!' : 'Error',
+        description:
+          language === 'ta'
+            ? 'சரியான விவரங்களை உள்ளிடவும்.'
+            : 'Please enter valid details.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    toast({
-      title: language === 'ta' ? 'நன்றி!' : 'Thank you!',
-      description:
-        language === 'ta'
-          ? 'தொடர்பு கொண்டதற்கு நன்றி. விரைவில் உங்களைத் தொடர்பு கொள்வோம்.'
-          : 'Thank you for contacting us. We will get back to you soon.',
-    });
-    setFormData({ name: '', phone: '', message: '' });
+    try {
+      // WhatsApp message format requested
+      const whatsappMessage = `New Contact Enquiry 🚨\nName: ${parsed.data.name}\nEmail: ${parsed.data.email}\nPhone: ${parsed.data.phone}\nMessage: ${parsed.data.message}`;
+
+      // NOTE: WhatsApp does not allow fully automatic sending from a website.
+      // This opens WhatsApp with a pre-filled message; the user must tap "Send".
+      const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(whatsappMessage)}`;
+      const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
+      if (!popup) {
+        throw new Error('Popup blocked');
+      }
+
+      toast({
+        title: language === 'ta' ? 'நன்றி!' : 'Thank you!',
+        description:
+          language === 'ta'
+            ? 'தொடர்பு கொண்டதற்கு நன்றி. விரைவில் உங்களைத் தொடர்பு கொள்வோம்.'
+            : 'Thank you for contacting us. We will get back to you soon.',
+      });
+
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    } catch (err) {
+      toast({
+        title: language === 'ta' ? 'பிழை!' : 'Error',
+        description:
+          language === 'ta'
+            ? 'வாட்ஸ்அப் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : 'Could not open WhatsApp. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(
@@ -133,13 +168,27 @@ Message: ${formData.message}`;
               {t.contact.formTitle}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} method="post" className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="contactName">{t.contact.name}</Label>
                 <Input
                   id="contactName"
+                  name="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contactEmail">{t.contact.emailLabel}</Label>
+                <Input
+                  id="contactEmail"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   className="rounded-xl"
                 />
@@ -149,6 +198,7 @@ Message: ${formData.message}`;
                 <Label htmlFor="contactPhone">{t.contact.phoneLabel}</Label>
                 <Input
                   id="contactPhone"
+                  name="phone"
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -161,6 +211,7 @@ Message: ${formData.message}`;
                 <Label htmlFor="contactMessage">{t.contact.message}</Label>
                 <Textarea
                   id="contactMessage"
+                  name="message"
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   required

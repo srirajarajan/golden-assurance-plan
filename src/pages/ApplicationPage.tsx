@@ -54,8 +54,35 @@ const ApplicationPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Basic client-side validation (prevents unnecessary backend calls)
+    const requiredFields: Array<keyof typeof formData> = [
+      'memberName',
+      'fatherName',
+      'gender',
+      'occupation',
+      'phone',
+      'rationCard',
+      'annualIncome',
+      'aadharCard',
+      'address',
+    ];
+
+    const missing = requiredFields.find((k) => !String(formData[k] ?? '').trim());
+    if (missing) {
+      toast({
+        title: language === 'ta' ? 'பிழை!' : 'Error',
+        description:
+          language === 'ta'
+            ? 'தேவையான விவரங்களை அனைத்தையும் நிரப்பவும்.'
+            : 'Please fill all required fields.',
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.functions.invoke('send-application', {
+      const { error } = await supabase.functions.invoke('send-application', {
         body: {
           ...formData,
           nominees,
@@ -92,10 +119,11 @@ const ApplicationPage = () => {
     } catch (error: any) {
       console.error('Error submitting application:', error);
       toast({
-        title: language === 'ta' ? 'பிழை!' : 'Error!',
-        description: language === 'ta' 
-          ? 'விண்ணப்பத்தை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
-          : 'Failed to submit application. Please try again.',
+        title: language === 'ta' ? 'பிழை!' : 'Error',
+        description:
+          language === 'ta'
+            ? 'விண்ணப்பத்தை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : 'Failed to submit application. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -121,8 +149,7 @@ const ApplicationPage = () => {
             <div className="w-24 h-1 bg-primary mx-auto rounded-full" />
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="card-elevated p-6 md:p-10 gold-border animate-slide-up">
+          <form onSubmit={handleSubmit} method="post" className="card-elevated p-6 md:p-10 gold-border animate-slide-up">
             {/* Personal Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="space-y-2">
@@ -132,6 +159,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input 
                   id="memberName" 
+                  name="memberName"
                   required 
                   className="rounded-xl" 
                   value={formData.memberName}
@@ -146,6 +174,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input 
                   id="fatherName" 
+                  name="fatherName"
                   required 
                   className="rounded-xl" 
                   value={formData.fatherName}
@@ -177,6 +206,7 @@ const ApplicationPage = () => {
                 <Label htmlFor="occupation">{t.form.occupation}</Label>
                 <Input 
                   id="occupation" 
+                  name="occupation"
                   required 
                   className="rounded-xl" 
                   value={formData.occupation}
@@ -191,6 +221,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input 
                   id="phone" 
+                  name="phone"
                   type="tel" 
                   required 
                   className="rounded-xl" 
@@ -206,6 +237,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input 
                   id="rationCard" 
+                  name="rationCard"
                   required 
                   className="rounded-xl" 
                   value={formData.rationCard}
@@ -220,6 +252,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input 
                   id="annualIncome" 
+                  name="annualIncome"
                   required 
                   className="rounded-xl" 
                   value={formData.annualIncome}
@@ -234,6 +267,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input 
                   id="aadharCard" 
+                  name="aadharCard"
                   required 
                   className="rounded-xl" 
                   value={formData.aadharCard}
@@ -248,6 +282,7 @@ const ApplicationPage = () => {
                 </Label>
                 <Input
                   id="photo"
+                  name="photo"
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoChange}
@@ -264,6 +299,7 @@ const ApplicationPage = () => {
               </Label>
               <Textarea 
                 id="address" 
+                name="address"
                 required 
                 className="rounded-xl min-h-[100px]" 
                 value={formData.address}
