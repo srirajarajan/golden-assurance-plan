@@ -13,12 +13,23 @@ const ContactPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Create WhatsApp message with form data
+    const whatsappMessage = `New Contact Enquiry 🚨
+Name: ${formData.name}
+Phone: ${formData.phone}
+Message: ${formData.message}`;
+
+    // Open WhatsApp with pre-filled message
+    const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(whatsappUrl, '_blank');
+
     toast({
-      title: language === 'ta' ? 'செய்தி அனுப்பப்பட்டது!' : 'Message Sent!',
+      title: language === 'ta' ? 'நன்றி!' : 'Thank you!',
       description:
         language === 'ta'
-          ? 'உங்கள் செய்தி பெறப்பட்டது. விரைவில் தொடர்பு கொள்வோம்.'
-          : 'Your message has been received. We will contact you soon.',
+          ? 'தொடர்பு கொண்டதற்கு நன்றி. விரைவில் உங்களைத் தொடர்பு கொள்வோம்.'
+          : 'Thank you for contacting us. We will get back to you soon.',
     });
     setFormData({ name: '', phone: '', message: '' });
   };
