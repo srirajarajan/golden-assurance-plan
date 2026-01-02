@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { User, Phone, CreditCard, IndianRupee, Mail, MessageSquare } from 'lucide-react';
+import { User, Phone, CreditCard, IndianRupee, MapPin, Briefcase, Users, Shield } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 const ApplicationPage = () => {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -19,6 +21,9 @@ const ApplicationPage = () => {
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+    
+    // Append director authorization
+    formData.append('director_authorization', 'Authorized by Director – William Carey Funeral Insurance');
 
     try {
       const response = await fetch('https://formspree.io/f/xvzgaooo', {
@@ -90,115 +95,292 @@ const ApplicationPage = () => {
   return (
     <main className="min-h-screen py-12 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12 animate-fade-in">
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-secondary mb-4">
-              {t.form.title}
+          <div className="text-center mb-8 animate-fade-in">
+            <img src={logo} alt="William Carey Funeral Insurance" className="w-20 h-20 mx-auto mb-4 object-contain" />
+            <h1 className="font-display text-2xl md:text-3xl font-bold text-secondary mb-2">
+              William Carey Funeral Insurance
             </h1>
-            <div className="w-24 h-1 bg-primary mx-auto rounded-full" />
+            <p className="text-lg text-muted-foreground">
+              உறுப்பினர் விண்ணப்பப் படிவம் / Membership Application Form
+            </p>
+            <div className="w-24 h-1 bg-primary mx-auto rounded-full mt-4" />
           </div>
 
           <form
             ref={formRef}
             onSubmit={handleSubmit}
             method="POST"
-            className="card-elevated p-6 md:p-10 gold-border animate-slide-up space-y-6"
+            className="card-elevated p-6 md:p-10 gold-border animate-slide-up space-y-8"
           >
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="full_name" className="flex items-center gap-2">
-                <User size={16} className="text-primary" />
-                {t.form.memberName}
-              </Label>
-              <Input
-                id="full_name"
-                name="full_name"
-                required
-                className="rounded-xl"
-                placeholder={language === 'ta' ? 'முழு பெயர்' : 'Enter your full name'}
-              />
+            {/* Applicant Details Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 border-b border-border pb-3">
+                <User className="text-primary" size={20} />
+                <h2 className="font-display text-xl font-semibold text-secondary">
+                  விண்ணப்பதாரர் விவரங்கள் / Applicant Details
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Applicant Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="applicant_name">
+                    உறுப்பினர் பெயர் / Applicant Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="applicant_name"
+                    name="applicant_name"
+                    required
+                    className="rounded-xl"
+                    placeholder="பெயர் / Name"
+                  />
+                </div>
+
+                {/* Guardian Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="guardian_name">
+                    தகப்பனார் / கணவர் பெயர் / Father / Husband Name
+                  </Label>
+                  <Input
+                    id="guardian_name"
+                    name="guardian_name"
+                    className="rounded-xl"
+                    placeholder="தகப்பனார் / கணவர் பெயர்"
+                  />
+                </div>
+
+                {/* Gender */}
+                <div className="space-y-2">
+                  <Label htmlFor="gender">
+                    பாலினம் / Gender
+                  </Label>
+                  <Select name="gender">
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="பாலினம் தேர்வு செய்க / Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">ஆண் / Male</SelectItem>
+                      <SelectItem value="female">பெண் / Female</SelectItem>
+                      <SelectItem value="other">மற்றவை / Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Occupation */}
+                <div className="space-y-2">
+                  <Label htmlFor="occupation" className="flex items-center gap-2">
+                    <Briefcase size={14} className="text-primary" />
+                    தொழில் / Occupation
+                  </Label>
+                  <Input
+                    id="occupation"
+                    name="occupation"
+                    className="rounded-xl"
+                    placeholder="தொழில் / Occupation"
+                  />
+                </div>
+
+                {/* Ration Card Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="ration_card" className="flex items-center gap-2">
+                    <CreditCard size={14} className="text-primary" />
+                    குடும்ப அட்டை எண் / Ration Card No. <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="ration_card"
+                    name="ration_card"
+                    required
+                    className="rounded-xl"
+                    placeholder="குடும்ப அட்டை எண்"
+                  />
+                </div>
+
+                {/* Annual Income Dropdown */}
+                <div className="space-y-2">
+                  <Label htmlFor="annual_income" className="flex items-center gap-2">
+                    <IndianRupee size={14} className="text-primary" />
+                    ஆண்டு வருமானம் / Annual Income <span className="text-destructive">*</span>
+                  </Label>
+                  <Select name="annual_income" required>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="வருமானம் தேர்வு செய்க / Select Income" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="below_175000">₹1.75 லட்சத்திற்கு கீழ் / Below ₹1.75 Lakhs</SelectItem>
+                      <SelectItem value="above_175000">₹1.75 லட்சத்திற்கு மேல் / Above ₹1.75 Lakhs</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">அதிகபட்சம் ₹1.75 லட்சம் / Max – 1.75 Lakhs</p>
+                </div>
+
+                {/* Aadhaar Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="aadhaar" className="flex items-center gap-2">
+                    <Shield size={14} className="text-primary" />
+                    ஆதார் அட்டை எண் / Aadhaar No.
+                  </Label>
+                  <Input
+                    id="aadhaar"
+                    name="aadhaar"
+                    className="rounded-xl"
+                    placeholder="XXXX XXXX XXXX"
+                    maxLength={14}
+                  />
+                </div>
+
+                {/* Phone Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone size={14} className="text-primary" />
+                    செல் / Mobile Number <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    className="rounded-xl"
+                    placeholder="கைபேசி எண் / Mobile Number"
+                  />
+                </div>
+              </div>
+
+              {/* Address - Full Width */}
+              <div className="space-y-2">
+                <Label htmlFor="address" className="flex items-center gap-2">
+                  <MapPin size={14} className="text-primary" />
+                  நிரந்தர முகவரி / Permanent Address
+                </Label>
+                <Textarea
+                  id="address"
+                  name="address"
+                  className="rounded-xl min-h-[80px]"
+                  placeholder="முழு முகவரி / Full Address"
+                />
+              </div>
             </div>
 
-            {/* Email Address */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail size={16} className="text-primary" />
-                {language === 'ta' ? 'மின்னஞ்சல் முகவரி' : 'Email Address'}
-              </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="rounded-xl"
-                placeholder={language === 'ta' ? 'example@email.com' : 'example@email.com'}
-              />
+            {/* Nominee Details Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 border-b border-border pb-3">
+                <Users className="text-primary" size={20} />
+                <h2 className="font-display text-xl font-semibold text-secondary">
+                  வாரிசு விவரங்கள் / Nominee Details
+                </h2>
+              </div>
+
+              {/* Nominee 1 */}
+              <div className="space-y-4 p-4 bg-muted/50 rounded-xl">
+                <h3 className="font-medium text-secondary">வாரிசு 1 / Nominee 1</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee1_name">பெயர் / Name</Label>
+                    <Input
+                      id="nominee1_name"
+                      name="nominee1_name"
+                      className="rounded-xl"
+                      placeholder="வாரிசு பெயர் / Nominee Name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee1_gender">பாலினம் / Gender</Label>
+                    <Select name="nominee1_gender">
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="தேர்வு / Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">ஆண் / Male</SelectItem>
+                        <SelectItem value="female">பெண் / Female</SelectItem>
+                        <SelectItem value="other">மற்றவை / Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee1_age">வயது / Age</Label>
+                    <Input
+                      id="nominee1_age"
+                      name="nominee1_age"
+                      type="number"
+                      className="rounded-xl"
+                      placeholder="வயது / Age"
+                      min={1}
+                      max={120}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee1_relation">உறவு முறை / Relationship</Label>
+                    <Input
+                      id="nominee1_relation"
+                      name="nominee1_relation"
+                      className="rounded-xl"
+                      placeholder="உறவு / Relationship"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Nominee 2 */}
+              <div className="space-y-4 p-4 bg-muted/30 rounded-xl">
+                <h3 className="font-medium text-muted-foreground">வாரிசு 2 / Nominee 2 (Optional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee2_name">பெயர் / Name</Label>
+                    <Input
+                      id="nominee2_name"
+                      name="nominee2_name"
+                      className="rounded-xl"
+                      placeholder="வாரிசு பெயர் / Nominee Name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee2_gender">பாலினம் / Gender</Label>
+                    <Select name="nominee2_gender">
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="தேர்வு / Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">ஆண் / Male</SelectItem>
+                        <SelectItem value="female">பெண் / Female</SelectItem>
+                        <SelectItem value="other">மற்றவை / Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee2_age">வயது / Age</Label>
+                    <Input
+                      id="nominee2_age"
+                      name="nominee2_age"
+                      type="number"
+                      className="rounded-xl"
+                      placeholder="வயது / Age"
+                      min={1}
+                      max={120}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nominee2_relation">உறவு முறை / Relationship</Label>
+                    <Input
+                      id="nominee2_relation"
+                      name="nominee2_relation"
+                      className="rounded-xl"
+                      placeholder="உறவு / Relationship"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Phone Number */}
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="flex items-center gap-2">
-                <Phone size={16} className="text-primary" />
-                {t.form.phone}
-              </Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                className="rounded-xl"
-                placeholder={language === 'ta' ? 'கைபேசி எண்' : 'Enter your phone number'}
-              />
-            </div>
-
-            {/* Ration Card Number */}
-            <div className="space-y-2">
-              <Label htmlFor="ration_card" className="flex items-center gap-2">
-                <CreditCard size={16} className="text-primary" />
-                {t.form.rationCard}
-              </Label>
-              <Input
-                id="ration_card"
-                name="ration_card"
-                required
-                className="rounded-xl"
-                placeholder={language === 'ta' ? 'குடும்ப அட்டை எண்' : 'Enter ration card number'}
-              />
-            </div>
-
-            {/* Annual Income */}
-            <div className="space-y-2">
-              <Label htmlFor="annual_income" className="flex items-center gap-2">
-                <IndianRupee size={16} className="text-primary" />
-                {t.form.annualIncome}
-              </Label>
-              <Input
-                id="annual_income"
-                name="annual_income"
-                required
-                className="rounded-xl"
-                placeholder={language === 'ta' ? 'ஆண்டு வருமானம்' : 'Enter annual income'}
-              />
-            </div>
-
-            {/* Message / Application Details */}
-            <div className="space-y-2">
-              <Label htmlFor="message" className="flex items-center gap-2">
-                <MessageSquare size={16} className="text-primary" />
-                {language === 'ta' ? 'கூடுதல் விவரங்கள்' : 'Message / Application Details'}
-              </Label>
-              <Textarea
-                id="message"
-                name="message"
-                required
-                className="rounded-xl min-h-[120px]"
-                placeholder={
-                  language === 'ta'
-                    ? 'உங்கள் விண்ணப்பம் பற்றிய கூடுதல் தகவல்களை இங்கே எழுதுங்கள்...'
-                    : 'Enter any additional details about your application...'
-                }
-              />
+            {/* Director Authorization Notice */}
+            <div className="text-center p-6 bg-secondary/5 rounded-xl border border-secondary/20">
+              <img src={logo} alt="Official Seal" className="w-16 h-16 mx-auto mb-3 object-contain opacity-80" />
+              <p className="text-sm font-medium text-secondary">
+                Authorized by Director – William Carey Funeral Insurance
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                இயக்குநரால் அங்கீகரிக்கப்பட்டது
+              </p>
             </div>
 
             {/* Submit Button */}
@@ -212,7 +394,9 @@ const ApplicationPage = () => {
                 ? language === 'ta'
                   ? 'சமர்ப்பிக்கிறது...'
                   : 'Submitting...'
-                : t.form.submit}
+                : language === 'ta'
+                  ? 'விண்ணப்பத்தை சமர்ப்பிக்கவும்'
+                  : 'Submit Application'}
             </Button>
           </form>
         </div>
