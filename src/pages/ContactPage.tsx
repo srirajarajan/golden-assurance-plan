@@ -18,8 +18,9 @@ const contactSchema = z.object({
 const ContactPage = () => {
   const { t, language } = useLanguage();
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const parsed = contactSchema.safeParse(formData);
@@ -35,38 +36,24 @@ const ContactPage = () => {
       return;
     }
 
-    try {
-      // WhatsApp message format requested
-      const whatsappMessage = `New Contact Enquiry 🚨\nName: ${parsed.data.name}\nEmail: ${parsed.data.email}\nPhone: ${parsed.data.phone}\nMessage: ${parsed.data.message}`;
+    // Show redirecting state
+    setIsRedirecting(true);
 
-      // NOTE: WhatsApp does not allow fully automatic sending from a website.
-      // This opens WhatsApp with a pre-filled message; the user must tap "Send".
-      const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(whatsappMessage)}`;
-      const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    // Build the WhatsApp message
+    const whatsappMessage = `Hello 👋
 
-      if (!popup) {
-        throw new Error('Popup blocked');
-      }
+I would like to know more about William Carey Funeral Insurance.
 
-      toast({
-        title: language === 'ta' ? 'நன்றி!' : 'Thank you!',
-        description:
-          language === 'ta'
-            ? 'தொடர்பு கொண்டதற்கு நன்றி. விரைவில் உங்களைத் தொடர்பு கொள்வோம்.'
-            : 'Thank you for contacting us. We will get back to you soon.',
-      });
+Name: ${parsed.data.name}
+Phone: ${parsed.data.phone}
+Email: ${parsed.data.email}
+Message: ${parsed.data.message}`;
 
-      setFormData({ name: '', email: '', phone: '', message: '' });
-    } catch (err) {
-      toast({
-        title: language === 'ta' ? 'பிழை!' : 'Error',
-        description:
-          language === 'ta'
-            ? 'வாட்ஸ்அப் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
-            : 'Could not open WhatsApp. Please try again.',
-        variant: 'destructive',
-      });
-    }
+    // Redirect to WhatsApp using wa.me
+    const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(whatsappMessage)}`;
+    
+    // Use window.location.href for reliable redirect
+    window.location.href = whatsappUrl;
   };
 
   const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(
@@ -219,9 +206,17 @@ const ContactPage = () => {
                 />
               </div>
 
-              <Button type="submit" size="lg" className="w-full rounded-xl text-lg py-6 shadow-glow">
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full rounded-xl text-lg py-6 shadow-glow"
+                disabled={isRedirecting}
+              >
                 <Send size={20} className="mr-2" />
-                {t.contact.send}
+                {isRedirecting 
+                  ? (language === 'ta' ? 'வாட்ஸ்அப்பிற்கு திருப்பி விடப்படுகிறது…' : 'Redirecting to WhatsApp…')
+                  : t.contact.send
+                }
               </Button>
             </form>
           </div>
