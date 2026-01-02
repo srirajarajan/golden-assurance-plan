@@ -1,123 +1,49 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { User, Phone, CreditCard, MapPin, Upload, Users, IndianRupee } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { User, Phone, CreditCard, IndianRupee, Mail, MessageSquare } from 'lucide-react';
 
 const ApplicationPage = () => {
   const { t, language } = useLanguage();
-  const [photo, setPhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    memberName: '',
-    fatherName: '',
-    gender: '',
-    occupation: '',
-    phone: '',
-    rationCard: '',
-    annualIncome: '',
-    aadharCard: '',
-    address: '',
-  });
+  const [isSuccess, setIsSuccess] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const [nominees, setNominees] = useState([
-    { name: '', gender: '', age: '', relation: '' },
-    { name: '', gender: '', age: '', relation: '' },
-  ]);
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleNomineeChange = (index: number, field: string, value: string) => {
-    setNominees(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Basic client-side validation (prevents unnecessary backend calls)
-    const requiredFields: Array<keyof typeof formData> = [
-      'memberName',
-      'fatherName',
-      'gender',
-      'occupation',
-      'phone',
-      'rationCard',
-      'annualIncome',
-      'aadharCard',
-      'address',
-    ];
-
-    const missing = requiredFields.find((k) => !String(formData[k] ?? '').trim());
-    if (missing) {
-      toast({
-        title: language === 'ta' ? 'பிழை!' : 'Error',
-        description:
-          language === 'ta'
-            ? 'தேவையான விவரங்களை அனைத்தையும் நிரப்பவும்.'
-            : 'Please fill all required fields.',
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-      return;
-    }
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
     try {
-      const { error } = await supabase.functions.invoke('send-application', {
-        body: {
-          ...formData,
-          nominees,
+      const response = await fetch('https://formspree.io/f/xvzgaooo', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
         },
       });
 
-      if (error) throw error;
-
-      toast({
-        title: language === 'ta' ? 'விண்ணப்பம் சமர்ப்பிக்கப்பட்டது!' : 'Application Submitted!',
-        description:
-          language === 'ta'
-            ? 'உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது. விரைவில் தொடர்பு கொள்வோம்.'
-            : 'Your application has been submitted successfully. We will contact you shortly.',
-      });
-
-      // Reset form
-      setFormData({
-        memberName: '',
-        fatherName: '',
-        gender: '',
-        occupation: '',
-        phone: '',
-        rationCard: '',
-        annualIncome: '',
-        aadharCard: '',
-        address: '',
-      });
-      setNominees([
-        { name: '', gender: '', age: '', relation: '' },
-        { name: '', gender: '', age: '', relation: '' },
-      ]);
-      setPhoto(null);
-    } catch (error: any) {
-      console.error('Error submitting application:', error);
+      if (response.ok) {
+        setIsSuccess(true);
+        toast({
+          title: language === 'ta' ? 'நன்றி!' : 'Thank you!',
+          description:
+            language === 'ta'
+              ? 'உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது.'
+              : 'Your application has been submitted successfully.',
+        });
+        form.reset();
+      } else {
+        throw new Error('Submission failed');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: language === 'ta' ? 'பிழை!' : 'Error',
         description:
@@ -131,16 +57,40 @@ const ApplicationPage = () => {
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPhoto(e.target.files[0]);
-    }
-  };
+  if (isSuccess) {
+    return (
+      <main className="min-h-screen py-12 md:py-20 bg-muted/30 flex items-center justify-center">
+        <div className="container mx-auto px-4">
+          <div className="max-w-xl mx-auto text-center card-elevated p-10 gold-border">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-secondary mb-4">
+              {language === 'ta' ? 'நன்றி!' : 'Thank you!'}
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              {language === 'ta'
+                ? 'உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது.'
+                : 'Your application has been submitted successfully.'}
+            </p>
+            <Button
+              onClick={() => setIsSuccess(false)}
+              className="mt-6"
+            >
+              {language === 'ta' ? 'புதிய விண்ணப்பம்' : 'Submit Another Application'}
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen py-12 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12 animate-fade-in">
             <h1 className="font-display text-3xl md:text-4xl font-bold text-secondary mb-4">
@@ -149,270 +99,119 @@ const ApplicationPage = () => {
             <div className="w-24 h-1 bg-primary mx-auto rounded-full" />
           </div>
 
-          <form onSubmit={handleSubmit} method="post" className="card-elevated p-6 md:p-10 gold-border animate-slide-up">
-            {/* Personal Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="space-y-2">
-                <Label htmlFor="memberName" className="flex items-center gap-2">
-                  <User size={16} className="text-primary" />
-                  {t.form.memberName}
-                </Label>
-                <Input 
-                  id="memberName" 
-                  name="memberName"
-                  required 
-                  className="rounded-xl" 
-                  value={formData.memberName}
-                  onChange={(e) => handleInputChange('memberName', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fatherName" className="flex items-center gap-2">
-                  <User size={16} className="text-primary" />
-                  {t.form.fatherHusbandName}
-                </Label>
-                <Input 
-                  id="fatherName" 
-                  name="fatherName"
-                  required 
-                  className="rounded-xl" 
-                  value={formData.fatherName}
-                  onChange={(e) => handleInputChange('fatherName', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="gender" className="flex items-center gap-2">
-                  <Users size={16} className="text-primary" />
-                  {t.form.gender}
-                </Label>
-                <Select 
-                  required 
-                  value={formData.gender}
-                  onValueChange={(value) => handleInputChange('gender', value)}
-                >
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder={t.form.selectGender} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">{t.form.male}</SelectItem>
-                    <SelectItem value="female">{t.form.female}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="occupation">{t.form.occupation}</Label>
-                <Input 
-                  id="occupation" 
-                  name="occupation"
-                  required 
-                  className="rounded-xl" 
-                  value={formData.occupation}
-                  onChange={(e) => handleInputChange('occupation', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-2">
-                  <Phone size={16} className="text-primary" />
-                  {t.form.phone}
-                </Label>
-                <Input 
-                  id="phone" 
-                  name="phone"
-                  type="tel" 
-                  required 
-                  className="rounded-xl" 
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rationCard" className="flex items-center gap-2">
-                  <CreditCard size={16} className="text-primary" />
-                  {t.form.rationCard}
-                </Label>
-                <Input 
-                  id="rationCard" 
-                  name="rationCard"
-                  required 
-                  className="rounded-xl" 
-                  value={formData.rationCard}
-                  onChange={(e) => handleInputChange('rationCard', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="annualIncome" className="flex items-center gap-2">
-                  <IndianRupee size={16} className="text-primary" />
-                  {t.form.annualIncome}
-                </Label>
-                <Input 
-                  id="annualIncome" 
-                  name="annualIncome"
-                  required 
-                  className="rounded-xl" 
-                  value={formData.annualIncome}
-                  onChange={(e) => handleInputChange('annualIncome', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="aadharCard" className="flex items-center gap-2">
-                  <CreditCard size={16} className="text-primary" />
-                  {t.form.aadharCard}
-                </Label>
-                <Input 
-                  id="aadharCard" 
-                  name="aadharCard"
-                  required 
-                  className="rounded-xl" 
-                  value={formData.aadharCard}
-                  onChange={(e) => handleInputChange('aadharCard', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="photo" className="flex items-center gap-2">
-                  <Upload size={16} className="text-primary" />
-                  {t.form.uploadPhoto}
-                </Label>
-                <Input
-                  id="photo"
-                  name="photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="rounded-xl"
-                />
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="mb-8">
-              <Label htmlFor="address" className="flex items-center gap-2 mb-2">
-                <MapPin size={16} className="text-primary" />
-                {t.form.permanentAddress}
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            method="POST"
+            className="card-elevated p-6 md:p-10 gold-border animate-slide-up space-y-6"
+          >
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label htmlFor="full_name" className="flex items-center gap-2">
+                <User size={16} className="text-primary" />
+                {t.form.memberName}
               </Label>
-              <Textarea 
-                id="address" 
-                name="address"
-                required 
-                className="rounded-xl min-h-[100px]" 
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+              <Input
+                id="full_name"
+                name="full_name"
+                required
+                className="rounded-xl"
+                placeholder={language === 'ta' ? 'முழு பெயர்' : 'Enter your full name'}
               />
             </div>
 
-            {/* Nominee Section */}
-            <div className="mb-8">
-              <h3 className="font-display text-xl font-semibold text-secondary mb-4 flex items-center gap-2">
-                <Users size={20} className="text-primary" />
-                {t.form.nomineeSection}
-              </h3>
-
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-primary/10">
-                      <th className="border border-border p-3 text-left text-sm font-medium">
-                        {t.form.no}
-                      </th>
-                      <th className="border border-border p-3 text-left text-sm font-medium">
-                        {t.form.name}
-                      </th>
-                      <th className="border border-border p-3 text-left text-sm font-medium">
-                        {t.form.gender}
-                      </th>
-                      <th className="border border-border p-3 text-left text-sm font-medium">
-                        {t.form.age}
-                      </th>
-                      <th className="border border-border p-3 text-left text-sm font-medium">
-                        {t.form.relation}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {nominees.map((nominee, index) => (
-                      <tr key={index}>
-                        <td className="border border-border p-3 text-center">{index + 1}</td>
-                        <td className="border border-border p-2">
-                          <Input 
-                            className="rounded-lg border-0 bg-transparent" 
-                            value={nominee.name}
-                            onChange={(e) => handleNomineeChange(index, 'name', e.target.value)}
-                          />
-                        </td>
-                        <td className="border border-border p-2">
-                          <Select
-                            value={nominee.gender}
-                            onValueChange={(value) => handleNomineeChange(index, 'gender', value)}
-                          >
-                            <SelectTrigger className="rounded-lg border-0 bg-transparent">
-                              <SelectValue placeholder="-" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="male">{t.form.male}</SelectItem>
-                              <SelectItem value="female">{t.form.female}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="border border-border p-2">
-                          <Input 
-                            type="number" 
-                            className="rounded-lg border-0 bg-transparent" 
-                            value={nominee.age}
-                            onChange={(e) => handleNomineeChange(index, 'age', e.target.value)}
-                          />
-                        </td>
-                        <td className="border border-border p-2">
-                          <Select
-                            value={nominee.relation}
-                            onValueChange={(value) => handleNomineeChange(index, 'relation', value)}
-                          >
-                            <SelectTrigger className="rounded-lg border-0 bg-transparent">
-                              <SelectValue placeholder={t.form.selectRelation} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="spouse">{t.form.spouse}</SelectItem>
-                              <SelectItem value="child">{t.form.child}</SelectItem>
-                              <SelectItem value="parent">{t.form.parent}</SelectItem>
-                              <SelectItem value="sibling">{t.form.sibling}</SelectItem>
-                              <SelectItem value="other">{t.form.other}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            {/* Email Address */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail size={16} className="text-primary" />
+                {language === 'ta' ? 'மின்னஞ்சல் முகவரி' : 'Email Address'}
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="rounded-xl"
+                placeholder={language === 'ta' ? 'example@email.com' : 'example@email.com'}
+              />
             </div>
 
-            {/* Signatures */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-2">
-                <Label>{t.form.applicantSignature}</Label>
-                <div className="h-24 border-2 border-dashed border-border rounded-xl bg-muted/50" />
-              </div>
-              <div className="space-y-2">
-                <Label>{t.form.mdSignature}</Label>
-                <div className="h-24 border-2 border-dashed border-border rounded-xl bg-muted/50" />
-              </div>
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="flex items-center gap-2">
+                <Phone size={16} className="text-primary" />
+                {t.form.phone}
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                className="rounded-xl"
+                placeholder={language === 'ta' ? 'கைபேசி எண்' : 'Enter your phone number'}
+              />
             </div>
 
-            {/* Submit */}
-            <Button 
-              type="submit" 
-              size="lg" 
+            {/* Ration Card Number */}
+            <div className="space-y-2">
+              <Label htmlFor="ration_card" className="flex items-center gap-2">
+                <CreditCard size={16} className="text-primary" />
+                {t.form.rationCard}
+              </Label>
+              <Input
+                id="ration_card"
+                name="ration_card"
+                required
+                className="rounded-xl"
+                placeholder={language === 'ta' ? 'குடும்ப அட்டை எண்' : 'Enter ration card number'}
+              />
+            </div>
+
+            {/* Annual Income */}
+            <div className="space-y-2">
+              <Label htmlFor="annual_income" className="flex items-center gap-2">
+                <IndianRupee size={16} className="text-primary" />
+                {t.form.annualIncome}
+              </Label>
+              <Input
+                id="annual_income"
+                name="annual_income"
+                required
+                className="rounded-xl"
+                placeholder={language === 'ta' ? 'ஆண்டு வருமானம்' : 'Enter annual income'}
+              />
+            </div>
+
+            {/* Message / Application Details */}
+            <div className="space-y-2">
+              <Label htmlFor="message" className="flex items-center gap-2">
+                <MessageSquare size={16} className="text-primary" />
+                {language === 'ta' ? 'கூடுதல் விவரங்கள்' : 'Message / Application Details'}
+              </Label>
+              <Textarea
+                id="message"
+                name="message"
+                required
+                className="rounded-xl min-h-[120px]"
+                placeholder={
+                  language === 'ta'
+                    ? 'உங்கள் விண்ணப்பம் பற்றிய கூடுதல் தகவல்களை இங்கே எழுதுங்கள்...'
+                    : 'Enter any additional details about your application...'
+                }
+              />
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              size="lg"
               className="w-full rounded-xl text-lg py-6 shadow-glow"
               disabled={isSubmitting}
             >
-              {isSubmitting 
-                ? (language === 'ta' ? 'சமர்ப்பிக்கிறது...' : 'Submitting...') 
+              {isSubmitting
+                ? language === 'ta'
+                  ? 'சமர்ப்பிக்கிறது...'
+                  : 'Submitting...'
                 : t.form.submit}
             </Button>
           </form>
