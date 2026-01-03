@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -26,6 +27,7 @@ interface ApplicationData {
   nominee2_gender: string;
   nominee2_age: string;
   nominee2_relation: string;
+  seal_base64?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -161,6 +163,9 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="color: #666; font-size: 14px;">
               இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி ஈமச்சடங்கு காப்பீடு
             </p>
+            <p style="color: #888; font-size: 12px; margin-top: 10px;">
+              (Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)
+            </p>
           </div>
 
           <p style="margin-top: 30px; color: #888; font-size: 12px; text-align: center;">
@@ -172,7 +177,26 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Sending email to williamcareyfuneral99@gmail.com...");
+    console.log("Sending email to williamcareyfuneral99@gmail.com with seal attachment...");
+
+    // Prepare email payload with attachment if seal_base64 is provided
+    const emailPayload: any = {
+      from: "William Carey Insurance <onboarding@resend.dev>",
+      to: ["williamcareyfuneral99@gmail.com"],
+      subject: "New Membership Application – William Carey",
+      html: emailHtml,
+    };
+
+    // Add seal attachment if provided
+    if (data.seal_base64) {
+      emailPayload.attachments = [
+        {
+          filename: "official-seal.jpg",
+          content: data.seal_base64,
+        }
+      ];
+      console.log("Seal attachment added to email");
+    }
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -180,12 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({
-        from: "William Carey Insurance <onboarding@resend.dev>",
-        to: ["williamcareyfuneral99@gmail.com"],
-        subject: "New Membership Application – William Carey",
-        html: emailHtml,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const emailResult = await emailResponse.json();

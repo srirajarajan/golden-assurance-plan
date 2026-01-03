@@ -17,6 +17,26 @@ const ApplicationPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Convert image to base64
+  const getImageBase64 = async (imageSrc: string): Promise<string> => {
+    try {
+      const response = await fetch(imageSrc);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      return '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -24,28 +44,32 @@ const ApplicationPage = () => {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    // Build application data object
-    const applicationData = {
-      applicant_name: formData.get('applicant_name') as string,
-      guardian_name: formData.get('guardian_name') as string,
-      gender: formData.get('gender') as string,
-      occupation: formData.get('occupation') as string,
-      ration_card: formData.get('ration_card') as string,
-      annual_income: formData.get('annual_income') as string,
-      aadhaar: formData.get('aadhaar') as string,
-      address: formData.get('address') as string,
-      phone: formData.get('phone') as string,
-      nominee1_name: formData.get('nominee1_name') as string,
-      nominee1_gender: formData.get('nominee1_gender') as string,
-      nominee1_age: formData.get('nominee1_age') as string,
-      nominee1_relation: formData.get('nominee1_relation') as string,
-      nominee2_name: formData.get('nominee2_name') as string,
-      nominee2_gender: formData.get('nominee2_gender') as string,
-      nominee2_age: formData.get('nominee2_age') as string,
-      nominee2_relation: formData.get('nominee2_relation') as string,
-    };
-
     try {
+      // Get seal image as base64 for attachment
+      const sealBase64 = await getImageBase64('/official-seal.jpg');
+
+      // Build application data object
+      const applicationData = {
+        applicant_name: formData.get('applicant_name') as string,
+        guardian_name: formData.get('guardian_name') as string,
+        gender: formData.get('gender') as string,
+        occupation: formData.get('occupation') as string,
+        ration_card: formData.get('ration_card') as string,
+        annual_income: formData.get('annual_income') as string,
+        aadhaar: formData.get('aadhaar') as string,
+        address: formData.get('address') as string,
+        phone: formData.get('phone') as string,
+        nominee1_name: formData.get('nominee1_name') as string,
+        nominee1_gender: formData.get('nominee1_gender') as string,
+        nominee1_age: formData.get('nominee1_age') as string,
+        nominee1_relation: formData.get('nominee1_relation') as string,
+        nominee2_name: formData.get('nominee2_name') as string,
+        nominee2_gender: formData.get('nominee2_gender') as string,
+        nominee2_age: formData.get('nominee2_age') as string,
+        nominee2_relation: formData.get('nominee2_relation') as string,
+        seal_base64: sealBase64,
+      };
+
       const { data, error } = await supabase.functions.invoke('send-membership-application', {
         body: applicationData,
       });
