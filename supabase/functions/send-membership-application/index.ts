@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -28,6 +27,7 @@ interface ApplicationData {
   nominee2_age: string;
   nominee2_relation: string;
   seal_base64?: string;
+  language?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -38,7 +38,10 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const data: ApplicationData = await req.json();
-    console.log("Received membership application data:", data);
+    console.log("Received membership application data:", {
+      ...data,
+      seal_base64: data.seal_base64 ? "[BASE64_DATA]" : "none"
+    });
 
     // Format gender display
     const getGenderLabel = (gender: string) => {
@@ -104,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
           <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
             <tr style="background-color: #f9f9f9;">
               <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold; width: 40%;">Member Name / உறுப்பினர் பெயர்</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${data.applicant_name}</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${data.applicant_name || '-'}</td>
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">Father/Husband Name / தகப்பனார் / கணவர் பெயர்</td>
@@ -120,11 +123,11 @@ const handler = async (req: Request): Promise<Response> => {
             </tr>
             <tr style="background-color: #f9f9f9;">
               <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">Mobile Number / செல்</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${data.phone}</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${data.phone || '-'}</td>
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">Ration Card No. / குடும்ப அட்டை எண்</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${data.ration_card}</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${data.ration_card || '-'}</td>
             </tr>
             <tr style="background-color: #f9f9f9;">
               <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">Annual Income / ஆண்டு வருமானம்</td>
@@ -163,9 +166,9 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="color: #666; font-size: 14px;">
               இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி ஈமச்சடங்கு காப்பீடு
             </p>
-            <p style="color: #888; font-size: 12px; margin-top: 10px;">
+            ${data.seal_base64 ? `<p style="color: #888; font-size: 12px; margin-top: 10px;">
               (Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)
-            </p>
+            </p>` : ''}
           </div>
 
           <p style="margin-top: 30px; color: #888; font-size: 12px; text-align: center;">
@@ -177,9 +180,9 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Sending email to williamcareyfuneral99@gmail.com with seal attachment...");
+    console.log("Sending email to williamcareyfuneral99@gmail.com...");
 
-    // Prepare email payload with attachment if seal_base64 is provided
+    // Prepare email payload
     const emailPayload: any = {
       from: "William Carey Insurance <onboarding@resend.dev>",
       to: ["williamcareyfuneral99@gmail.com"],
@@ -187,8 +190,8 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
     };
 
-    // Add seal attachment if provided
-    if (data.seal_base64) {
+    // Add seal attachment if provided and not empty
+    if (data.seal_base64 && data.seal_base64.length > 100) {
       emailPayload.attachments = [
         {
           filename: "official-seal.jpg",
@@ -196,6 +199,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       ];
       console.log("Seal attachment added to email");
+    } else {
+      console.log("No seal attachment (empty or not provided)");
     }
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -208,12 +213,16 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const emailResult = await emailResponse.json();
-    console.log("Email response:", emailResult);
+    console.log("Email API response status:", emailResponse.status);
+    console.log("Email API response:", emailResult);
 
     if (!emailResponse.ok) {
+      console.error("Email API error:", emailResult);
       throw new Error(emailResult.message || "Failed to send email");
     }
 
+    console.log("Email sent successfully!");
+    
     return new Response(JSON.stringify({ success: true, emailResult }), {
       status: 200,
       headers: {
