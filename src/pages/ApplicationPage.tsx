@@ -45,34 +45,44 @@ const ApplicationPage = () => {
     const formData = new FormData(form);
 
     try {
-      // Get seal image as base64 for attachment
-      const sealBase64 = await getImageBase64('/official-seal.jpg');
+      // Get seal image as base64 for attachment (optional)
+      let sealBase64 = '';
+      try {
+        sealBase64 = await getImageBase64('/official-seal.jpg');
+      } catch (err) {
+        console.log('Seal image not available, continuing without it');
+      }
 
-      // Build application data object
+      // Build application data object - only include non-empty values
       const applicationData = {
-        applicant_name: formData.get('applicant_name') as string,
-        guardian_name: formData.get('guardian_name') as string,
-        gender: formData.get('gender') as string,
-        occupation: formData.get('occupation') as string,
-        ration_card: formData.get('ration_card') as string,
-        annual_income: formData.get('annual_income') as string,
-        aadhaar: formData.get('aadhaar') as string,
-        address: formData.get('address') as string,
-        phone: formData.get('phone') as string,
-        nominee1_name: formData.get('nominee1_name') as string,
-        nominee1_gender: formData.get('nominee1_gender') as string,
-        nominee1_age: formData.get('nominee1_age') as string,
-        nominee1_relation: formData.get('nominee1_relation') as string,
-        nominee2_name: formData.get('nominee2_name') as string,
-        nominee2_gender: formData.get('nominee2_gender') as string,
-        nominee2_age: formData.get('nominee2_age') as string,
-        nominee2_relation: formData.get('nominee2_relation') as string,
+        applicant_name: (formData.get('applicant_name') as string) || '',
+        guardian_name: (formData.get('guardian_name') as string) || '',
+        gender: (formData.get('gender') as string) || '',
+        occupation: (formData.get('occupation') as string) || '',
+        ration_card: (formData.get('ration_card') as string) || '',
+        annual_income: (formData.get('annual_income') as string) || '',
+        aadhaar: (formData.get('aadhaar') as string) || '',
+        address: (formData.get('address') as string) || '',
+        phone: (formData.get('phone') as string) || '',
+        nominee1_name: (formData.get('nominee1_name') as string) || '',
+        nominee1_gender: (formData.get('nominee1_gender') as string) || '',
+        nominee1_age: (formData.get('nominee1_age') as string) || '',
+        nominee1_relation: (formData.get('nominee1_relation') as string) || '',
+        nominee2_name: (formData.get('nominee2_name') as string) || '',
+        nominee2_gender: (formData.get('nominee2_gender') as string) || '',
+        nominee2_age: (formData.get('nominee2_age') as string) || '',
+        nominee2_relation: (formData.get('nominee2_relation') as string) || '',
         seal_base64: sealBase64,
+        language: language,
       };
+
+      console.log('Submitting application:', applicationData);
 
       const { data, error } = await supabase.functions.invoke('send-membership-application', {
         body: applicationData,
       });
+
+      console.log('Response:', data, error);
 
       if (error) throw error;
 
