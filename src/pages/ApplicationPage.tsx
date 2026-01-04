@@ -17,26 +17,6 @@ const ApplicationPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Convert image to base64
-  const getImageBase64 = async (imageSrc: string): Promise<string> => {
-    try {
-      const response = await fetch(imageSrc);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error converting image to base64:', error);
-      return '';
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -45,15 +25,7 @@ const ApplicationPage = () => {
     const formData = new FormData(form);
 
     try {
-      // Get seal image as base64 for attachment (optional)
-      let sealBase64 = '';
-      try {
-        sealBase64 = await getImageBase64('/official-seal.jpg');
-      } catch (err) {
-        console.log('Seal image not available, continuing without it');
-      }
-
-      // Build application data object - only include non-empty values
+      // Build clean JSON payload - no seal processing in frontend
       const applicationData = {
         applicant_name: (formData.get('applicant_name') as string) || '',
         guardian_name: (formData.get('guardian_name') as string) || '',
@@ -72,7 +44,6 @@ const ApplicationPage = () => {
         nominee2_gender: (formData.get('nominee2_gender') as string) || '',
         nominee2_age: (formData.get('nominee2_age') as string) || '',
         nominee2_relation: (formData.get('nominee2_relation') as string) || '',
-        seal_base64: sealBase64,
         language: language,
       };
 
