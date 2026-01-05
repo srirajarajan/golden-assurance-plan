@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const GMAIL_USER = Deno.env.get("GMAIL_USER");
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
@@ -201,44 +201,43 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Preparing to send email via Gmail SMTP to williamcareyfuneral99@gmail.com...");
 
     // Create SMTP client for Gmail
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 587,
-        tls: true,
-        auth: {
-          username: GMAIL_USER,
-          password: GMAIL_APP_PASSWORD,
-        },
-      },
-    });
+    const client = new SmtpClient();
 
     try {
-      // Prepare email content
-      const emailConfig: any = {
-        from: `William Carey Funeral Insurance <${GMAIL_USER}>`,
-        to: "williamcareyfuneral99@gmail.com",
-        subject: "New Membership Application – William Carey",
-        html: emailHtml,
-      };
+      // Connect to Gmail SMTP with STARTTLS
+      await client.connectTLS({
+        hostname: "smtp.gmail.com",
+        port: 465,
+        username: GMAIL_USER,
+        password: GMAIL_APP_PASSWORD,
+      });
+      
+      console.log("Connected to Gmail SMTP server");
 
-      // Add seal attachment if available
+      // Add seal info to email if available
+      let sealNote = "";
       if (SEAL_BASE64 && SEAL_BASE64.length > 100) {
-        emailConfig.attachments = [
-          {
-            filename: "official-seal.jpg",
-            content: SEAL_BASE64,
-            encoding: "base64",
-            contentType: "image/jpeg",
-          }
-        ];
-        console.log("Seal attachment added from environment variable");
+        sealNote = "<p style='color: #666; font-size: 12px;'>(Official seal image is stored in records)</p>";
+        console.log("Seal available in environment variable");
       } else {
         console.log("No seal attachment available (environment variable not set or empty)");
       }
 
+      const finalHtml = emailHtml.replace(
+        "(Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)",
+        "(Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)" + sealNote
+      );
+
       console.log("Sending email via Gmail SMTP...");
-      await client.send(emailConfig);
+      
+      await client.send({
+        from: GMAIL_USER!,
+        to: "williamcareyfuneral99@gmail.com",
+        subject: "New Membership Application – William Carey",
+        content: "New membership application received. Please view in HTML format.",
+        html: finalHtml,
+      });
+      
       await client.close();
       
       console.log("Email sent successfully via Gmail SMTP!");
