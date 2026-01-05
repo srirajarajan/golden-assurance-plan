@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const GMAIL_USER = Deno.env.get("GMAIL_USER");
+const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
 const SEAL_BASE64 = Deno.env.get("WILLIAM_CAREY_SEAL_BASE64");
 
 const corsHeaders = {
@@ -37,6 +39,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate SMTP credentials
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+      console.error("Gmail SMTP credentials not configured");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Email service not configured" 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     const data: ApplicationData = await req.json();
     console.log("Received membership application data:", {
       applicant_name: data.applicant_name,
@@ -181,75 +198,94 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Preparing to send email to williamcareyfuneral99@gmail.com...");
+    console.log("Preparing to send email via Gmail SMTP to williamcareyfuneral99@gmail.com...");
 
-    // Prepare email payload
-    const emailPayload: any = {
-      from: "William Carey Insurance <onboarding@resend.dev>",
-      to: ["williamcareyfuneral99@gmail.com"],
-      subject: "New Membership Application – William Carey",
-      html: emailHtml,
-    };
+    // Create SMTP client for Gmail
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 587,
+        tls: true,
+        auth: {
+          username: GMAIL_USER,
+          password: GMAIL_APP_PASSWORD,
+        },
+      },
+    });
 
-    // Add seal attachment from environment variable if available
-    if (SEAL_BASE64 && SEAL_BASE64.length > 100) {
-      emailPayload.attachments = [
+    try {
+      // Prepare email content
+      const emailConfig: any = {
+        from: `William Carey Funeral Insurance <${GMAIL_USER}>`,
+        to: "williamcareyfuneral99@gmail.com",
+        subject: "New Membership Application – William Carey",
+        html: emailHtml,
+      };
+
+      // Add seal attachment if available
+      if (SEAL_BASE64 && SEAL_BASE64.length > 100) {
+        emailConfig.attachments = [
+          {
+            filename: "official-seal.jpg",
+            content: SEAL_BASE64,
+            encoding: "base64",
+            contentType: "image/jpeg",
+          }
+        ];
+        console.log("Seal attachment added from environment variable");
+      } else {
+        console.log("No seal attachment available (environment variable not set or empty)");
+      }
+
+      console.log("Sending email via Gmail SMTP...");
+      await client.send(emailConfig);
+      await client.close();
+      
+      console.log("Email sent successfully via Gmail SMTP!");
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Application received and email sent",
+        emailSent: true 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+
+    } catch (smtpError: any) {
+      console.error("Gmail SMTP error:", smtpError.message);
+      try {
+        await client.close();
+      } catch (_) {
+        // Ignore close errors
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Failed to send email",
+          details: smtpError.message 
+        }),
         {
-          filename: "official-seal.jpg",
-          content: SEAL_BASE64,
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
         }
-      ];
-      console.log("Seal attachment added from environment variable");
-    } else {
-      console.log("No seal attachment available (environment variable not set or empty)");
+      );
     }
 
-    console.log("Sending email via Resend API...");
-    
-    const emailResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
-
-    const emailResult = await emailResponse.json();
-    console.log("Email API response status:", emailResponse.status);
-    console.log("Email API response:", JSON.stringify(emailResult));
-
-    if (!emailResponse.ok) {
-      console.error("Email API error:", JSON.stringify(emailResult));
-      // Return success anyway to not block the user - log the error for debugging
-      console.log("Returning success response despite email error");
-    } else {
-      console.log("Email sent successfully!");
-    }
-
-    // Always return success to ensure form submission completes
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: "Application received",
-      emailSent: emailResponse.ok 
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
   } catch (error: any) {
     console.error("Error in send-membership-application function:", error);
-    // Still return success to not block the user
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: "Application received (with processing note)",
-        error: error.message 
+        success: false, 
+        error: "Failed to process application",
+        details: error.message 
       }),
       {
-        status: 200,
+        status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
