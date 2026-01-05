@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const GMAIL_USER = Deno.env.get("GMAIL_USER");
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
@@ -30,6 +30,96 @@ interface ApplicationData {
   nominee2_age: string;
   nominee2_relation: string;
   language?: string;
+}
+
+// Simple SMTP client for Gmail
+class SimpleSmtpClient {
+  private conn: Deno.Conn | null = null;
+  private encoder = new TextEncoder();
+  private decoder = new TextDecoder();
+
+  async connect(hostname: string, port: number): Promise<void> {
+    this.conn = await Deno.connectTls({
+      hostname,
+      port,
+    });
+    await this.readResponse();
+  }
+
+  private async send(command: string): Promise<string> {
+    if (!this.conn) throw new Error("Not connected");
+    await this.conn.write(this.encoder.encode(command + "\r\n"));
+    return await this.readResponse();
+  }
+
+  private async readResponse(): Promise<string> {
+    if (!this.conn) throw new Error("Not connected");
+    const buffer = new Uint8Array(4096);
+    const bytesRead = await this.conn.read(buffer);
+    if (bytesRead === null) return "";
+    return this.decoder.decode(buffer.subarray(0, bytesRead));
+  }
+
+  async authenticate(username: string, password: string): Promise<void> {
+    await this.send(`EHLO gmail.com`);
+    await this.send(`AUTH LOGIN`);
+    await this.send(base64Encode(username));
+    const response = await this.send(base64Encode(password));
+    if (!response.startsWith("235")) {
+      throw new Error(`Authentication failed: ${response}`);
+    }
+  }
+
+  async sendMail(from: string, to: string, subject: string, htmlBody: string, attachments?: { filename: string; content: string }[]): Promise<void> {
+    await this.send(`MAIL FROM:<${from}>`);
+    await this.send(`RCPT TO:<${to}>`);
+    await this.send(`DATA`);
+
+    const boundary = "----=_Part_" + Date.now();
+    
+    let message = `From: William Carey Funeral Insurance <${from}>\r\n`;
+    message += `To: ${to}\r\n`;
+    message += `Subject: ${subject}\r\n`;
+    message += `MIME-Version: 1.0\r\n`;
+    message += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`;
+    
+    // HTML part
+    message += `--${boundary}\r\n`;
+    message += `Content-Type: text/html; charset=utf-8\r\n`;
+    message += `Content-Transfer-Encoding: 7bit\r\n\r\n`;
+    message += htmlBody + "\r\n\r\n";
+    
+    // Attachments
+    if (attachments) {
+      for (const att of attachments) {
+        message += `--${boundary}\r\n`;
+        message += `Content-Type: image/jpeg; name="${att.filename}"\r\n`;
+        message += `Content-Disposition: attachment; filename="${att.filename}"\r\n`;
+        message += `Content-Transfer-Encoding: base64\r\n\r\n`;
+        message += att.content + "\r\n\r\n";
+      }
+    }
+    
+    message += `--${boundary}--\r\n`;
+    message += ".\r\n";
+
+    const response = await this.send(message);
+    if (!response.startsWith("250")) {
+      throw new Error(`Failed to send email: ${response}`);
+    }
+  }
+
+  async close(): Promise<void> {
+    if (this.conn) {
+      try {
+        await this.send("QUIT");
+      } catch (_) {
+        // Ignore quit errors
+      }
+      this.conn.close();
+      this.conn = null;
+    }
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -198,48 +288,39 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Preparing to send email via Gmail SMTP to williamcareyfuneral99@gmail.com...");
+    console.log("Preparing to send email via Gmail SMTP...");
 
-    // Create SMTP client for Gmail
-    const client = new SmtpClient();
-
+    const client = new SimpleSmtpClient();
+    
     try {
-      // Connect to Gmail SMTP with STARTTLS
-      await client.connectTLS({
-        hostname: "smtp.gmail.com",
-        port: 465,
-        username: GMAIL_USER,
-        password: GMAIL_APP_PASSWORD,
-      });
+      console.log("Connecting to smtp.gmail.com:465...");
+      await client.connect("smtp.gmail.com", 465);
+      console.log("Connected successfully");
       
-      console.log("Connected to Gmail SMTP server");
+      console.log("Authenticating...");
+      await client.authenticate(GMAIL_USER, GMAIL_APP_PASSWORD);
+      console.log("Authenticated successfully");
 
-      // Add seal info to email if available
-      let sealNote = "";
+      // Prepare attachments
+      const attachments = [];
       if (SEAL_BASE64 && SEAL_BASE64.length > 100) {
-        sealNote = "<p style='color: #666; font-size: 12px;'>(Official seal image is stored in records)</p>";
-        console.log("Seal available in environment variable");
-      } else {
-        console.log("No seal attachment available (environment variable not set or empty)");
+        attachments.push({
+          filename: "official-seal.jpg",
+          content: SEAL_BASE64
+        });
+        console.log("Seal attachment prepared");
       }
 
-      const finalHtml = emailHtml.replace(
-        "(Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)",
-        "(Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)" + sealNote
+      console.log("Sending email...");
+      await client.sendMail(
+        GMAIL_USER,
+        "williamcareyfuneral99@gmail.com",
+        "New Membership Application – William Carey",
+        emailHtml,
+        attachments.length > 0 ? attachments : undefined
       );
-
-      console.log("Sending email via Gmail SMTP...");
-      
-      await client.send({
-        from: GMAIL_USER!,
-        to: "williamcareyfuneral99@gmail.com",
-        subject: "New Membership Application – William Carey",
-        content: "New membership application received. Please view in HTML format.",
-        html: finalHtml,
-      });
       
       await client.close();
-      
       console.log("Email sent successfully via Gmail SMTP!");
 
       return new Response(JSON.stringify({ 
@@ -256,11 +337,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     } catch (smtpError: any) {
       console.error("Gmail SMTP error:", smtpError.message);
-      try {
-        await client.close();
-      } catch (_) {
-        // Ignore close errors
-      }
+      await client.close();
       
       return new Response(
         JSON.stringify({ 
@@ -276,7 +353,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
   } catch (error: any) {
-    console.error("Error in send-membership-application function:", error);
+    console.error("Error in send-membership-application function:", error.message);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
