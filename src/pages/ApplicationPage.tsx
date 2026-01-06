@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { User, Phone, CreditCard, IndianRupee, MapPin, Briefcase, Users, Shield } from 'lucide-react';
 import logo from '@/assets/logo.png';
-import officialSeal from '@/assets/official-seal.jpg';
+import officialSeal from '@/assets/official-seal.png';
 import { supabase } from '@/integrations/supabase/client';
 
 const ApplicationPage = () => {

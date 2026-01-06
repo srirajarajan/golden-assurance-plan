@@ -61,18 +61,17 @@ export const translations = {
     },
     benefits: {
       title: "Benefits & Conditions",
-      subtitle: "Complete details of the scheme benefits and requirements",
+      subtitle: "William Carey Funeral Insurance Scheme introduced by William Carey Trust for the poor and needy people.",
       benefitsList: [
-        "One ration card or individual person can enroll in this funeral insurance scheme.",
-        "Only 2 (or) 3 members per ration card can benefit from this scheme.",
-        "Members must be above 40 years of age to benefit from this scheme.",
-        "Each member receives ₹3,000 monthly and ₹10,000 funeral coverage.",
-        "After paying ₹3,000 for one year, full benefits begin; from the 15th month onwards, additional benefits apply.",
-        "Nominee listed in the ration card will receive the insurance amount from the rightful heirs.",
-        "This scheme allocates funds from William Carey Institution for the welfare of poor people.",
-        "After 5 years: ₹10,000 (ten thousand only). After 10 years: ₹15,000 (fifteen thousand only).",
-        "Identity card will be issued to all members under 'William Carey Funeral Insurance Scheme'.",
-        "Insurance amount will be provided only after returning the member ID card. Additionally, any family assistance will be provided through William Carey Institution."
+        "Any person listed in a family ration card or an individual can use this funeral insurance scheme.",
+        "To join as a member in this scheme, you must be above 40 years of age.",
+        "To become a member, pay application fee ₹1,300/- and one-time lifetime policy fee ₹1,700/-. Benefits start from the 15th day after payment and continue for lifetime.",
+        "A nominee will be registered through a person listed in the Ration Card, and the insurance amount will be provided at the appropriate time.",
+        "Amount provided through this scheme: (i) Death after 5 years: ₹10,000/- (ii) Death after 10 years: ₹15,000/-",
+        "Every member joining this scheme will be issued an identity card with official seal under 'William Carey Funeral Insurance Scheme'.",
+        "If the policyholder passes away, the insurance amount will be provided in person after the nominee or family member informs. If not informed, heirs can receive the amount after submitting proper documents.",
+        "The member identity card must be returned when receiving the insurance amount.",
+        "All members will receive special gifts and sweets during Diwali and Christmas festivals. Additionally, one need-based assistance will be provided to the family through William Carey Trust."
       ],
       documentsTitle: "Required Documents",
       documents: [
@@ -85,6 +84,8 @@ export const translations = {
       title: "Contact Us",
       subtitle: "Get in touch with us for any queries",
       phone: "Phone",
+      email: "Email",
+      emailAddress: "williamcareyfuneral99@gmail.com",
       address: "Address",
       addressText: "190/86A, Yercaud Main Road, Hasthampatty, Salem – 7",
       formTitle: "Send us a Message",
@@ -161,19 +162,18 @@ export const translations = {
       errorMessage: "விண்ணப்பத்தை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
     },
     benefits: {
-      title: "நிபந்தனைகள்",
-      subtitle: "திட்ட சலுகைகள் மற்றும் தேவைகளின் முழு விவரங்கள்",
+      title: "சலுகைகள் & நிபந்தனைகள்",
+      subtitle: "ஈமசடங்கு காப்பீட்டுத் திட்டம் வில்லியம் கேரி அறக்கட்டளை மூலம் ஏழை, எளிய மக்களுக்கு இழப்பு காப்பீட்டுத் திட்டமாக அறிமுகப்படுத்தப்பட்டுள்ளது.",
       benefitsList: [
-        "ஈமசடங்கு காப்பீட்டு திட்ட முறை ஒரு குடும்ப அட்டைக்கு (ரேஷன் கார்டு) அல்லது தனிப்பட்ட நபர் இத்திட்டதை பயன்படுத்தி கொள்ளலாம்.",
-        "ஒரு குடும்ப அட்டையில் உள்ள (ரேஷன் கார்டு) இரண்டு (அ) மூன்று நபர்கள் மட்டும் இத்திட்டத்தின் மூலம் பயன் பெறலாம்.",
-        "இத்திட்டத்தின் உறுப்பினராக இணைய அதிக பட்சம் 40-வயதிற்க்கு மேற்பட்டவர்களுக்கு இத்திட்டம் மூலம் பயன்பெறலாம்.",
-        "இத்திட்டத்தின் மூலம் உறுப்பினர் ஒருவருக்கு தொகை ரூ.3000 செலுத்தினால் இறப்பு காப்பீடாக ரூ.10000 வழங்கப்படும்.",
-        "இத்திட்டத்தின் மூலம் ஒரு முறை தொகை ரூ.3000 செலுத்தினால் போதுமானது வாழ்நாள் முழுவதும் உறுப்பினருக்கு இத்திட்டம் செயல்படும், மேலும் தொகை செலுத்தி 15-வது நாட்களிலிருந்து இத்திட்டம் மூலம் பயன்பெறலாம்.",
-        "குடும்ப அட்டையில் (ரேஷன் கார்டு) உள்ள ஒருவர் மூலம் நாமினி (Nominee) போடப்பட்டு தக்க சமையத்தில் உரியவர்களிடம் காப்பீட்டு தொகையை ஒப்படைக்கப்படும்.",
-        "இத்திட்டம் ஏழை எளிய பாமர மக்கள் பயன்பெறும் வகையில் நமது வில்லியம் கேரி நிறுவனத்திலிருந்து தொகையினை ஒதுப்படுக்கிறது.",
-        "இத்திட்டம் (I). 5 வருடத்திற்க்கு மேல் இறப்பு நேரிட்டால் ரூ.10000 (பத்தாயிரம் ரூபாய் மட்டும்) (II). 10 வருடத்திற்க்கு மேல் இறப்பு ரூ.15000 (பதினைந்தாயிரம் ரூபாய் மட்டும்) ஒதுப்படுக்கிறது.",
-        "இத்திட்டத்தின் இணையும் அனைவருக்கு வில்லியம் கேரி ஈமசடங்கு காப்பீட்டு திட்டம் என்ற பெயரில் அடையாள அட்டை சீல் வைத்து கொடுக்கப்படும்.",
-        "இத்திட்டத்தின் மூலம் வழங்கும் காப்பீட்டு தொகையை திரும்ப பெறும் பொழுது கட்டயமாக உறுப்பினர் அடையாள அட்டை திரும்ப கொடுத்த பின்னரே தொகை வழங்கப்படும். மேலும் அந்த குடும்பத்திற்கு தேவையான ஏதேனும் ஒரு உதவி வில்லியம் கேரி காப்பீட்டு நிறுவனத்தின் மூலம் செய்து கொடுக்கப்படும்."
+        "ஈமசடங்கு காப்பீட்டுத் திட்டம் ஒரு குடும்பத்திலுள்ள குடும்ப அட்டையில் உள்ளவரோ அல்லது தனிப்பட்ட நபரோ இத்திட்டத்தை பயன்படுத்திக் கொள்ளலாம்.",
+        "இத்திட்டத்தில் உறுப்பினராக இணைய அதிகபட்சம் 40 வயதிற்கு மேற்பட்டவராக இருத்தல் வேண்டும்.",
+        "இத்திட்டத்தின் மூலம் உறுப்பினராக இணைய விண்ணப்பத் தொகை ரூ.1300/- மற்றும் பாலிசி தொகை ஒருமுறை வாழ்நாள் கட்டணமாக ரூ.1700/- செலுத்தி பயன் பெறலாம். பாலிசி தொகை செலுத்திய 15வது நாளிலிருந்து வாழ்நாள் முழுவதும் பயன் பெறலாம்.",
+        "குடும்ப அட்டையில் (Ration Card) உள்ள ஒருவர் மூலம் நாமினி பதிவு செய்யப்பட்டு, உரிய நேரத்தில் காப்பீட்டுத் தொகை வழங்கப்படும்.",
+        "இத்திட்டத்தின் மூலம் வழங்கப்படும் தொகை விவரம்: (i) 5 வருடத்திற்கு மேல் இறப்பு ஏற்பட்டால் ரூ.10,000/- (ii) 10 வருடத்திற்கு மேல் இறப்பு ஏற்பட்டால் ரூ.15,000/-",
+        "இத்திட்டத்தில் இணையும் ஒவ்வொருவருக்கும் \"வில்லியம் கேரி ஈமசடங்கு காப்பீட்டுத் திட்டம்\" என்ற பெயரில் அலுவலர் சீல் உடன் அடையாள அட்டை வழங்கப்படும்.",
+        "பாலிசிதாரருக்கு இழப்பு நேரிட்டால், நாமினி அல்லது குடும்ப உறுப்பினர் தகவல் தெரிவித்த பிறகு காப்பீட்டுத் தொகை நேரில் வழங்கப்படும். தகவல் அளிக்கப்படாத பட்சத்தில், வாரிசுதாரர்கள் உரிய சான்றுகள் சமர்ப்பித்த பின் தொகை வழங்கப்படும்.",
+        "காப்பீட்டுத் தொகை பெறும் போது கட்டாயமாக உறுப்பினர் அடையாள அட்டை திருப்பி அளிக்க வேண்டும்.",
+        "இத்திட்டத்தில் இணையும் அனைவருக்கும் தீபாவளி மற்றும் கிறிஸ்துமஸ் பண்டிகைகளில் சிறப்பு பரிசுகள் மற்றும் இனிப்புகள் வழங்கப்படும். மேலும், அந்த குடும்பத்திற்கு தேவையான ஒரு உதவி வில்லியம் கேரி அறக்கட்டளை மூலம் வழங்கப்படும்."
       ],
       documentsTitle: "தேவையான ஆவணங்கள்",
       documents: [
@@ -186,6 +186,8 @@ export const translations = {
       title: "தொடர்பு கொள்ளுங்கள்",
       subtitle: "எந்த கேள்விகளுக்கும் எங்களை தொடர்பு கொள்ளுங்கள்",
       phone: "தொலைபேசி",
+      email: "மின்னஞ்சல்",
+      emailAddress: "williamcareyfuneral99@gmail.com",
       address: "முகவரி",
       addressText: "190/86A, ஏற்காடு பிரதான சாலை, ஹஸ்தம்பட்டி, சேலம் – 7",
       formTitle: "எங்களுக்கு செய்தி அனுப்புங்கள்",

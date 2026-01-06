@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { Phone, MapPin, Send, MessageCircle } from 'lucide-react';
+import { Phone, MapPin, Send, MessageCircle, Mail } from 'lucide-react';
 import { z } from 'zod';
 
 const contactSchema = z.object({
@@ -99,6 +99,24 @@ Message: ${parsed.data.message}`;
                   96003 50889
                 </a>
               </div>
+            </div>
+
+            {/* Email */}
+            <div className="card-elevated p-6 gold-border">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Mail className="text-primary" size={24} />
+                </div>
+                <h3 className="font-display text-xl font-semibold text-secondary">
+                  {t.contact.email}
+                </h3>
+              </div>
+              <a
+                href="mailto:williamcareyfuneral99@gmail.com"
+                className="block text-lg text-foreground hover:text-primary transition-colors"
+              >
+                📧 williamcareyfuneral99@gmail.com
+              </a>
             </div>
 
             {/* Address */}
