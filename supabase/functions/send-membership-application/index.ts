@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
-const GMAIL_USER = Deno.env.get("GMAIL_USER");
-const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
-const SEAL_BASE64 = Deno.env.get("WILLIAM_CAREY_SEAL_BASE64");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,96 +27,7 @@ interface ApplicationData {
   nominee2_age: string;
   nominee2_relation: string;
   language?: string;
-}
-
-// Simple SMTP client for Gmail
-class SimpleSmtpClient {
-  private conn: Deno.Conn | null = null;
-  private encoder = new TextEncoder();
-  private decoder = new TextDecoder();
-
-  async connect(hostname: string, port: number): Promise<void> {
-    this.conn = await Deno.connectTls({
-      hostname,
-      port,
-    });
-    await this.readResponse();
-  }
-
-  private async send(command: string): Promise<string> {
-    if (!this.conn) throw new Error("Not connected");
-    await this.conn.write(this.encoder.encode(command + "\r\n"));
-    return await this.readResponse();
-  }
-
-  private async readResponse(): Promise<string> {
-    if (!this.conn) throw new Error("Not connected");
-    const buffer = new Uint8Array(4096);
-    const bytesRead = await this.conn.read(buffer);
-    if (bytesRead === null) return "";
-    return this.decoder.decode(buffer.subarray(0, bytesRead));
-  }
-
-  async authenticate(username: string, password: string): Promise<void> {
-    await this.send(`EHLO gmail.com`);
-    await this.send(`AUTH LOGIN`);
-    await this.send(base64Encode(username));
-    const response = await this.send(base64Encode(password));
-    if (!response.startsWith("235")) {
-      throw new Error(`Authentication failed: ${response}`);
-    }
-  }
-
-  async sendMail(from: string, to: string, subject: string, htmlBody: string, attachments?: { filename: string; content: string }[]): Promise<void> {
-    await this.send(`MAIL FROM:<${from}>`);
-    await this.send(`RCPT TO:<${to}>`);
-    await this.send(`DATA`);
-
-    const boundary = "----=_Part_" + Date.now();
-    
-    let message = `From: William Carey Funeral Insurance <${from}>\r\n`;
-    message += `To: ${to}\r\n`;
-    message += `Subject: ${subject}\r\n`;
-    message += `MIME-Version: 1.0\r\n`;
-    message += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`;
-    
-    // HTML part
-    message += `--${boundary}\r\n`;
-    message += `Content-Type: text/html; charset=utf-8\r\n`;
-    message += `Content-Transfer-Encoding: 7bit\r\n\r\n`;
-    message += htmlBody + "\r\n\r\n";
-    
-    // Attachments
-    if (attachments) {
-      for (const att of attachments) {
-        message += `--${boundary}\r\n`;
-        message += `Content-Type: image/jpeg; name="${att.filename}"\r\n`;
-        message += `Content-Disposition: attachment; filename="${att.filename}"\r\n`;
-        message += `Content-Transfer-Encoding: base64\r\n\r\n`;
-        message += att.content + "\r\n\r\n";
-      }
-    }
-    
-    message += `--${boundary}--\r\n`;
-    message += ".\r\n";
-
-    const response = await this.send(message);
-    if (!response.startsWith("250")) {
-      throw new Error(`Failed to send email: ${response}`);
-    }
-  }
-
-  async close(): Promise<void> {
-    if (this.conn) {
-      try {
-        await this.send("QUIT");
-      } catch (_) {
-        // Ignore quit errors
-      }
-      this.conn.close();
-      this.conn = null;
-    }
-  }
+  photo_url?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -129,9 +37,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Validate SMTP credentials
-    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-      console.error("Gmail SMTP credentials not configured");
+    // Validate Resend API key
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY not configured");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -145,13 +53,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const data: ApplicationData = await req.json();
-    console.log("Received membership application data:", {
+    console.log("Received membership application:", {
       applicant_name: data.applicant_name,
       phone: data.phone,
-      language: data.language
+      photo_url: data.photo_url ? "Present" : "Not provided"
     });
 
-    // Format gender display (bilingual for email)
+    // Format gender display
     const getGenderLabel = (gender: string) => {
       switch (gender) {
         case 'male': return 'Male / ஆண்';
@@ -161,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     };
 
-    // Format income display (bilingual for email)
+    // Format income display
     const getIncomeLabel = (income: string) => {
       switch (income) {
         case 'below_175000': return 'Below ₹1.75 Lakhs / ₹1.75 லட்சத்திற்கு கீழ்';
@@ -195,6 +103,19 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     }
 
+    // Photo section HTML
+    const photoHtml = data.photo_url ? `
+      <h3 style="color: #8B4513; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-top: 30px;">
+        Applicant Photo / விண்ணப்பதாரர் புகைப்படம்
+      </h3>
+      <div style="text-align: center; margin: 20px 0;">
+        <img src="${data.photo_url}" alt="Applicant Photo" style="max-width: 200px; max-height: 250px; border: 3px solid #D4AF37; border-radius: 8px;" />
+        <p style="margin-top: 10px;">
+          <a href="${data.photo_url}" style="color: #8B4513; text-decoration: underline;">Download Photo / புகைப்படம் பதிவிறக்கம்</a>
+        </p>
+      </div>
+    ` : '';
+
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -207,7 +128,10 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #8B4513; margin-bottom: 5px;">William Carey Funeral Insurance</h1>
             <h2 style="color: #666; font-weight: normal; margin-top: 0;">New Membership Application</h2>
+            <p style="color: #888;">புதிய உறுப்பினர் விண்ணப்பம்</p>
           </div>
+
+          ${photoHtml}
           
           <h3 style="color: #8B4513; border-bottom: 2px solid #D4AF37; padding-bottom: 10px;">
             Applicant Details / விண்ணப்பதாரர் விவரங்கள்
@@ -274,9 +198,6 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="color: #666; font-size: 14px;">
               இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி ஈமச்சடங்கு காப்பீடு
             </p>
-            <p style="color: #888; font-size: 12px; margin-top: 10px;">
-              (Official Seal attached / அதிகாரப்பூர்வ முத்திரை இணைக்கப்பட்டுள்ளது)
-            </p>
           </div>
 
           <p style="margin-top: 30px; color: #888; font-size: 12px; text-align: center;">
@@ -288,77 +209,51 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Preparing to send email via Gmail SMTP...");
+    console.log("Sending email via Resend API...");
 
-    const client = new SimpleSmtpClient();
-    
-    try {
-      console.log("Connecting to smtp.gmail.com:465...");
-      await client.connect("smtp.gmail.com", 465);
-      console.log("Connected successfully");
-      
-      console.log("Authenticating...");
-      await client.authenticate(GMAIL_USER, GMAIL_APP_PASSWORD);
-      console.log("Authenticated successfully");
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: "William Carey Insurance <onboarding@resend.dev>",
+        to: ["williamcareyfuneral99@gmail.com"],
+        subject: `New Membership Application – ${data.applicant_name || 'Unknown'}`,
+        html: emailHtml,
+      }),
+    });
 
-      // Prepare attachments
-      const attachments = [];
-      if (SEAL_BASE64 && SEAL_BASE64.length > 100) {
-        attachments.push({
-          filename: "official-seal.jpg",
-          content: SEAL_BASE64
-        });
-        console.log("Seal attachment prepared");
-      }
+    const emailResult = await emailResponse.json();
+    console.log("Resend response:", emailResult);
 
-      console.log("Sending email...");
-      await client.sendMail(
-        GMAIL_USER,
-        "williamcareyfuneral99@gmail.com",
-        "New Membership Application – William Carey",
-        emailHtml,
-        attachments.length > 0 ? attachments : undefined
-      );
-      
-      await client.close();
-      console.log("Email sent successfully via Gmail SMTP!");
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: "Application received and email sent",
-        emailSent: true 
-      }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      });
-
-    } catch (smtpError: any) {
-      console.error("Gmail SMTP error:", smtpError.message);
-      await client.close();
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Failed to send email",
-          details: smtpError.message 
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+    if (!emailResponse.ok) {
+      console.error("Resend API error:", emailResult);
+      throw new Error(emailResult.message || "Failed to send email");
     }
 
+    console.log("Email sent successfully! ID:", emailResult.id);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: "Application received and email sent",
+      emailId: emailResult.id
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
+    });
+
   } catch (error: any) {
-    console.error("Error in send-membership-application function:", error.message);
+    console.error("Error in send-membership-application:", error.message);
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: "Failed to process application",
+        error: "Failed to send application",
         details: error.message 
       }),
       {
