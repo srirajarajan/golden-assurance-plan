@@ -10,6 +10,7 @@ import { User, Phone, CreditCard, IndianRupee, MapPin, Briefcase, Users, Shield,
 import logo from '@/assets/logo.png';
 import officialSeal from '@/assets/official-seal.png';
 import { supabase } from '@/integrations/supabase/client';
+import emailjs from '@emailjs/browser';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -127,44 +128,45 @@ const ApplicationPage = () => {
       const photoUrl = await uploadPhoto(photoFile);
       console.log('Photo uploaded:', photoUrl);
 
-      // Build application data
-      const applicationData = {
-        applicant_name: (formData.get('applicant_name') as string) || '',
-        guardian_name: (formData.get('guardian_name') as string) || '',
-        gender: (formData.get('gender') as string) || '',
-        occupation: (formData.get('occupation') as string) || '',
-        ration_card: (formData.get('ration_card') as string) || '',
-        annual_income: (formData.get('annual_income') as string) || '',
-        aadhaar: (formData.get('aadhaar') as string) || '',
-        address: (formData.get('address') as string) || '',
-        phone: (formData.get('phone') as string) || '',
-        nominee1_name: (formData.get('nominee1_name') as string) || '',
-        nominee1_gender: (formData.get('nominee1_gender') as string) || '',
-        nominee1_age: (formData.get('nominee1_age') as string) || '',
-        nominee1_relation: (formData.get('nominee1_relation') as string) || '',
-        nominee2_name: (formData.get('nominee2_name') as string) || '',
-        nominee2_gender: (formData.get('nominee2_gender') as string) || '',
-        nominee2_age: (formData.get('nominee2_age') as string) || '',
-        nominee2_relation: (formData.get('nominee2_relation') as string) || '',
-        language: language,
+      // Build nominee details string
+      const nominee1 = formData.get('nominee1_name') 
+        ? `${formData.get('nominee1_name')} (${formData.get('nominee1_gender')}, ${formData.get('nominee1_age')} yrs, ${formData.get('nominee1_relation')})`
+        : '';
+      const nominee2 = formData.get('nominee2_name')
+        ? `${formData.get('nominee2_name')} (${formData.get('nominee2_gender')}, ${formData.get('nominee2_age')} yrs, ${formData.get('nominee2_relation')})`
+        : '';
+
+      // Build EmailJS template parameters
+      const templateParams = {
+        applicant_name: formData.get('applicant_name') || '',
+        guardian_name: formData.get('guardian_name') || '',
+        gender: formData.get('gender') || '',
+        occupation: formData.get('occupation') || '',
+        ration_card: formData.get('ration_card') || '',
+        annual_income: formData.get('annual_income') || '',
+        aadhaar: formData.get('aadhaar') || '',
+        address: formData.get('address') || '',
+        phone: formData.get('phone') || '',
+        nominee1: nominee1,
+        nominee2: nominee2,
         photo_url: photoUrl,
+        to_email: 'williamcareyfuneral99@gmail.com',
       };
 
-      console.log('Submitting application...');
+      console.log('Sending email via EmailJS...');
 
-      const { data, error } = await supabase.functions.invoke('send-membership-application', {
-        body: applicationData,
-      });
+      // Send email using EmailJS
+      const response = await emailjs.send(
+        'service_oayf2od',
+        'template_g6mbhol',
+        templateParams,
+        'gq4UP7sZykMwY4aQc'
+      );
 
-      console.log('Response:', data, error);
+      console.log('EmailJS Response:', response);
 
-      if (error) {
-        console.error('Function error:', error);
-        throw new Error(error.message || 'Email sending failed');
-      }
-
-      if (data && !data.success) {
-        throw new Error(data.error || 'Email sending failed');
+      if (response.status !== 200) {
+        throw new Error('Email sending failed');
       }
 
       // Only show success if email was actually sent
