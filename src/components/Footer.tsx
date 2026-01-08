@@ -1,5 +1,5 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Phone, MapPin, Heart } from 'lucide-react';
+import { Phone, MapPin, Heart, Mail } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const Footer = () => {
@@ -25,6 +25,10 @@ const Footer = () => {
             <div className="flex items-center gap-2 text-sm text-secondary-foreground/80">
               <Phone size={16} className="text-gold-light" />
               <span>96003 50699 / 96003 50889</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-secondary-foreground/80">
+              <Mail size={16} className="text-gold-light" />
+              <span>{t.footer.email}</span>
             </div>
             <div className="flex items-start gap-2 text-sm text-secondary-foreground/80">
               <MapPin size={16} className="text-gold-light mt-1 flex-shrink-0" />
