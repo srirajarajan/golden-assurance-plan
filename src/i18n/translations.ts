@@ -13,8 +13,8 @@ export const translations = {
       benefitsBtn: "View Benefits"
     },
     form: {
-      title: "Application Form",
-      subtitle: "Membership Application Form",
+      title: "Funeral Insurance Application",
+      subtitle: "Application Form",
       memberName: "Member Name",
       memberNamePlaceholder: "Enter your name",
       fatherHusbandName: "Father/Husband Name",
@@ -36,6 +36,8 @@ export const translations = {
       aboveIncome: "Above ₹1.75 Lakhs",
       aadharCard: "Aadhaar No.",
       aadharPlaceholder: "XXXX XXXX XXXX",
+      aadharFront: "Aadhaar Front Side Photo",
+      aadharBack: "Aadhaar Back Side Photo",
       permanentAddress: "Permanent Address",
       addressPlaceholder: "Enter full address",
       nomineeSection: "Nominee Details",
@@ -57,7 +59,16 @@ export const translations = {
       successMessage: "Your application has been submitted successfully.",
       newApplication: "Submit Another Application",
       errorTitle: "Error",
-      errorMessage: "Failed to submit application. Please try again."
+      errorMessage: "Failed to submit application. Please try again.",
+      photo: "Photo",
+      uploadPhoto: "Upload Photo",
+      pamphletPhoto: "Upload Pamphlet Photo",
+      uploadImage: "Upload Image",
+      imageTooLarge: "Image too large",
+      imageSizeLimit: "Please use an image less than 2MB",
+      message: "Additional Message",
+      messagePlaceholder: "Any additional information...",
+      secureSubmit: "Your information will be sent securely"
     },
     benefits: {
       title: "Benefits & Conditions",
@@ -98,7 +109,8 @@ export const translations = {
     },
     footer: {
       rights: "All Rights Reserved",
-      tagline: "Providing peace of mind to families since 2020"
+      tagline: "Providing peace of mind to families since 2020",
+      email: "williamcareyfuneral99@gmail.com"
     }
   },
   ta: {
@@ -115,7 +127,7 @@ export const translations = {
       benefitsBtn: "சலுகைகள் பார்க்க"
     },
     form: {
-      title: "விண்ணப்பப் படிவம்",
+      title: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
       subtitle: "உறுப்பினர் விண்ணப்பப் படிவம்",
       memberName: "உறுப்பினர் பெயர்",
       memberNamePlaceholder: "பெயரை உள்ளிடவும்",
@@ -138,6 +150,8 @@ export const translations = {
       aboveIncome: "₹1.75 லட்சத்திற்கு மேல்",
       aadharCard: "ஆதார் அட்டை எண்",
       aadharPlaceholder: "XXXX XXXX XXXX",
+      aadharFront: "ஆதார் முன்பக்க புகைப்படம்",
+      aadharBack: "ஆதார் பின்பக்க புகைப்படம்",
       permanentAddress: "நிரந்தர முகவரி",
       addressPlaceholder: "முழு முகவரியை உள்ளிடவும்",
       nomineeSection: "வாரிசு விவரங்கள்",
@@ -159,7 +173,16 @@ export const translations = {
       successMessage: "உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது.",
       newApplication: "புதிய விண்ணப்பம்",
       errorTitle: "பிழை!",
-      errorMessage: "விண்ணப்பத்தை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
+      errorMessage: "விண்ணப்பத்தை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+      photo: "புகைப்படம்",
+      uploadPhoto: "படத்தை பதிவேற்றவும்",
+      pamphletPhoto: "கையேடு புகைப்படம் பதிவேற்றவும்",
+      uploadImage: "படத்தை பதிவேற்றவும்",
+      imageTooLarge: "படம் மிகப் பெரியது",
+      imageSizeLimit: "2MB க்கு குறைவான படத்தை பயன்படுத்தவும்",
+      message: "கூடுதல் செய்தி",
+      messagePlaceholder: "ஏதேனும் கூடுதல் தகவல்...",
+      secureSubmit: "உங்கள் தகவல்கள் பாதுகாப்பாக அனுப்பப்படும்"
     },
     benefits: {
       title: "சலுகைகள் & நிபந்தனைகள்",
@@ -200,7 +223,8 @@ export const translations = {
     },
     footer: {
       rights: "அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை",
-      tagline: "2020 முதல் குடும்பங்களுக்கு மன அமைதி அளிக்கிறது"
+      tagline: "2020 முதல் குடும்பங்களுக்கு மன அமைதி அளிக்கிறது",
+      email: "williamcareyfuneral99@gmail.com"
     }
   }
 };
