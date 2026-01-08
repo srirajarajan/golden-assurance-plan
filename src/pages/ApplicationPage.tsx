@@ -6,29 +6,146 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee, FileImage } from 'lucide-react';
+import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee } from 'lucide-react';
+
+type Language = 'en' | 'ta';
+
+// Complete translations for strict language separation
+const formTranslations = {
+  en: {
+    title: "Funeral Insurance Application",
+    subtitle: "Application Form",
+    languageLabel: "Language",
+    // Photo Labels
+    applicantPhoto: "Applicant Photo",
+    aadhaarFront: "Aadhaar Front Side Photo",
+    aadhaarBack: "Aadhaar Back Side Photo",
+    uploadImage: "Tap to Upload / Capture",
+    // Applicant Details
+    applicantDetails: "Applicant Details",
+    memberName: "Member Name",
+    memberNamePlaceholder: "Enter your name",
+    guardianName: "Father / Husband Name",
+    guardianNamePlaceholder: "Enter father/husband name",
+    gender: "Gender",
+    selectGender: "Select Gender",
+    male: "Male",
+    female: "Female",
+    other: "Other",
+    occupation: "Occupation",
+    occupationPlaceholder: "Enter occupation",
+    rationCard: "Ration Card Number",
+    rationCardPlaceholder: "Enter ration card number",
+    annualIncome: "Annual Income (Max ₹1.75 Lakhs)",
+    annualIncomePlaceholder: "Enter annual income",
+    aadhaarNumber: "Aadhaar Number (12 digits)",
+    aadhaarPlaceholder: "XXXX XXXX XXXX",
+    mobileNumber: "Mobile Number",
+    mobilePlaceholder: "Enter mobile number",
+    permanentAddress: "Permanent Address",
+    addressPlaceholder: "Enter full address",
+    // Nominee 1
+    nominee1Title: "Nominee 1 (Required)",
+    nomineeName: "Nominee Name",
+    nomineeNamePlaceholder: "Enter nominee name",
+    nomineeAge: "Age",
+    nomineeAgePlaceholder: "Age",
+    nomineeRelation: "Relationship",
+    nomineeRelationPlaceholder: "Enter relationship",
+    // Nominee 2
+    nominee2Title: "Nominee 2 (Optional)",
+    // Additional
+    additionalMessage: "Additional Message (Optional)",
+    messagePlaceholder: "Any additional information...",
+    // Submit
+    submit: "Submit Application",
+    submitting: "Submitting...",
+    successTitle: "Thank you!",
+    successMessage: "Your application has been submitted successfully.",
+    errorTitle: "Error",
+    errorMessage: "Failed to submit. Please try again.",
+    imageTooLarge: "Image too large",
+    imageSizeLimit: "Please use an image less than 2MB"
+  },
+  ta: {
+    title: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
+    subtitle: "உறுப்பினர் விண்ணப்பப் படிவம்",
+    languageLabel: "மொழி",
+    // Photo Labels
+    applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
+    aadhaarFront: "ஆதார் முன்பக்க புகைப்படம்",
+    aadhaarBack: "ஆதார் பின்பக்க புகைப்படம்",
+    uploadImage: "பதிவேற்ற தட்டவும்",
+    // Applicant Details
+    applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
+    memberName: "உறுப்பினர் பெயர்",
+    memberNamePlaceholder: "பெயரை உள்ளிடவும்",
+    guardianName: "தகப்பனார் / கணவர் பெயர்",
+    guardianNamePlaceholder: "தகப்பனார் / கணவர் பெயரை உள்ளிடவும்",
+    gender: "பாலினம்",
+    selectGender: "பாலினம் தேர்வு செய்க",
+    male: "ஆண்",
+    female: "பெண்",
+    other: "மற்றவை",
+    occupation: "தொழில்",
+    occupationPlaceholder: "தொழிலை உள்ளிடவும்",
+    rationCard: "குடும்ப அட்டை எண்",
+    rationCardPlaceholder: "குடும்ப அட்டை எண்ணை உள்ளிடவும்",
+    annualIncome: "ஆண்டு வருமானம் (அதிகபட்சம் ₹1.75 லட்சம்)",
+    annualIncomePlaceholder: "ஆண்டு வருமானத்தை உள்ளிடவும்",
+    aadhaarNumber: "ஆதார் எண் (12 இலக்கங்கள்)",
+    aadhaarPlaceholder: "XXXX XXXX XXXX",
+    mobileNumber: "கைபேசி எண்",
+    mobilePlaceholder: "கைபேசி எண்ணை உள்ளிடவும்",
+    permanentAddress: "நிரந்தர முகவரி",
+    addressPlaceholder: "முழு முகவரியை உள்ளிடவும்",
+    // Nominee 1
+    nominee1Title: "வாரிசு 1 (கட்டாயம்)",
+    nomineeName: "வாரிசு பெயர்",
+    nomineeNamePlaceholder: "வாரிசு பெயரை உள்ளிடவும்",
+    nomineeAge: "வயது",
+    nomineeAgePlaceholder: "வயது",
+    nomineeRelation: "உறவு முறை",
+    nomineeRelationPlaceholder: "உறவு முறையை உள்ளிடவும்",
+    // Nominee 2
+    nominee2Title: "வாரிசு 2 (விருப்பத்திற்குட்பட்டது)",
+    // Additional
+    additionalMessage: "கூடுதல் செய்தி (விருப்பமானது)",
+    messagePlaceholder: "ஏதேனும் கூடுதல் தகவல்...",
+    // Submit
+    submit: "விண்ணப்பத்தை சமர்ப்பிக்க",
+    submitting: "சமர்ப்பிக்கிறது...",
+    successTitle: "நன்றி!",
+    successMessage: "உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது.",
+    errorTitle: "பிழை!",
+    errorMessage: "சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+    imageTooLarge: "படம் மிகப் பெரியது",
+    imageSizeLimit: "2MB க்கு குறைவான படத்தை பயன்படுத்தவும்"
+  }
+};
 
 const ApplicationPage: React.FC = () => {
   const formRef = useRef<HTMLFormElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [photoBase64, setPhotoBase64] = useState<string>('');
-  const [photoPreview, setPhotoPreview] = useState<string>('');
-  const [pamphletBase64, setPamphletBase64] = useState<string>('');
-  const [pamphletPreview, setPamphletPreview] = useState<string>('');
-  const [aadhaarFrontBase64, setAadhaarFrontBase64] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('ta');
+  
+  // Image states
+  const [applicantPhoto, setApplicantPhoto] = useState<string>('');
+  const [applicantPhotoPreview, setApplicantPhotoPreview] = useState<string>('');
+  const [aadhaarFront, setAadhaarFront] = useState<string>('');
   const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<string>('');
-  const [aadhaarBackBase64, setAadhaarBackBase64] = useState<string>('');
+  const [aadhaarBack, setAadhaarBack] = useState<string>('');
   const [aadhaarBackPreview, setAadhaarBackPreview] = useState<string>('');
+  
   const { toast } = useToast();
-  const { language, setLanguage, t } = useLanguage();
+  const t = formTranslations[selectedLanguage];
 
-  // Initialize EmailJS on mount
+  // Initialize EmailJS
   useEffect(() => {
     emailjs.init('gq4UP7sZykMwY4aQc');
   }, []);
 
-  // Generic image handler
+  // Image handler with Base64 conversion
   const handleImageChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setBase64: React.Dispatch<React.SetStateAction<string>>,
@@ -39,8 +156,8 @@ const ApplicationPage: React.FC = () => {
 
     if (file.size > 2 * 1024 * 1024) {
       toast({
-        title: t.form.imageTooLarge,
-        description: t.form.imageSizeLimit,
+        title: t.imageTooLarge,
+        description: t.imageSizeLimit,
         variant: "destructive",
       });
       return;
@@ -65,7 +182,6 @@ const ApplicationPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -75,34 +191,31 @@ const ApplicationPage: React.FC = () => {
 
       const formData = new FormData(form);
 
-      // Build template parameters - all fields optional
+      // EXACT template variables as specified
       const templateParams = {
-        to_email: 'williamcareyfuneral99@gmail.com',
-        applicant_name: formData.get('applicant_name') || 'Not provided',
-        guardian_name: formData.get('guardian_name') || 'Not provided',
-        gender: formData.get('gender') || 'Not provided',
-        occupation: formData.get('occupation') || 'Not provided',
-        ration_card: formData.get('ration_card') || 'Not provided',
-        annual_income: formData.get('annual_income') || 'Not provided',
-        aadhaar: formData.get('aadhaar') || 'Not provided',
-        phone: formData.get('phone') || 'Not provided',
-        address: formData.get('address') || 'Not provided',
-        nominee1_name: formData.get('nominee1_name') || 'Not provided',
-        nominee1_gender: formData.get('nominee1_gender') || 'Not provided',
-        nominee1_age: formData.get('nominee1_age') || 'Not provided',
-        nominee1_relation: formData.get('nominee1_relation') || 'Not provided',
-        nominee2_name: formData.get('nominee2_name') || 'Not provided',
-        nominee2_gender: formData.get('nominee2_gender') || 'Not provided',
-        nominee2_age: formData.get('nominee2_age') || 'Not provided',
-        nominee2_relation: formData.get('nominee2_relation') || 'Not provided',
-        message: formData.get('message') || 'No message',
-        photo_url: photoBase64 ? photoBase64.substring(0, 500) + '...[truncated]' : 'No photo',
-        pamphlet_photo: pamphletBase64 ? pamphletBase64.substring(0, 500) + '...[truncated]' : 'No pamphlet photo',
-        aadhaar_front: aadhaarFrontBase64 ? aadhaarFrontBase64.substring(0, 500) + '...[truncated]' : 'No Aadhaar front',
-        aadhaar_back: aadhaarBackBase64 ? aadhaarBackBase64.substring(0, 500) + '...[truncated]' : 'No Aadhaar back',
+        member_name: formData.get('member_name') || '—',
+        guardian_name: formData.get('guardian_name') || '—',
+        gender: formData.get('gender') || '—',
+        occupation: formData.get('occupation') || '—',
+        ration_card: formData.get('ration_card') || '—',
+        annual_income: formData.get('annual_income') || '—',
+        aadhaar_number: formData.get('aadhaar_number') || '—',
+        mobile_number: formData.get('mobile_number') || '—',
+        address: formData.get('address') || '—',
+        nominee1_name: formData.get('nominee1_name') || '—',
+        nominee1_gender: formData.get('nominee1_gender') || '—',
+        nominee1_age: formData.get('nominee1_age') || '—',
+        nominee1_relation: formData.get('nominee1_relation') || '—',
+        nominee2_name: formData.get('nominee2_name') || '—',
+        nominee2_gender: formData.get('nominee2_gender') || '—',
+        nominee2_age: formData.get('nominee2_age') || '—',
+        nominee2_relation: formData.get('nominee2_relation') || '—',
+        additional_message: formData.get('additional_message') || '—',
+        applicant_photo: applicantPhoto || '—',
+        aadhaar_front: aadhaarFront || '—',
+        aadhaar_back: aadhaarBack || '—',
+        selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil'
       };
-
-      console.log('Sending email via EmailJS...');
 
       const response = await emailjs.send(
         'service_oayf2od',
@@ -110,21 +223,17 @@ const ApplicationPage: React.FC = () => {
         templateParams
       );
 
-      console.log('EmailJS Response:', response);
-
       if (response.status === 200) {
         toast({
-          title: t.form.successTitle,
-          description: t.form.successMessage,
+          title: t.successTitle,
+          description: t.successMessage,
         });
         form.reset();
-        setPhotoBase64('');
-        setPhotoPreview('');
-        setPamphletBase64('');
-        setPamphletPreview('');
-        setAadhaarFrontBase64('');
+        setApplicantPhoto('');
+        setApplicantPhotoPreview('');
+        setAadhaarFront('');
         setAadhaarFrontPreview('');
-        setAadhaarBackBase64('');
+        setAadhaarBack('');
         setAadhaarBackPreview('');
       } else {
         throw new Error('Email failed');
@@ -132,8 +241,8 @@ const ApplicationPage: React.FC = () => {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: t.form.errorTitle,
-        description: t.form.errorMessage,
+        title: t.errorTitle,
+        description: t.errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -141,7 +250,7 @@ const ApplicationPage: React.FC = () => {
     }
   };
 
-  // Image upload component
+  // Image Upload Component
   const ImageUpload = ({
     label,
     preview,
@@ -155,8 +264,8 @@ const ApplicationPage: React.FC = () => {
     onRemove: () => void;
     icon?: React.ElementType;
   }) => (
-    <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed rounded-lg bg-muted/20">
-      <Label className="text-lg font-semibold flex items-center gap-2">
+    <div className="flex flex-col items-center gap-3 p-4 border-2 border-dashed rounded-lg bg-muted/20">
+      <Label className="text-base font-semibold flex items-center gap-2">
         <Icon className="w-5 h-5" />
         {label}
       </Label>
@@ -165,7 +274,7 @@ const ApplicationPage: React.FC = () => {
           <img 
             src={preview} 
             alt="Preview" 
-            className="w-32 h-32 object-cover rounded-lg border-2 shadow-md"
+            className="w-28 h-28 object-cover rounded-lg border-2 shadow-md"
           />
           <button
             type="button"
@@ -176,9 +285,9 @@ const ApplicationPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <label className="cursor-pointer flex flex-col items-center gap-2 p-6 border rounded-lg hover:bg-muted/50 transition-colors">
-          <Icon className="w-10 h-10 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">{t.form.uploadImage}</span>
+        <label className="cursor-pointer flex flex-col items-center gap-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+          <Icon className="w-8 h-8 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground text-center">{t.uploadImage}</span>
           <input 
             type="file" 
             accept="image/jpeg,image/jpg,image/png" 
@@ -201,238 +310,235 @@ const ApplicationPage: React.FC = () => {
               <div className="inline-flex rounded-lg border border-input bg-background p-1">
                 <button
                   type="button"
-                  onClick={() => setLanguage('en')}
+                  onClick={() => setSelectedLanguage('ta')}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    language === 'en' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  English
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLanguage('ta')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    language === 'ta' 
+                    selectedLanguage === 'ta' 
                       ? 'bg-primary text-primary-foreground' 
                       : 'hover:bg-muted'
                   }`}
                 >
                   தமிழ்
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLanguage('en')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    selectedLanguage === 'en' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  English
+                </button>
               </div>
             </div>
             
             <CardTitle className="text-2xl md:text-3xl font-bold text-primary">
-              {t.form.title}
+              {t.title}
             </CardTitle>
             <p className="text-muted-foreground mt-2">
-              {t.form.subtitle}
+              {t.subtitle}
             </p>
           </CardHeader>
           
           <CardContent className="p-6">
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
               
-              {/* Photo Upload */}
-              <ImageUpload
-                label={t.form.photo}
-                preview={photoPreview}
-                onImageChange={(e) => handleImageChange(e, setPhotoBase64, setPhotoPreview)}
-                onRemove={() => removeImage(setPhotoBase64, setPhotoPreview)}
-                icon={Camera}
-              />
-
-              {/* Pamphlet Photo Upload */}
-              <ImageUpload
-                label={t.form.pamphletPhoto}
-                preview={pamphletPreview}
-                onImageChange={(e) => handleImageChange(e, setPamphletBase64, setPamphletPreview)}
-                onRemove={() => removeImage(setPamphletBase64, setPamphletPreview)}
-                icon={FileImage}
-              />
+              {/* Applicant Photos Section */}
+              <div className="space-y-4">
+                <ImageUpload
+                  label={t.applicantPhoto}
+                  preview={applicantPhotoPreview}
+                  onImageChange={(e) => handleImageChange(e, setApplicantPhoto, setApplicantPhotoPreview)}
+                  onRemove={() => removeImage(setApplicantPhoto, setApplicantPhotoPreview)}
+                  icon={Camera}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ImageUpload
+                    label={t.aadhaarFront}
+                    preview={aadhaarFrontPreview}
+                    onImageChange={(e) => handleImageChange(e, setAadhaarFront, setAadhaarFrontPreview)}
+                    onRemove={() => removeImage(setAadhaarFront, setAadhaarFrontPreview)}
+                    icon={Shield}
+                  />
+                  <ImageUpload
+                    label={t.aadhaarBack}
+                    preview={aadhaarBackPreview}
+                    onImageChange={(e) => handleImageChange(e, setAadhaarBack, setAadhaarBackPreview)}
+                    onRemove={() => removeImage(setAadhaarBack, setAadhaarBackPreview)}
+                    icon={Shield}
+                  />
+                </div>
+              </div>
 
               {/* Applicant Details */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <User className="w-5 h-5 text-primary" />
-                  {t.form.applicantDetails}
+                  {t.applicantDetails}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="applicant_name">{t.form.memberName}</Label>
-                    <Input id="applicant_name" name="applicant_name" placeholder={t.form.memberNamePlaceholder} className="mt-1" />
+                    <Label htmlFor="member_name">{t.memberName}</Label>
+                    <Input id="member_name" name="member_name" placeholder={t.memberNamePlaceholder} className="mt-1" />
                   </div>
                   
                   <div>
-                    <Label htmlFor="guardian_name">{t.form.fatherHusbandName}</Label>
-                    <Input id="guardian_name" name="guardian_name" placeholder={t.form.fatherHusbandPlaceholder} className="mt-1" />
+                    <Label htmlFor="guardian_name">{t.guardianName}</Label>
+                    <Input id="guardian_name" name="guardian_name" placeholder={t.guardianNamePlaceholder} className="mt-1" />
                   </div>
                   
                   <div>
-                    <Label htmlFor="gender">{t.form.gender}</Label>
+                    <Label htmlFor="gender">{t.gender}</Label>
                     <select id="gender" name="gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
-                      <option value="">{t.form.selectGender}</option>
-                      <option value={t.form.male}>{t.form.male}</option>
-                      <option value={t.form.female}>{t.form.female}</option>
-                      <option value={t.form.other}>{t.form.other}</option>
+                      <option value="">{t.selectGender}</option>
+                      <option value={t.male}>{t.male}</option>
+                      <option value={t.female}>{t.female}</option>
+                      <option value={t.other}>{t.other}</option>
                     </select>
                   </div>
                   
                   <div>
                     <Label htmlFor="occupation" className="flex items-center gap-1">
                       <Briefcase className="w-4 h-4" />
-                      {t.form.occupation}
+                      {t.occupation}
                     </Label>
-                    <Input id="occupation" name="occupation" placeholder={t.form.occupationPlaceholder} className="mt-1" />
+                    <Input id="occupation" name="occupation" placeholder={t.occupationPlaceholder} className="mt-1" />
                   </div>
                   
                   <div>
                     <Label htmlFor="ration_card" className="flex items-center gap-1">
                       <CreditCard className="w-4 h-4" />
-                      {t.form.rationCard}
+                      {t.rationCard}
                     </Label>
-                    <Input id="ration_card" name="ration_card" placeholder={t.form.rationCardPlaceholder} className="mt-1" />
+                    <Input id="ration_card" name="ration_card" placeholder={t.rationCardPlaceholder} className="mt-1" />
                   </div>
                   
                   <div>
                     <Label htmlFor="annual_income" className="flex items-center gap-1">
                       <IndianRupee className="w-4 h-4" />
-                      {t.form.annualIncome}
+                      {t.annualIncome}
                     </Label>
-                    <Input id="annual_income" name="annual_income" placeholder="₹" className="mt-1" />
+                    <Input id="annual_income" name="annual_income" placeholder={t.annualIncomePlaceholder} className="mt-1" />
                   </div>
                   
                   <div>
-                    <Label htmlFor="aadhaar" className="flex items-center gap-1">
+                    <Label htmlFor="aadhaar_number" className="flex items-center gap-1">
                       <Shield className="w-4 h-4" />
-                      {t.form.aadharCard}
+                      {t.aadhaarNumber}
                     </Label>
-                    <Input id="aadhaar" name="aadhaar" placeholder={t.form.aadharPlaceholder} className="mt-1" />
+                    <Input id="aadhaar_number" name="aadhaar_number" placeholder={t.aadhaarPlaceholder} maxLength={14} className="mt-1" />
                   </div>
                   
                   <div>
-                    <Label htmlFor="phone" className="flex items-center gap-1">
+                    <Label htmlFor="mobile_number" className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
-                      {t.form.phone}
+                      {t.mobileNumber}
                     </Label>
-                    <Input id="phone" name="phone" type="tel" placeholder={t.form.phonePlaceholder} className="mt-1" />
+                    <Input id="mobile_number" name="mobile_number" type="tel" placeholder={t.mobilePlaceholder} className="mt-1" />
                   </div>
                 </div>
                 
                 <div>
                   <Label htmlFor="address" className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {t.form.permanentAddress}
+                    {t.permanentAddress}
                   </Label>
-                  <Textarea id="address" name="address" placeholder={t.form.addressPlaceholder} className="mt-1" rows={3} />
-                </div>
-
-                {/* Aadhaar Photo Uploads */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ImageUpload
-                    label={t.form.aadharFront}
-                    preview={aadhaarFrontPreview}
-                    onImageChange={(e) => handleImageChange(e, setAadhaarFrontBase64, setAadhaarFrontPreview)}
-                    onRemove={() => removeImage(setAadhaarFrontBase64, setAadhaarFrontPreview)}
-                    icon={Shield}
-                  />
-                  <ImageUpload
-                    label={t.form.aadharBack}
-                    preview={aadhaarBackPreview}
-                    onImageChange={(e) => handleImageChange(e, setAadhaarBackBase64, setAadhaarBackPreview)}
-                    onRemove={() => removeImage(setAadhaarBackBase64, setAadhaarBackPreview)}
-                    icon={Shield}
-                  />
+                  <Textarea id="address" name="address" placeholder={t.addressPlaceholder} className="mt-1" rows={3} />
                 </div>
               </div>
 
-              {/* Nominee 1 */}
+              {/* Nominee 1 - Required */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
-                  {t.form.nominee1Title}
+                  {t.nominee1Title}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="nominee1_name">{t.form.name}</Label>
-                    <Input id="nominee1_name" name="nominee1_name" placeholder={t.form.nomineePlaceholder} className="mt-1" />
+                    <Label htmlFor="nominee1_name">{t.nomineeName}</Label>
+                    <Input id="nominee1_name" name="nominee1_name" placeholder={t.nomineeNamePlaceholder} className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="nominee1_gender">{t.form.gender}</Label>
+                    <Label htmlFor="nominee1_gender">{t.gender}</Label>
                     <select id="nominee1_gender" name="nominee1_gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
-                      <option value="">{t.form.selectGender}</option>
-                      <option value={t.form.male}>{t.form.male}</option>
-                      <option value={t.form.female}>{t.form.female}</option>
+                      <option value="">{t.selectGender}</option>
+                      <option value={t.male}>{t.male}</option>
+                      <option value={t.female}>{t.female}</option>
                     </select>
                   </div>
                   <div>
-                    <Label htmlFor="nominee1_age">{t.form.age}</Label>
-                    <Input id="nominee1_age" name="nominee1_age" type="number" placeholder={t.form.agePlaceholder} className="mt-1" />
+                    <Label htmlFor="nominee1_age">{t.nomineeAge}</Label>
+                    <Input id="nominee1_age" name="nominee1_age" type="number" placeholder={t.nomineeAgePlaceholder} className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="nominee1_relation">{t.form.relation}</Label>
-                    <Input id="nominee1_relation" name="nominee1_relation" placeholder={t.form.relationPlaceholder} className="mt-1" />
+                    <Label htmlFor="nominee1_relation">{t.nomineeRelation}</Label>
+                    <Input id="nominee1_relation" name="nominee1_relation" placeholder={t.nomineeRelationPlaceholder} className="mt-1" />
                   </div>
                 </div>
               </div>
 
-              {/* Nominee 2 */}
+              {/* Nominee 2 - Optional */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
-                  {t.form.nominee2Title}
+                  {t.nominee2Title}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="nominee2_name">{t.form.name}</Label>
-                    <Input id="nominee2_name" name="nominee2_name" placeholder={t.form.nomineePlaceholder} className="mt-1" />
+                    <Label htmlFor="nominee2_name">{t.nomineeName}</Label>
+                    <Input id="nominee2_name" name="nominee2_name" placeholder={t.nomineeNamePlaceholder} className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="nominee2_gender">{t.form.gender}</Label>
+                    <Label htmlFor="nominee2_gender">{t.gender}</Label>
                     <select id="nominee2_gender" name="nominee2_gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
-                      <option value="">{t.form.selectGender}</option>
-                      <option value={t.form.male}>{t.form.male}</option>
-                      <option value={t.form.female}>{t.form.female}</option>
+                      <option value="">{t.selectGender}</option>
+                      <option value={t.male}>{t.male}</option>
+                      <option value={t.female}>{t.female}</option>
                     </select>
                   </div>
                   <div>
-                    <Label htmlFor="nominee2_age">{t.form.age}</Label>
-                    <Input id="nominee2_age" name="nominee2_age" type="number" placeholder={t.form.agePlaceholder} className="mt-1" />
+                    <Label htmlFor="nominee2_age">{t.nomineeAge}</Label>
+                    <Input id="nominee2_age" name="nominee2_age" type="number" placeholder={t.nomineeAgePlaceholder} className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="nominee2_relation">{t.form.relation}</Label>
-                    <Input id="nominee2_relation" name="nominee2_relation" placeholder={t.form.relationPlaceholder} className="mt-1" />
+                    <Label htmlFor="nominee2_relation">{t.nomineeRelation}</Label>
+                    <Input id="nominee2_relation" name="nominee2_relation" placeholder={t.nomineeRelationPlaceholder} className="mt-1" />
                   </div>
                 </div>
               </div>
 
-              {/* Message */}
-              <div>
-                <Label htmlFor="message">{t.form.message}</Label>
-                <Textarea id="message" name="message" placeholder={t.form.messagePlaceholder} className="mt-1" rows={3} />
+              {/* Additional Message */}
+              <div className="space-y-2">
+                <Label htmlFor="additional_message">{t.additionalMessage}</Label>
+                <Textarea 
+                  id="additional_message" 
+                  name="additional_message" 
+                  placeholder={t.messagePlaceholder} 
+                  rows={3} 
+                />
               </div>
 
-              {/* Submit */}
-              <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg font-semibold">
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full text-lg py-6"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {t.form.submitting}
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {t.submitting}
                   </>
                 ) : (
                   <>
-                    <Send className="w-5 h-5 mr-2" />
-                    {t.form.submit}
+                    <Send className="mr-2 h-5 w-5" />
+                    {t.submit}
                   </>
                 )}
               </Button>
-
-              <p className="text-center text-sm text-muted-foreground">
-                {t.form.secureSubmit}
-              </p>
             </form>
           </CardContent>
         </Card>
