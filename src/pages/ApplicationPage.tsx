@@ -10,18 +10,16 @@ import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase
 
 type Language = 'en' | 'ta';
 
-// Complete translations for strict language separation
+// Complete translations - STRICT language separation
 const formTranslations = {
   en: {
     title: "Funeral Insurance Application",
     subtitle: "Application Form",
     languageLabel: "Language",
-    // Photo Labels
     applicantPhoto: "Applicant Photo",
     aadhaarFront: "Aadhaar Front Side Photo",
     aadhaarBack: "Aadhaar Back Side Photo",
     uploadImage: "Tap to Upload / Capture",
-    // Applicant Details
     applicantDetails: "Applicant Details",
     memberName: "Member Name",
     memberNamePlaceholder: "Enter your name",
@@ -44,7 +42,7 @@ const formTranslations = {
     mobilePlaceholder: "Enter mobile number",
     permanentAddress: "Permanent Address",
     addressPlaceholder: "Enter full address",
-    // Nominee 1
+    aadhaarImages: "Aadhaar Card Images",
     nominee1Title: "Nominee 1 (Required)",
     nomineeName: "Nominee Name",
     nomineeNamePlaceholder: "Enter nominee name",
@@ -52,12 +50,9 @@ const formTranslations = {
     nomineeAgePlaceholder: "Age",
     nomineeRelation: "Relationship",
     nomineeRelationPlaceholder: "Enter relationship",
-    // Nominee 2
     nominee2Title: "Nominee 2 (Optional)",
-    // Additional
     additionalMessage: "Additional Message (Optional)",
     messagePlaceholder: "Any additional information...",
-    // Submit
     submit: "Submit Application",
     submitting: "Submitting...",
     successTitle: "Thank you!",
@@ -71,12 +66,10 @@ const formTranslations = {
     title: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
     subtitle: "உறுப்பினர் விண்ணப்பப் படிவம்",
     languageLabel: "மொழி",
-    // Photo Labels
     applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
     aadhaarFront: "ஆதார் முன்பக்க புகைப்படம்",
     aadhaarBack: "ஆதார் பின்பக்க புகைப்படம்",
     uploadImage: "பதிவேற்ற தட்டவும்",
-    // Applicant Details
     applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
     memberName: "உறுப்பினர் பெயர்",
     memberNamePlaceholder: "பெயரை உள்ளிடவும்",
@@ -99,7 +92,7 @@ const formTranslations = {
     mobilePlaceholder: "கைபேசி எண்ணை உள்ளிடவும்",
     permanentAddress: "நிரந்தர முகவரி",
     addressPlaceholder: "முழு முகவரியை உள்ளிடவும்",
-    // Nominee 1
+    aadhaarImages: "ஆதார் அட்டை புகைப்படங்கள்",
     nominee1Title: "வாரிசு 1 (கட்டாயம்)",
     nomineeName: "வாரிசு பெயர்",
     nomineeNamePlaceholder: "வாரிசு பெயரை உள்ளிடவும்",
@@ -107,12 +100,9 @@ const formTranslations = {
     nomineeAgePlaceholder: "வயது",
     nomineeRelation: "உறவு முறை",
     nomineeRelationPlaceholder: "உறவு முறையை உள்ளிடவும்",
-    // Nominee 2
     nominee2Title: "வாரிசு 2 (விருப்பத்திற்குட்பட்டது)",
-    // Additional
     additionalMessage: "கூடுதல் செய்தி (விருப்பமானது)",
     messagePlaceholder: "ஏதேனும் கூடுதல் தகவல்...",
-    // Submit
     submit: "விண்ணப்பத்தை சமர்ப்பிக்க",
     submitting: "சமர்ப்பிக்கிறது...",
     successTitle: "நன்றி!",
@@ -191,37 +181,41 @@ const ApplicationPage: React.FC = () => {
 
       const formData = new FormData(form);
 
-      // EXACT template variables as specified
+      // EXACT template variables - all with fallback to "—"
       const templateParams = {
-        member_name: formData.get('member_name') || '—',
-        guardian_name: formData.get('guardian_name') || '—',
-        gender: formData.get('gender') || '—',
-        occupation: formData.get('occupation') || '—',
-        ration_card: formData.get('ration_card') || '—',
-        annual_income: formData.get('annual_income') || '—',
-        aadhaar_number: formData.get('aadhaar_number') || '—',
-        mobile_number: formData.get('mobile_number') || '—',
-        address: formData.get('address') || '—',
-        nominee1_name: formData.get('nominee1_name') || '—',
-        nominee1_gender: formData.get('nominee1_gender') || '—',
-        nominee1_age: formData.get('nominee1_age') || '—',
-        nominee1_relation: formData.get('nominee1_relation') || '—',
-        nominee2_name: formData.get('nominee2_name') || '—',
-        nominee2_gender: formData.get('nominee2_gender') || '—',
-        nominee2_age: formData.get('nominee2_age') || '—',
-        nominee2_relation: formData.get('nominee2_relation') || '—',
-        additional_message: formData.get('additional_message') || '—',
+        member_name: (formData.get('member_name') as string)?.trim() || '—',
+        guardian_name: (formData.get('guardian_name') as string)?.trim() || '—',
+        gender: (formData.get('gender') as string)?.trim() || '—',
+        occupation: (formData.get('occupation') as string)?.trim() || '—',
+        ration_card: (formData.get('ration_card') as string)?.trim() || '—',
+        annual_income: (formData.get('annual_income') as string)?.trim() || '—',
+        aadhaar_number: (formData.get('aadhaar_number') as string)?.trim() || '—',
+        mobile_number: (formData.get('mobile_number') as string)?.trim() || '—',
+        address: (formData.get('address') as string)?.trim() || '—',
+        nominee1_name: (formData.get('nominee1_name') as string)?.trim() || '—',
+        nominee1_gender: (formData.get('nominee1_gender') as string)?.trim() || '—',
+        nominee1_age: (formData.get('nominee1_age') as string)?.trim() || '—',
+        nominee1_relation: (formData.get('nominee1_relation') as string)?.trim() || '—',
+        nominee2_name: (formData.get('nominee2_name') as string)?.trim() || '—',
+        nominee2_gender: (formData.get('nominee2_gender') as string)?.trim() || '—',
+        nominee2_age: (formData.get('nominee2_age') as string)?.trim() || '—',
+        nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '—',
+        additional_message: (formData.get('additional_message') as string)?.trim() || '—',
         applicant_photo: applicantPhoto || '—',
         aadhaar_front: aadhaarFront || '—',
         aadhaar_back: aadhaarBack || '—',
         selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil'
       };
 
+      console.log('Submitting to EmailJS:', Object.keys(templateParams));
+
       const response = await emailjs.send(
         'service_oayf2od',
         'template_g6mbhol',
         templateParams
       );
+
+      console.log('EmailJS Response:', response);
 
       if (response.status === 200) {
         toast({
@@ -239,7 +233,7 @@ const ApplicationPage: React.FC = () => {
         throw new Error('Email failed');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('EmailJS Error:', error);
       toast({
         title: t.errorTitle,
         description: t.errorMessage,
@@ -344,16 +338,108 @@ const ApplicationPage: React.FC = () => {
           <CardContent className="p-6">
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
               
-              {/* Applicant Photos Section */}
+              {/* 1. Applicant Photo */}
+              <ImageUpload
+                label={t.applicantPhoto}
+                preview={applicantPhotoPreview}
+                onImageChange={(e) => handleImageChange(e, setApplicantPhoto, setApplicantPhotoPreview)}
+                onRemove={() => removeImage(setApplicantPhoto, setApplicantPhotoPreview)}
+                icon={Camera}
+              />
+
+              {/* 2-10. Applicant Details */}
               <div className="space-y-4">
-                <ImageUpload
-                  label={t.applicantPhoto}
-                  preview={applicantPhotoPreview}
-                  onImageChange={(e) => handleImageChange(e, setApplicantPhoto, setApplicantPhotoPreview)}
-                  onRemove={() => removeImage(setApplicantPhoto, setApplicantPhotoPreview)}
-                  icon={Camera}
-                />
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  {t.applicantDetails}
+                </h3>
                 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 2. Member Name */}
+                  <div>
+                    <Label htmlFor="member_name">{t.memberName}</Label>
+                    <Input id="member_name" name="member_name" placeholder={t.memberNamePlaceholder} className="mt-1" />
+                  </div>
+                  
+                  {/* 3. Guardian Name */}
+                  <div>
+                    <Label htmlFor="guardian_name">{t.guardianName}</Label>
+                    <Input id="guardian_name" name="guardian_name" placeholder={t.guardianNamePlaceholder} className="mt-1" />
+                  </div>
+                  
+                  {/* 4. Gender */}
+                  <div>
+                    <Label htmlFor="gender">{t.gender}</Label>
+                    <select id="gender" name="gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
+                      <option value="">{t.selectGender}</option>
+                      <option value={t.male}>{t.male}</option>
+                      <option value={t.female}>{t.female}</option>
+                      <option value={t.other}>{t.other}</option>
+                    </select>
+                  </div>
+                  
+                  {/* 5. Occupation */}
+                  <div>
+                    <Label htmlFor="occupation" className="flex items-center gap-1">
+                      <Briefcase className="w-4 h-4" />
+                      {t.occupation}
+                    </Label>
+                    <Input id="occupation" name="occupation" placeholder={t.occupationPlaceholder} className="mt-1" />
+                  </div>
+                  
+                  {/* 6. Ration Card */}
+                  <div>
+                    <Label htmlFor="ration_card" className="flex items-center gap-1">
+                      <CreditCard className="w-4 h-4" />
+                      {t.rationCard}
+                    </Label>
+                    <Input id="ration_card" name="ration_card" placeholder={t.rationCardPlaceholder} className="mt-1" />
+                  </div>
+                  
+                  {/* 7. Annual Income */}
+                  <div>
+                    <Label htmlFor="annual_income" className="flex items-center gap-1">
+                      <IndianRupee className="w-4 h-4" />
+                      {t.annualIncome}
+                    </Label>
+                    <Input id="annual_income" name="annual_income" placeholder={t.annualIncomePlaceholder} className="mt-1" />
+                  </div>
+                  
+                  {/* 8. Aadhaar Number */}
+                  <div>
+                    <Label htmlFor="aadhaar_number" className="flex items-center gap-1">
+                      <Shield className="w-4 h-4" />
+                      {t.aadhaarNumber}
+                    </Label>
+                    <Input id="aadhaar_number" name="aadhaar_number" placeholder={t.aadhaarPlaceholder} maxLength={14} className="mt-1" />
+                  </div>
+                  
+                  {/* 9. Mobile Number */}
+                  <div>
+                    <Label htmlFor="mobile_number" className="flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      {t.mobileNumber}
+                    </Label>
+                    <Input id="mobile_number" name="mobile_number" type="tel" placeholder={t.mobilePlaceholder} className="mt-1" />
+                  </div>
+                </div>
+                
+                {/* 10. Address */}
+                <div>
+                  <Label htmlFor="address" className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    {t.permanentAddress}
+                  </Label>
+                  <Textarea id="address" name="address" placeholder={t.addressPlaceholder} className="mt-1" rows={3} />
+                </div>
+              </div>
+
+              {/* 11-12. Aadhaar Images */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  {t.aadhaarImages}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ImageUpload
                     label={t.aadhaarFront}
@@ -369,84 +455,6 @@ const ApplicationPage: React.FC = () => {
                     onRemove={() => removeImage(setAadhaarBack, setAadhaarBackPreview)}
                     icon={Shield}
                   />
-                </div>
-              </div>
-
-              {/* Applicant Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  {t.applicantDetails}
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="member_name">{t.memberName}</Label>
-                    <Input id="member_name" name="member_name" placeholder={t.memberNamePlaceholder} className="mt-1" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="guardian_name">{t.guardianName}</Label>
-                    <Input id="guardian_name" name="guardian_name" placeholder={t.guardianNamePlaceholder} className="mt-1" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="gender">{t.gender}</Label>
-                    <select id="gender" name="gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
-                      <option value="">{t.selectGender}</option>
-                      <option value={t.male}>{t.male}</option>
-                      <option value={t.female}>{t.female}</option>
-                      <option value={t.other}>{t.other}</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="occupation" className="flex items-center gap-1">
-                      <Briefcase className="w-4 h-4" />
-                      {t.occupation}
-                    </Label>
-                    <Input id="occupation" name="occupation" placeholder={t.occupationPlaceholder} className="mt-1" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="ration_card" className="flex items-center gap-1">
-                      <CreditCard className="w-4 h-4" />
-                      {t.rationCard}
-                    </Label>
-                    <Input id="ration_card" name="ration_card" placeholder={t.rationCardPlaceholder} className="mt-1" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="annual_income" className="flex items-center gap-1">
-                      <IndianRupee className="w-4 h-4" />
-                      {t.annualIncome}
-                    </Label>
-                    <Input id="annual_income" name="annual_income" placeholder={t.annualIncomePlaceholder} className="mt-1" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="aadhaar_number" className="flex items-center gap-1">
-                      <Shield className="w-4 h-4" />
-                      {t.aadhaarNumber}
-                    </Label>
-                    <Input id="aadhaar_number" name="aadhaar_number" placeholder={t.aadhaarPlaceholder} maxLength={14} className="mt-1" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="mobile_number" className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      {t.mobileNumber}
-                    </Label>
-                    <Input id="mobile_number" name="mobile_number" type="tel" placeholder={t.mobilePlaceholder} className="mt-1" />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="address" className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {t.permanentAddress}
-                  </Label>
-                  <Textarea id="address" name="address" placeholder={t.addressPlaceholder} className="mt-1" rows={3} />
                 </div>
               </div>
 
