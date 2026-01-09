@@ -49,7 +49,12 @@ const formTranslations = {
     nomineeAge: "Age",
     nomineeAgePlaceholder: "Age",
     nomineeRelation: "Relationship",
-    nomineeRelationPlaceholder: "Enter relationship",
+    selectRelation: "Select Relationship",
+    son: "Son",
+    daughter: "Daughter",
+    wife: "Wife",
+    husband: "Husband",
+    spouse: "Spouse",
     nominee2Title: "Nominee 2 (Optional)",
     additionalMessage: "Additional Message (Optional)",
     messagePlaceholder: "Any additional information...",
@@ -99,7 +104,12 @@ const formTranslations = {
     nomineeAge: "வயது",
     nomineeAgePlaceholder: "வயது",
     nomineeRelation: "உறவு முறை",
-    nomineeRelationPlaceholder: "உறவு முறையை உள்ளிடவும்",
+    selectRelation: "உறவு முறையை தேர்வு செய்க",
+    son: "மகன்",
+    daughter: "மகள்",
+    wife: "மனைவி",
+    husband: "கணவர்",
+    spouse: "துணைவர்",
     nominee2Title: "வாரிசு 2 (விருப்பத்திற்குட்பட்டது)",
     additionalMessage: "கூடுதல் செய்தி (விருப்பமானது)",
     messagePlaceholder: "ஏதேனும் கூடுதல் தகவல்...",
@@ -112,6 +122,46 @@ const formTranslations = {
     imageTooLarge: "படம் மிகப் பெரியது",
     imageSizeLimit: "2MB க்கு குறைவான படத்தை பயன்படுத்தவும்"
   }
+};
+
+// Compress image to reduce size for EmailJS (max 50KB total)
+const compressImage = (file: File, maxWidth: number = 400, quality: number = 0.5): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Scale down if too large
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to compressed JPEG
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 };
 
 const ApplicationPage: React.FC = () => {
@@ -135,8 +185,8 @@ const ApplicationPage: React.FC = () => {
     emailjs.init('gq4UP7sZykMwY4aQc');
   }, []);
 
-  // Image handler with Base64 conversion
-  const handleImageChange = (
+  // Image handler with compression
+  const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setBase64: React.Dispatch<React.SetStateAction<string>>,
     setPreview: React.Dispatch<React.SetStateAction<string>>
@@ -144,7 +194,7 @@ const ApplicationPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: t.imageTooLarge,
         description: t.imageSizeLimit,
@@ -153,13 +203,22 @@ const ApplicationPage: React.FC = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setBase64(base64String);
-      setPreview(base64String);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress image for EmailJS (small size)
+      const compressedBase64 = await compressImage(file, 300, 0.4);
+      setBase64(compressedBase64);
+      
+      // Keep higher quality for preview
+      const previewBase64 = await compressImage(file, 600, 0.7);
+      setPreview(previewBase64);
+    } catch (error) {
+      console.error('Image compression error:', error);
+      toast({
+        title: t.errorTitle,
+        description: 'Failed to process image',
+        variant: "destructive",
+      });
+    }
   };
 
   const removeImage = (
@@ -201,13 +260,13 @@ const ApplicationPage: React.FC = () => {
         nominee2_age: (formData.get('nominee2_age') as string)?.trim() || '—',
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '—',
         additional_message: (formData.get('additional_message') as string)?.trim() || '—',
-        applicant_photo: applicantPhoto || '—',
-        aadhaar_front: aadhaarFront || '—',
-        aadhaar_back: aadhaarBack || '—',
+        applicant_photo: applicantPhoto ? 'Photo Attached' : '—',
+        aadhaar_front: aadhaarFront ? 'Photo Attached' : '—',
+        aadhaar_back: aadhaarBack ? 'Photo Attached' : '—',
         selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil'
       };
 
-      console.log('Submitting to EmailJS:', Object.keys(templateParams));
+      console.log('Submitting to EmailJS:', templateParams);
 
       const response = await emailjs.send(
         'service_oayf2od',
@@ -370,7 +429,11 @@ const ApplicationPage: React.FC = () => {
                   {/* 4. Gender */}
                   <div>
                     <Label htmlFor="gender">{t.gender}</Label>
-                    <select id="gender" name="gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
+                    <select 
+                      id="gender" 
+                      name="gender" 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
                       <option value="">{t.selectGender}</option>
                       <option value={t.male}>{t.male}</option>
                       <option value={t.female}>{t.female}</option>
@@ -471,7 +534,11 @@ const ApplicationPage: React.FC = () => {
                   </div>
                   <div>
                     <Label htmlFor="nominee1_gender">{t.gender}</Label>
-                    <select id="nominee1_gender" name="nominee1_gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
+                    <select 
+                      id="nominee1_gender" 
+                      name="nominee1_gender" 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
                       <option value="">{t.selectGender}</option>
                       <option value={t.male}>{t.male}</option>
                       <option value={t.female}>{t.female}</option>
@@ -483,7 +550,18 @@ const ApplicationPage: React.FC = () => {
                   </div>
                   <div>
                     <Label htmlFor="nominee1_relation">{t.nomineeRelation}</Label>
-                    <Input id="nominee1_relation" name="nominee1_relation" placeholder={t.nomineeRelationPlaceholder} className="mt-1" />
+                    <select 
+                      id="nominee1_relation" 
+                      name="nominee1_relation" 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">{t.selectRelation}</option>
+                      <option value={t.son}>{t.son}</option>
+                      <option value={t.daughter}>{t.daughter}</option>
+                      <option value={t.wife}>{t.wife}</option>
+                      <option value={t.husband}>{t.husband}</option>
+                      <option value={t.spouse}>{t.spouse}</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -501,7 +579,11 @@ const ApplicationPage: React.FC = () => {
                   </div>
                   <div>
                     <Label htmlFor="nominee2_gender">{t.gender}</Label>
-                    <select id="nominee2_gender" name="nominee2_gender" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
+                    <select 
+                      id="nominee2_gender" 
+                      name="nominee2_gender" 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
                       <option value="">{t.selectGender}</option>
                       <option value={t.male}>{t.male}</option>
                       <option value={t.female}>{t.female}</option>
@@ -513,7 +595,18 @@ const ApplicationPage: React.FC = () => {
                   </div>
                   <div>
                     <Label htmlFor="nominee2_relation">{t.nomineeRelation}</Label>
-                    <Input id="nominee2_relation" name="nominee2_relation" placeholder={t.nomineeRelationPlaceholder} className="mt-1" />
+                    <select 
+                      id="nominee2_relation" 
+                      name="nominee2_relation" 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">{t.selectRelation}</option>
+                      <option value={t.son}>{t.son}</option>
+                      <option value={t.daughter}>{t.daughter}</option>
+                      <option value={t.wife}>{t.wife}</option>
+                      <option value={t.husband}>{t.husband}</option>
+                      <option value={t.spouse}>{t.spouse}</option>
+                    </select>
                   </div>
                 </div>
               </div>
