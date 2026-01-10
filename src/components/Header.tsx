@@ -1,13 +1,17 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, LogIn, LogOut, Shield, User } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
+import { Button } from '@/components/ui/button';
 
 const Header = () => {
   const { language, setLanguage, t } = useLanguage();
+  const { user, isAdmin, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { path: '/', label: t.nav.home },
@@ -15,6 +19,11 @@ const Header = () => {
     { path: '/benefits', label: t.nav.benefits },
     { path: '/contact', label: t.nav.contact },
   ];
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
@@ -41,10 +50,22 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                  location.pathname === '/admin' ? 'text-primary' : 'text-foreground/80'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                {language === 'ta' ? 'நிர்வாகி' : 'Admin'}
+              </Link>
+            )}
           </nav>
 
-          {/* Language Switch */}
+          {/* Auth & Language */}
           <div className="flex items-center gap-4">
+            {/* Language Switch */}
             <div className="flex items-center bg-muted rounded-full p-1">
               <button
                 onClick={() => setLanguage('ta')}
@@ -66,6 +87,23 @@ const Header = () => {
               >
                 EN
               </button>
+            </div>
+
+            {/* Auth Buttons - Desktop */}
+            <div className="hidden md:flex items-center gap-2">
+              {user ? (
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {language === 'ta' ? 'வெளியேறு' : 'Logout'}
+                </Button>
+              ) : (
+                <Link to="/login">
+                  <Button variant="outline" size="sm">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {language === 'ta' ? 'உள்நுழைக' : 'Login'}
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -93,6 +131,41 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setIsMenuOpen(false)}
+                className={`block py-3 text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                  location.pathname === '/admin' ? 'text-primary' : 'text-foreground/80'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                {language === 'ta' ? 'நிர்வாகி' : 'Admin'}
+              </Link>
+            )}
+            <div className="pt-4 border-t border-border mt-4">
+              {user ? (
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-primary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {language === 'ta' ? 'வெளியேறு' : 'Logout'}
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-primary"
+                >
+                  <LogIn className="h-4 w-4" />
+                  {language === 'ta' ? 'உள்நுழைக' : 'Login'}
+                </Link>
+              )}
+            </div>
           </nav>
         )}
       </div>
