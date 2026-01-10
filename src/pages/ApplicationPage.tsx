@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { uploadImageToStorage, compressImageFile } from '@/lib/uploadToStorage';
+import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee, Image, Lock } from 'lucide-react';
 
 type Language = 'en' | 'ta';
 
@@ -19,6 +22,7 @@ const formTranslations = {
     applicantPhoto: "Applicant Photo",
     aadhaarFront: "Aadhaar Front Side Photo",
     aadhaarBack: "Aadhaar Back Side Photo",
+    pamphletImage: "Pamphlet Image Upload",
     uploadImage: "Tap to Upload / Capture",
     applicantDetails: "Applicant Details",
     memberName: "Member Name",
@@ -65,7 +69,13 @@ const formTranslations = {
     errorTitle: "Error",
     errorMessage: "Failed to submit. Please try again.",
     imageTooLarge: "Image too large",
-    imageSizeLimit: "Please use an image less than 2MB"
+    imageSizeLimit: "Please use an image less than 5MB",
+    uploadingImages: "Uploading images...",
+    loginRequired: "Login Required",
+    loginRequiredMessage: "Please login to submit an application",
+    pendingApproval: "Account Pending",
+    pendingApprovalMessage: "Your account is pending admin approval. Please wait for approval to submit applications.",
+    goToLogin: "Go to Login",
   },
   ta: {
     title: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
@@ -74,6 +84,7 @@ const formTranslations = {
     applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
     aadhaarFront: "ஆதார் முன்பக்க புகைப்படம்",
     aadhaarBack: "ஆதார் பின்பக்க புகைப்படம்",
+    pamphletImage: "துண்டுப்பிரசுர புகைப்படம்",
     uploadImage: "பதிவேற்ற தட்டவும்",
     applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
     memberName: "உறுப்பினர் பெயர்",
@@ -120,76 +131,54 @@ const formTranslations = {
     errorTitle: "பிழை!",
     errorMessage: "சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
     imageTooLarge: "படம் மிகப் பெரியது",
-    imageSizeLimit: "2MB க்கு குறைவான படத்தை பயன்படுத்தவும்"
+    imageSizeLimit: "5MB க்கு குறைவான படத்தை பயன்படுத்தவும்",
+    uploadingImages: "படங்களை பதிவேற்றுகிறது...",
+    loginRequired: "உள்நுழைவு தேவை",
+    loginRequiredMessage: "விண்ணப்பத்தை சமர்ப்பிக்க உள்நுழையவும்",
+    pendingApproval: "கணக்கு நிலுவையில்",
+    pendingApprovalMessage: "உங்கள் கணக்கு நிர்வாகி அனுமதிக்காக காத்திருக்கிறது. விண்ணப்பங்களை சமர்ப்பிக்க அனுமதிக்காக காத்திருக்கவும்.",
+    goToLogin: "உள்நுழைய செல்க",
   }
 };
 
-// Compress image to reduce size for EmailJS (max 50KB total)
-const compressImage = (file: File, maxWidth: number = 400, quality: number = 0.5): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Scale down if too large
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to compressed JPEG
-        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedBase64);
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-};
+interface ImageState {
+  file: File | null;
+  preview: string;
+  url: string;
+}
 
 const ApplicationPage: React.FC = () => {
+  const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
+  const { user, isLoading, userStatus, checkUserStatus } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('ta');
   
   // Image states
-  const [applicantPhoto, setApplicantPhoto] = useState<string>('');
-  const [applicantPhotoPreview, setApplicantPhotoPreview] = useState<string>('');
-  const [aadhaarFront, setAadhaarFront] = useState<string>('');
-  const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<string>('');
-  const [aadhaarBack, setAadhaarBack] = useState<string>('');
-  const [aadhaarBackPreview, setAadhaarBackPreview] = useState<string>('');
+  const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', url: '' });
+  const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', url: '' });
+  const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', url: '' });
+  const [pamphletImage, setPamphletImage] = useState<ImageState>({ file: null, preview: '', url: '' });
   
   const { toast } = useToast();
   const t = formTranslations[selectedLanguage];
+
+  // Check user status on mount
+  useEffect(() => {
+    if (user) {
+      checkUserStatus();
+    }
+  }, [user]);
 
   // Initialize EmailJS
   useEffect(() => {
     emailjs.init('gq4UP7sZykMwY4aQc');
   }, []);
 
-  // Image handler with compression
+  // Image handler
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    setBase64: React.Dispatch<React.SetStateAction<string>>,
-    setPreview: React.Dispatch<React.SetStateAction<string>>
+    setImageState: React.Dispatch<React.SetStateAction<ImageState>>
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -204,15 +193,21 @@ const ApplicationPage: React.FC = () => {
     }
 
     try {
-      // Compress image for EmailJS (small size)
-      const compressedBase64 = await compressImage(file, 300, 0.4);
-      setBase64(compressedBase64);
+      // Compress image
+      const compressedFile = await compressImageFile(file, 1200, 0.8);
       
-      // Keep higher quality for preview
-      const previewBase64 = await compressImage(file, 600, 0.7);
-      setPreview(previewBase64);
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImageState({
+          file: compressedFile,
+          preview: event.target?.result as string,
+          url: '',
+        });
+      };
+      reader.readAsDataURL(compressedFile);
     } catch (error) {
-      console.error('Image compression error:', error);
+      console.error('Image processing error:', error);
       toast({
         title: t.errorTitle,
         description: 'Failed to process image',
@@ -221,48 +216,98 @@ const ApplicationPage: React.FC = () => {
     }
   };
 
-  const removeImage = (
-    setBase64: React.Dispatch<React.SetStateAction<string>>,
-    setPreview: React.Dispatch<React.SetStateAction<string>>
-  ) => {
-    setBase64('');
-    setPreview('');
+  const removeImage = (setImageState: React.Dispatch<React.SetStateAction<ImageState>>) => {
+    setImageState({ file: null, preview: '', url: '' });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
+    
+    if (!user) {
+      toast({
+        title: t.loginRequired,
+        description: t.loginRequiredMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userStatus !== 'active') {
+      toast({
+        title: t.pendingApproval,
+        description: t.pendingApprovalMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const form = formRef.current;
       if (!form) throw new Error('Form not found');
 
+      // Upload images to Supabase Storage
+      toast({
+        title: t.uploadingImages,
+      });
+
+      const uploadPromises: Promise<string | null>[] = [];
+      const userId = user.id;
+
+      if (applicantPhoto.file) {
+        uploadPromises.push(uploadImageToStorage(applicantPhoto.file, 'applicant_photo', userId));
+      } else {
+        uploadPromises.push(Promise.resolve(null));
+      }
+
+      if (aadhaarFront.file) {
+        uploadPromises.push(uploadImageToStorage(aadhaarFront.file, 'aadhaar_front', userId));
+      } else {
+        uploadPromises.push(Promise.resolve(null));
+      }
+
+      if (aadhaarBack.file) {
+        uploadPromises.push(uploadImageToStorage(aadhaarBack.file, 'aadhaar_back', userId));
+      } else {
+        uploadPromises.push(Promise.resolve(null));
+      }
+
+      if (pamphletImage.file) {
+        uploadPromises.push(uploadImageToStorage(pamphletImage.file, 'pamphlet_image', userId));
+      } else {
+        uploadPromises.push(Promise.resolve(null));
+      }
+
+      const [applicantPhotoUrl, aadhaarFrontUrl, aadhaarBackUrl, pamphletImageUrl] = await Promise.all(uploadPromises);
+
       const formData = new FormData(form);
 
-      // EXACT template variables - all with fallback to "—"
+      // EXACT template variables - all with fallback to "Not Provided"
       const templateParams = {
-        member_name: (formData.get('member_name') as string)?.trim() || '—',
-        guardian_name: (formData.get('guardian_name') as string)?.trim() || '—',
-        gender: (formData.get('gender') as string)?.trim() || '—',
-        occupation: (formData.get('occupation') as string)?.trim() || '—',
-        ration_card: (formData.get('ration_card') as string)?.trim() || '—',
-        annual_income: (formData.get('annual_income') as string)?.trim() || '—',
-        aadhaar_number: (formData.get('aadhaar_number') as string)?.trim() || '—',
-        mobile_number: (formData.get('mobile_number') as string)?.trim() || '—',
-        address: (formData.get('address') as string)?.trim() || '—',
-        nominee1_name: (formData.get('nominee1_name') as string)?.trim() || '—',
-        nominee1_gender: (formData.get('nominee1_gender') as string)?.trim() || '—',
-        nominee1_age: (formData.get('nominee1_age') as string)?.trim() || '—',
-        nominee1_relation: (formData.get('nominee1_relation') as string)?.trim() || '—',
-        nominee2_name: (formData.get('nominee2_name') as string)?.trim() || '—',
-        nominee2_gender: (formData.get('nominee2_gender') as string)?.trim() || '—',
-        nominee2_age: (formData.get('nominee2_age') as string)?.trim() || '—',
-        nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '—',
-        additional_message: (formData.get('additional_message') as string)?.trim() || '—',
-        applicant_photo: applicantPhoto ? 'Photo Attached' : '—',
-        aadhaar_front: aadhaarFront ? 'Photo Attached' : '—',
-        aadhaar_back: aadhaarBack ? 'Photo Attached' : '—',
+        member_name: (formData.get('member_name') as string)?.trim() || 'Not Provided',
+        guardian_name: (formData.get('guardian_name') as string)?.trim() || 'Not Provided',
+        gender: (formData.get('gender') as string)?.trim() || 'Not Provided',
+        occupation: (formData.get('occupation') as string)?.trim() || 'Not Provided',
+        ration_card: (formData.get('ration_card') as string)?.trim() || 'Not Provided',
+        annual_income: (formData.get('annual_income') as string)?.trim() || 'Not Provided',
+        aadhaar_number: (formData.get('aadhaar_number') as string)?.trim() || 'Not Provided',
+        mobile_number: (formData.get('mobile_number') as string)?.trim() || 'Not Provided',
+        address: (formData.get('address') as string)?.trim() || 'Not Provided',
+        nominee1_name: (formData.get('nominee1_name') as string)?.trim() || 'Not Provided',
+        nominee1_gender: (formData.get('nominee1_gender') as string)?.trim() || 'Not Provided',
+        nominee1_age: (formData.get('nominee1_age') as string)?.trim() || 'Not Provided',
+        nominee1_relation: (formData.get('nominee1_relation') as string)?.trim() || 'Not Provided',
+        nominee2_name: (formData.get('nominee2_name') as string)?.trim() || 'Not Provided',
+        nominee2_gender: (formData.get('nominee2_gender') as string)?.trim() || 'Not Provided',
+        nominee2_age: (formData.get('nominee2_age') as string)?.trim() || 'Not Provided',
+        nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || 'Not Provided',
+        additional_message: (formData.get('additional_message') as string)?.trim() || 'Not Provided',
+        applicant_photo: applicantPhotoUrl || 'Not Provided',
+        aadhaar_front: aadhaarFrontUrl || 'Not Provided',
+        aadhaar_back: aadhaarBackUrl || 'Not Provided',
+        pamphlet_image: pamphletImageUrl || 'Not Provided',
         selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil'
       };
 
@@ -282,17 +327,15 @@ const ApplicationPage: React.FC = () => {
           description: t.successMessage,
         });
         form.reset();
-        setApplicantPhoto('');
-        setApplicantPhotoPreview('');
-        setAadhaarFront('');
-        setAadhaarFrontPreview('');
-        setAadhaarBack('');
-        setAadhaarBackPreview('');
+        setApplicantPhoto({ file: null, preview: '', url: '' });
+        setAadhaarFront({ file: null, preview: '', url: '' });
+        setAadhaarBack({ file: null, preview: '', url: '' });
+        setPamphletImage({ file: null, preview: '', url: '' });
       } else {
         throw new Error('Email failed');
       }
     } catch (error) {
-      console.error('EmailJS Error:', error);
+      console.error('Submit Error:', error);
       toast({
         title: t.errorTitle,
         description: t.errorMessage,
@@ -353,6 +396,69 @@ const ApplicationPage: React.FC = () => {
     </div>
   );
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
+        <Card className="w-full max-w-md shadow-xl border-2">
+          <CardContent className="p-8 text-center">
+            <Lock className="h-16 w-16 text-primary mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-primary mb-2">{t.loginRequired}</h2>
+            <p className="text-muted-foreground mb-6">{t.loginRequiredMessage}</p>
+            <Button onClick={() => navigate('/login')} className="w-full">
+              {t.goToLogin}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Account pending approval
+  if (userStatus === 'pending') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
+        <Card className="w-full max-w-md shadow-xl border-2">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-16 w-16 text-primary mx-auto mb-4 animate-spin" />
+            <h2 className="text-2xl font-bold text-primary mb-2">{t.pendingApproval}</h2>
+            <p className="text-muted-foreground">{t.pendingApprovalMessage}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Account rejected
+  if (userStatus === 'rejected') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
+        <Card className="w-full max-w-md shadow-xl border-2">
+          <CardContent className="p-8 text-center">
+            <X className="h-16 w-16 text-destructive mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-destructive mb-2">
+              {selectedLanguage === 'en' ? 'Account Rejected' : 'கணக்கு நிராகரிக்கப்பட்டது'}
+            </h2>
+            <p className="text-muted-foreground">
+              {selectedLanguage === 'en' 
+                ? 'Your account has been rejected. Please contact support.'
+                : 'உங்கள் கணக்கு நிராகரிக்கப்பட்டது. ஆதரவைத் தொடர்பு கொள்ளவும்.'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -400,9 +506,9 @@ const ApplicationPage: React.FC = () => {
               {/* 1. Applicant Photo */}
               <ImageUpload
                 label={t.applicantPhoto}
-                preview={applicantPhotoPreview}
-                onImageChange={(e) => handleImageChange(e, setApplicantPhoto, setApplicantPhotoPreview)}
-                onRemove={() => removeImage(setApplicantPhoto, setApplicantPhotoPreview)}
+                preview={applicantPhoto.preview}
+                onImageChange={(e) => handleImageChange(e, setApplicantPhoto)}
+                onRemove={() => removeImage(setApplicantPhoto)}
                 icon={Camera}
               />
 
@@ -506,20 +612,29 @@ const ApplicationPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ImageUpload
                     label={t.aadhaarFront}
-                    preview={aadhaarFrontPreview}
-                    onImageChange={(e) => handleImageChange(e, setAadhaarFront, setAadhaarFrontPreview)}
-                    onRemove={() => removeImage(setAadhaarFront, setAadhaarFrontPreview)}
+                    preview={aadhaarFront.preview}
+                    onImageChange={(e) => handleImageChange(e, setAadhaarFront)}
+                    onRemove={() => removeImage(setAadhaarFront)}
                     icon={Shield}
                   />
                   <ImageUpload
                     label={t.aadhaarBack}
-                    preview={aadhaarBackPreview}
-                    onImageChange={(e) => handleImageChange(e, setAadhaarBack, setAadhaarBackPreview)}
-                    onRemove={() => removeImage(setAadhaarBack, setAadhaarBackPreview)}
+                    preview={aadhaarBack.preview}
+                    onImageChange={(e) => handleImageChange(e, setAadhaarBack)}
+                    onRemove={() => removeImage(setAadhaarBack)}
                     icon={Shield}
                   />
                 </div>
               </div>
+
+              {/* Pamphlet Image */}
+              <ImageUpload
+                label={t.pamphletImage}
+                preview={pamphletImage.preview}
+                onImageChange={(e) => handleImageChange(e, setPamphletImage)}
+                onRemove={() => removeImage(setPamphletImage)}
+                icon={Image}
+              />
 
               {/* Nominee 1 - Required */}
               <div className="space-y-4">
