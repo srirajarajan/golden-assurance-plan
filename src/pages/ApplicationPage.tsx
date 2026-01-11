@@ -175,7 +175,18 @@ const ApplicationPage: React.FC = () => {
     emailjs.init('gq4UP7sZykMwY4aQc');
   }, []);
 
-  // Image handler
+  // Cleanup blob URLs on unmount (prevents memory leaks)
+  useEffect(() => {
+    return () => {
+      const previews = [applicantPhoto.preview, aadhaarFront.preview, aadhaarBack.preview, pamphletImage.preview];
+      previews.forEach((p) => {
+        if (p?.startsWith('blob:')) URL.revokeObjectURL(p);
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Image handler (keeps UI identical; avoids Base64 in state)
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setImageState: React.Dispatch<React.SetStateAction<ImageState>>
@@ -195,17 +206,23 @@ const ApplicationPage: React.FC = () => {
     try {
       // Compress image
       const compressedFile = await compressImageFile(file, 1200, 0.8);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageState({
+
+      // Use an object URL for preview (no Base64 in state)
+      const previewUrl = URL.createObjectURL(compressedFile);
+
+      setImageState((prev) => {
+        if (prev.preview?.startsWith('blob:')) {
+          URL.revokeObjectURL(prev.preview);
+        }
+        return {
           file: compressedFile,
-          preview: event.target?.result as string,
+          preview: previewUrl,
           url: '',
-        });
-      };
-      reader.readAsDataURL(compressedFile);
+        };
+      });
+
+      // Allow selecting the same file again to trigger onChange
+      e.target.value = '';
     } catch (error) {
       console.error('Image processing error:', error);
       toast({
@@ -217,7 +234,12 @@ const ApplicationPage: React.FC = () => {
   };
 
   const removeImage = (setImageState: React.Dispatch<React.SetStateAction<ImageState>>) => {
-    setImageState({ file: null, preview: '', url: '' });
+    setImageState((prev) => {
+      if (prev.preview?.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.preview);
+      }
+      return { file: null, preview: '', url: '' };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -327,10 +349,12 @@ const ApplicationPage: React.FC = () => {
           description: t.successMessage,
         });
         form.reset();
-        setApplicantPhoto({ file: null, preview: '', url: '' });
-        setAadhaarFront({ file: null, preview: '', url: '' });
-        setAadhaarBack({ file: null, preview: '', url: '' });
-        setPamphletImage({ file: null, preview: '', url: '' });
+
+        // Clean up object URLs
+        removeImage(setApplicantPhoto);
+        removeImage(setAadhaarFront);
+        removeImage(setAadhaarBack);
+        removeImage(setPamphletImage);
       } else {
         throw new Error('Email failed');
       }
@@ -386,7 +410,7 @@ const ApplicationPage: React.FC = () => {
           <span className="text-sm text-muted-foreground text-center">{t.uploadImage}</span>
           <input 
             type="file" 
-            accept="image/jpeg,image/jpg,image/png" 
+            accept="image/*" 
             capture="environment"
             onChange={onImageChange} 
             className="hidden" 
