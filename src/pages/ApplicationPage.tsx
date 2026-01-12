@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { uploadImageToStorage, compressImageFile } from '@/lib/uploadToStorage';
+import { uploadImageToPrivateStorage, compressImageFile } from '@/lib/uploadToPrivateStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee, Image, Lock } from 'lucide-react';
 
 type Language = 'en' | 'ta';
@@ -71,6 +72,8 @@ const formTranslations = {
     imageTooLarge: "Image too large",
     imageSizeLimit: "Please use an image less than 5MB",
     uploadingImages: "Uploading images...",
+    generatingPDF: "Generating PDF...",
+    sendingEmail: "Sending notification...",
     loginRequired: "Login Required",
     loginRequiredMessage: "Please login to submit an application",
     pendingApproval: "Account Pending",
@@ -133,6 +136,8 @@ const formTranslations = {
     imageTooLarge: "படம் மிகப் பெரியது",
     imageSizeLimit: "5MB க்கு குறைவான படத்தை பயன்படுத்தவும்",
     uploadingImages: "படங்களை பதிவேற்றுகிறது...",
+    generatingPDF: "PDF உருவாக்குகிறது...",
+    sendingEmail: "அறிவிப்பை அனுப்புகிறது...",
     loginRequired: "உள்நுழைவு தேவை",
     loginRequiredMessage: "விண்ணப்பத்தை சமர்ப்பிக்க உள்நுழையவும்",
     pendingApproval: "கணக்கு நிலுவையில்",
@@ -144,7 +149,7 @@ const formTranslations = {
 interface ImageState {
   file: File | null;
   preview: string;
-  url: string;
+  path: string; // Storage path, not URL
 }
 
 const ApplicationPage: React.FC = () => {
@@ -152,13 +157,14 @@ const ApplicationPage: React.FC = () => {
   const formRef = useRef<HTMLFormElement>(null);
   const { user, isLoading, userStatus, checkUserStatus } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStep, setSubmitStep] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('ta');
   
-  // Image states
-  const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', url: '' });
-  const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', url: '' });
-  const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', url: '' });
-  const [pamphletImage, setPamphletImage] = useState<ImageState>({ file: null, preview: '', url: '' });
+  // Image states - now storing paths instead of URLs
+  const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', path: '' });
+  const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
+  const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', path: '' });
+  const [pamphletImage, setPamphletImage] = useState<ImageState>({ file: null, preview: '', path: '' });
   
   const { toast } = useToast();
   const t = formTranslations[selectedLanguage];
@@ -175,7 +181,7 @@ const ApplicationPage: React.FC = () => {
     emailjs.init('gq4UP7sZykMwY4aQc');
   }, []);
 
-  // Cleanup blob URLs on unmount (prevents memory leaks)
+  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       const previews = [applicantPhoto.preview, aadhaarFront.preview, aadhaarBack.preview, pamphletImage.preview];
@@ -186,7 +192,7 @@ const ApplicationPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Image handler (keeps UI identical; avoids Base64 in state)
+  // Image handler
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setImageState: React.Dispatch<React.SetStateAction<ImageState>>
@@ -204,10 +210,7 @@ const ApplicationPage: React.FC = () => {
     }
 
     try {
-      // Compress image
       const compressedFile = await compressImageFile(file, 1200, 0.8);
-
-      // Use an object URL for preview (no Base64 in state)
       const previewUrl = URL.createObjectURL(compressedFile);
 
       setImageState((prev) => {
@@ -217,11 +220,10 @@ const ApplicationPage: React.FC = () => {
         return {
           file: compressedFile,
           preview: previewUrl,
-          url: '',
+          path: '',
         };
       });
 
-      // Allow selecting the same file again to trigger onChange
       e.target.value = '';
     } catch (error) {
       console.error('Image processing error:', error);
@@ -238,7 +240,7 @@ const ApplicationPage: React.FC = () => {
       if (prev.preview?.startsWith('blob:')) {
         URL.revokeObjectURL(prev.preview);
       }
-      return { file: null, preview: '', url: '' };
+      return { file: null, preview: '', path: '' };
     });
   };
 
@@ -270,44 +272,53 @@ const ApplicationPage: React.FC = () => {
       const form = formRef.current;
       if (!form) throw new Error('Form not found');
 
-      // Upload images to Supabase Storage
-      toast({
-        title: t.uploadingImages,
-      });
+      const userId = user.id;
+      const formData = new FormData(form);
+
+      // Step 1: Upload images to private storage
+      setSubmitStep(t.uploadingImages);
+      toast({ title: t.uploadingImages });
 
       const uploadPromises: Promise<string | null>[] = [];
-      const userId = user.id;
 
       if (applicantPhoto.file) {
-        uploadPromises.push(uploadImageToStorage(applicantPhoto.file, 'applicant_photo', userId));
+        uploadPromises.push(uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId));
       } else {
         uploadPromises.push(Promise.resolve(null));
       }
 
       if (aadhaarFront.file) {
-        uploadPromises.push(uploadImageToStorage(aadhaarFront.file, 'aadhaar_front', userId));
+        uploadPromises.push(uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId));
       } else {
         uploadPromises.push(Promise.resolve(null));
       }
 
       if (aadhaarBack.file) {
-        uploadPromises.push(uploadImageToStorage(aadhaarBack.file, 'aadhaar_back', userId));
+        uploadPromises.push(uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId));
       } else {
         uploadPromises.push(Promise.resolve(null));
       }
 
       if (pamphletImage.file) {
-        uploadPromises.push(uploadImageToStorage(pamphletImage.file, 'pamphlet_image', userId));
+        uploadPromises.push(uploadImageToPrivateStorage(pamphletImage.file, 'pamphlet_image', userId));
       } else {
         uploadPromises.push(Promise.resolve(null));
       }
 
-      const [applicantPhotoUrl, aadhaarFrontUrl, aadhaarBackUrl, pamphletImageUrl] = await Promise.all(uploadPromises);
+      const [applicantPhotoPath, aadhaarFrontPath, aadhaarBackPath, pamphletImagePath] = await Promise.all(uploadPromises);
 
-      const formData = new FormData(form);
+      console.log('Images uploaded to private storage:', {
+        applicantPhotoPath,
+        aadhaarFrontPath,
+        aadhaarBackPath,
+        pamphletImagePath,
+      });
 
-      // EXACT template variables - all with fallback to "Not Provided"
-      const templateParams = {
+      // Step 2: Generate PDF via edge function
+      setSubmitStep(t.generatingPDF);
+      toast({ title: t.generatingPDF });
+
+      const pdfPayload = {
         member_name: (formData.get('member_name') as string)?.trim() || 'Not Provided',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || 'Not Provided',
         gender: (formData.get('gender') as string)?.trim() || 'Not Provided',
@@ -326,31 +337,57 @@ const ApplicationPage: React.FC = () => {
         nominee2_age: (formData.get('nominee2_age') as string)?.trim() || 'Not Provided',
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || 'Not Provided',
         additional_message: (formData.get('additional_message') as string)?.trim() || 'Not Provided',
-        applicant_photo: applicantPhotoUrl || 'Not Provided',
-        aadhaar_front: aadhaarFrontUrl || 'Not Provided',
-        aadhaar_back: aadhaarBackUrl || 'Not Provided',
-        pamphlet_image: pamphletImageUrl || 'Not Provided',
-        selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil'
+        selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil',
+        applicant_photo_path: applicantPhotoPath || 'Not Provided',
+        aadhaar_front_path: aadhaarFrontPath || 'Not Provided',
+        aadhaar_back_path: aadhaarBackPath || 'Not Provided',
+        pamphlet_image_path: pamphletImagePath || 'Not Provided',
+        user_id: userId,
       };
 
-      console.log('Submitting to EmailJS:', templateParams);
+      console.log('Calling PDF generation edge function...');
 
-      const response = await emailjs.send(
+      const { data: pdfResponse, error: pdfError } = await supabase.functions.invoke('generate-application-pdf', {
+        body: pdfPayload,
+      });
+
+      if (pdfError) {
+        console.error('PDF generation error:', pdfError);
+        throw new Error(`PDF generation failed: ${pdfError.message}`);
+      }
+
+      if (!pdfResponse?.pdf_url) {
+        throw new Error('No PDF URL returned from server');
+      }
+
+      console.log('PDF generated successfully:', pdfResponse.pdf_url);
+
+      // Step 3: Send email with PDF URL only
+      setSubmitStep(t.sendingEmail);
+      toast({ title: t.sendingEmail });
+
+      const emailParams = {
+        member_name: pdfPayload.member_name,
+        mobile_number: pdfPayload.mobile_number,
+        pdf_url: pdfResponse.pdf_url,
+      };
+
+      console.log('Sending email with PDF URL:', emailParams);
+
+      const emailResponse = await emailjs.send(
         'service_oayf2od',
         'template_g6mbhol',
-        templateParams
+        emailParams
       );
 
-      console.log('EmailJS Response:', response);
+      console.log('EmailJS Response:', emailResponse);
 
-      if (response.status === 200) {
+      if (emailResponse.status === 200) {
         toast({
           title: t.successTitle,
           description: t.successMessage,
         });
         form.reset();
-
-        // Clean up object URLs
         removeImage(setApplicantPhoto);
         removeImage(setAadhaarFront);
         removeImage(setAadhaarBack);
@@ -367,6 +404,7 @@ const ApplicationPage: React.FC = () => {
       });
     } finally {
       setIsSubmitting(false);
+      setSubmitStep('');
     }
   };
 
@@ -770,7 +808,7 @@ const ApplicationPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {t.submitting}
+                    {submitStep || t.submitting}
                   </>
                 ) : (
                   <>
