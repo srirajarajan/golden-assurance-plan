@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,48 +88,42 @@ const englishLabels = {
   notProvided: "Not Provided",
 };
 
-async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Array | null> {
-  if (!path || path === "Not Provided") {
-    console.log(`No image path provided for: ${path}`);
-    return null;
-  }
-
-  try {
-    console.log(`Fetching image from path: ${path}`);
-    const { data, error } = await supabase.storage
-      .from("applications-images")
-      .download(path);
-
-    if (error) {
-      console.error(`Error downloading image ${path}:`, error);
-      return null;
-    }
-
-    const arrayBuffer = await data.arrayBuffer();
-    return new Uint8Array(arrayBuffer);
-  } catch (err) {
-    console.error(`Failed to fetch image ${path}:`, err);
-    return null;
-  }
+function safeText(v: unknown, fallback: string) {
+  const s = typeof v === "string" ? v.trim() : "";
+  return s.length ? s : fallback;
 }
 
-async function embedImage(
-  pdfDoc: PDFDocument,
-  imageBytes: Uint8Array | null,
-  mimeType: string
-): Promise<any | null> {
-  if (!imageBytes) return null;
-
-  try {
-    if (mimeType.includes("png")) {
-      return await pdfDoc.embedPng(imageBytes);
-    } else {
-      return await pdfDoc.embedJpg(imageBytes);
-    }
-  } catch (err) {
-    console.error("Failed to embed image:", err);
-    return null;
+async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Array> {
+  if (!path || path === "Not Provided") {
+    throw new Error("Missing required image path");
   }
+
+  const { data, error } = await supabase.storage
+    .from("applications-images")
+    .download(path);
+
+  if (error) {
+    throw new Error(`Failed to download image (${path}): ${error.message}`);
+  }
+
+  const arrayBuffer = await data.arrayBuffer();
+  return new Uint8Array(arrayBuffer);
+}
+
+async function embedImage(pdfDoc: PDFDocument, imageBytes: Uint8Array): Promise<any> {
+  // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+  const isPng =
+    imageBytes.length > 8 &&
+    imageBytes[0] === 0x89 &&
+    imageBytes[1] === 0x50 &&
+    imageBytes[2] === 0x4e &&
+    imageBytes[3] === 0x47 &&
+    imageBytes[4] === 0x0d &&
+    imageBytes[5] === 0x0a &&
+    imageBytes[6] === 0x1a &&
+    imageBytes[7] === 0x0a;
+
+  return isPng ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes);
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -142,8 +137,9 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const data: ApplicationData = await req.json();
-    console.log("Received application data for PDF generation:", {
-      member_name: data.member_name,
+
+    // Do not log PII
+    console.log("generate-application-pdf: request received", {
       user_id: data.user_id,
       selected_language: data.selected_language,
     });
@@ -151,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
     const labels = data.selected_language === "Tamil" ? tamilLabels : englishLabels;
     const notProvided = labels.notProvided;
 
-    // Fetch all images in parallel
+    // Fetch required images
     const [applicantPhotoBytes, aadhaarFrontBytes, aadhaarBackBytes, pamphletBytes] =
       await Promise.all([
         fetchImageAsBytes(supabase, data.applicant_photo_path),
@@ -160,35 +156,27 @@ const handler = async (req: Request): Promise<Response> => {
         fetchImageAsBytes(supabase, data.pamphlet_image_path),
       ]);
 
-    console.log("Images fetched:", {
-      applicantPhoto: !!applicantPhotoBytes,
-      aadhaarFront: !!aadhaarFrontBytes,
-      aadhaarBack: !!aadhaarBackBytes,
-      pamphlet: !!pamphletBytes,
-    });
-
-    // Create PDF
     const pdfDoc = await PDFDocument.create();
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    pdfDoc.registerFontkit(fontkit);
 
-    // Page dimensions
-    const pageWidth = 595.28; // A4 width
-    const pageHeight = 841.89; // A4 height
+    // Unicode-safe font for Tamil + English
+    const fontBytes = await Deno.readFile(new URL("./NotoSansTamil-Regular.ttf", import.meta.url));
+    const unicodeFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+
+    const pageWidth = 595.28;
+    const pageHeight = 841.89;
     const margin = 50;
     const lineHeight = 18;
 
-    // Add first page
-    let page = pdfDoc.addPage([pageWidth, pageHeight]);
+    // Page 1
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
 
-    // Helper function to draw text
     const drawText = (text: string, x: number, yPos: number, options: any = {}) => {
-      const { font = helveticaFont, size = 11, color = rgb(0, 0, 0) } = options;
+      const { font = unicodeFont, size = 11, color = rgb(0, 0, 0) } = options;
       page.drawText(text, { x, y: yPos, size, font, color });
     };
 
-    // Helper function to draw a line
     const drawLine = (yPos: number) => {
       page.drawLine({
         start: { x: margin, y: yPos },
@@ -198,46 +186,41 @@ const handler = async (req: Request): Promise<Response> => {
       });
     };
 
-    // Title
-    drawText(labels.title, margin, y, { font: helveticaBold, size: 18, color: rgb(0.4, 0.2, 0.1) });
+    // Header
+    drawText(labels.title, margin, y, { size: 18, color: rgb(0.4, 0.2, 0.1) });
     y -= 25;
-    drawText(labels.subtitle, margin, y, { font: helveticaBold, size: 14, color: rgb(0.5, 0.3, 0.15) });
+    drawText(labels.subtitle, margin, y, { size: 14, color: rgb(0.5, 0.3, 0.15) });
     y -= 30;
     drawLine(y);
     y -= 25;
 
-    // Embed applicant photo if available
-    const applicantPhotoImage = await embedImage(pdfDoc, applicantPhotoBytes, "image/jpeg");
-    if (applicantPhotoImage) {
-      const imgDims = applicantPhotoImage.scale(0.15);
-      const imgWidth = Math.min(imgDims.width, 100);
-      const imgHeight = Math.min(imgDims.height, 120);
-      page.drawImage(applicantPhotoImage, {
-        x: pageWidth - margin - imgWidth,
-        y: y - imgHeight + 20,
-        width: imgWidth,
-        height: imgHeight,
-      });
-    }
+    // Applicant Photo (fixed)
+    const applicantPhotoImage = await embedImage(pdfDoc, applicantPhotoBytes);
+    page.drawImage(applicantPhotoImage, {
+      x: pageWidth - margin - 100,
+      y: y - 120 + 20,
+      width: 100,
+      height: 120,
+    });
 
-    // Section: Applicant Details
-    drawText(labels.applicantDetails, margin, y, { font: helveticaBold, size: 13, color: rgb(0.2, 0.4, 0.6) });
+    // Applicant details
+    drawText(labels.applicantDetails, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
     y -= lineHeight + 5;
 
-    const fields = [
-      [labels.memberName, data.member_name || notProvided],
-      [labels.guardianName, data.guardian_name || notProvided],
-      [labels.gender, data.gender || notProvided],
-      [labels.occupation, data.occupation || notProvided],
-      [labels.rationCard, data.ration_card || notProvided],
-      [labels.annualIncome, data.annual_income || notProvided],
-      [labels.aadhaarNumber, data.aadhaar_number || notProvided],
-      [labels.mobileNumber, data.mobile_number || notProvided],
-      [labels.address, data.address || notProvided],
+    const fields: Array<[string, string]> = [
+      [labels.memberName, safeText(data.member_name, notProvided)],
+      [labels.guardianName, safeText(data.guardian_name, notProvided)],
+      [labels.gender, safeText(data.gender, notProvided)],
+      [labels.occupation, safeText(data.occupation, notProvided)],
+      [labels.rationCard, safeText(data.ration_card, notProvided)],
+      [labels.annualIncome, safeText(data.annual_income, notProvided)],
+      [labels.aadhaarNumber, safeText(data.aadhaar_number, notProvided)],
+      [labels.mobileNumber, safeText(data.mobile_number, notProvided)],
+      [labels.address, safeText(data.address, notProvided)],
     ];
 
     for (const [label, value] of fields) {
-      drawText(`${label}:`, margin, y, { font: helveticaBold, size: 10 });
+      drawText(`${label}:`, margin, y, { size: 10 });
       drawText(String(value), margin + 150, y, { size: 10 });
       y -= lineHeight;
     }
@@ -246,38 +229,38 @@ const handler = async (req: Request): Promise<Response> => {
     drawLine(y);
     y -= 20;
 
-    // Section: Nominee 1
-    drawText(labels.nominee1Title, margin, y, { font: helveticaBold, size: 13, color: rgb(0.2, 0.4, 0.6) });
+    // Nominee 1
+    drawText(labels.nominee1Title, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
     y -= lineHeight + 5;
 
-    const nominee1Fields = [
-      [labels.nomineeName, data.nominee1_name || notProvided],
-      [labels.gender, data.nominee1_gender || notProvided],
-      [labels.nomineeAge, data.nominee1_age || notProvided],
-      [labels.nomineeRelation, data.nominee1_relation || notProvided],
+    const nominee1Fields: Array<[string, string]> = [
+      [labels.nomineeName, safeText(data.nominee1_name, notProvided)],
+      [labels.gender, safeText(data.nominee1_gender, notProvided)],
+      [labels.nomineeAge, safeText(data.nominee1_age, notProvided)],
+      [labels.nomineeRelation, safeText(data.nominee1_relation, notProvided)],
     ];
 
     for (const [label, value] of nominee1Fields) {
-      drawText(`${label}:`, margin, y, { font: helveticaBold, size: 10 });
+      drawText(`${label}:`, margin, y, { size: 10 });
       drawText(String(value), margin + 150, y, { size: 10 });
       y -= lineHeight;
     }
 
     y -= 10;
 
-    // Section: Nominee 2
-    drawText(labels.nominee2Title, margin, y, { font: helveticaBold, size: 13, color: rgb(0.2, 0.4, 0.6) });
+    // Nominee 2
+    drawText(labels.nominee2Title, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
     y -= lineHeight + 5;
 
-    const nominee2Fields = [
-      [labels.nomineeName, data.nominee2_name || notProvided],
-      [labels.gender, data.nominee2_gender || notProvided],
-      [labels.nomineeAge, data.nominee2_age || notProvided],
-      [labels.nomineeRelation, data.nominee2_relation || notProvided],
+    const nominee2Fields: Array<[string, string]> = [
+      [labels.nomineeName, safeText(data.nominee2_name, notProvided)],
+      [labels.gender, safeText(data.nominee2_gender, notProvided)],
+      [labels.nomineeAge, safeText(data.nominee2_age, notProvided)],
+      [labels.nomineeRelation, safeText(data.nominee2_relation, notProvided)],
     ];
 
     for (const [label, value] of nominee2Fields) {
-      drawText(`${label}:`, margin, y, { font: helveticaBold, size: 10 });
+      drawText(`${label}:`, margin, y, { size: 10 });
       drawText(String(value), margin + 150, y, { size: 10 });
       y -= lineHeight;
     }
@@ -286,15 +269,15 @@ const handler = async (req: Request): Promise<Response> => {
     drawLine(y);
     y -= 20;
 
-    // Additional Message
-    if (data.additional_message && data.additional_message !== "Not Provided") {
-      drawText(labels.additionalMessage + ":", margin, y, { font: helveticaBold, size: 10 });
+    const additionalMessage = safeText(data.additional_message, "");
+    if (additionalMessage) {
+      drawText(`${labels.additionalMessage}:`, margin, y, { size: 10 });
       y -= lineHeight;
-      drawText(data.additional_message, margin, y, { size: 10 });
+      drawText(additionalMessage, margin, y, { size: 10 });
       y -= lineHeight * 2;
     }
 
-    // Add second page for images
+    // Page 2 (Images)
     const imagePage = pdfDoc.addPage([pageWidth, pageHeight]);
     let imgY = pageHeight - margin;
 
@@ -303,7 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
         x: margin,
         y: yPos,
         size: 12,
-        font: helveticaBold,
+        font: unicodeFont,
         color: rgb(0.2, 0.4, 0.6),
       });
     };
@@ -311,51 +294,42 @@ const handler = async (req: Request): Promise<Response> => {
     // Aadhaar Front
     drawImageTitle(labels.aadhaarFront, imgY);
     imgY -= 20;
-    const aadhaarFrontImage = await embedImage(pdfDoc, aadhaarFrontBytes, "image/jpeg");
-    if (aadhaarFrontImage) {
-      const dims = aadhaarFrontImage.scale(0.3);
-      const w = Math.min(dims.width, 250);
-      const h = Math.min(dims.height, 160);
-      imagePage.drawImage(aadhaarFrontImage, { x: margin, y: imgY - h, width: w, height: h });
-      imgY -= h + 30;
-    } else {
-      imagePage.drawText(notProvided, { x: margin, y: imgY - 15, size: 10, font: helveticaFont });
-      imgY -= 40;
-    }
+    const aadhaarFrontImage = await embedImage(pdfDoc, aadhaarFrontBytes);
+    imagePage.drawImage(aadhaarFrontImage, {
+      x: margin,
+      y: imgY - 160,
+      width: 250,
+      height: 160,
+    });
+    imgY -= 160 + 30;
 
     // Aadhaar Back
     drawImageTitle(labels.aadhaarBack, imgY);
     imgY -= 20;
-    const aadhaarBackImage = await embedImage(pdfDoc, aadhaarBackBytes, "image/jpeg");
-    if (aadhaarBackImage) {
-      const dims = aadhaarBackImage.scale(0.3);
-      const w = Math.min(dims.width, 250);
-      const h = Math.min(dims.height, 160);
-      imagePage.drawImage(aadhaarBackImage, { x: margin, y: imgY - h, width: w, height: h });
-      imgY -= h + 30;
-    } else {
-      imagePage.drawText(notProvided, { x: margin, y: imgY - 15, size: 10, font: helveticaFont });
-      imgY -= 40;
-    }
+    const aadhaarBackImage = await embedImage(pdfDoc, aadhaarBackBytes);
+    imagePage.drawImage(aadhaarBackImage, {
+      x: margin,
+      y: imgY - 160,
+      width: 250,
+      height: 160,
+    });
+    imgY -= 160 + 30;
 
-    // Pamphlet Image
+    // Pamphlet
     drawImageTitle(labels.pamphletImage, imgY);
     imgY -= 20;
-    const pamphletImage = await embedImage(pdfDoc, pamphletBytes, "image/jpeg");
-    if (pamphletImage) {
-      const dims = pamphletImage.scale(0.3);
-      const w = Math.min(dims.width, 250);
-      const h = Math.min(dims.height, 180);
-      imagePage.drawImage(pamphletImage, { x: margin, y: imgY - h, width: w, height: h });
-    } else {
-      imagePage.drawText(notProvided, { x: margin, y: imgY - 15, size: 10, font: helveticaFont });
-    }
+    const pamphletImage = await embedImage(pdfDoc, pamphletBytes);
+    imagePage.drawImage(pamphletImage, {
+      x: margin,
+      y: imgY - 180,
+      width: 250,
+      height: 180,
+    });
 
-    // Save PDF
     const pdfBytes = await pdfDoc.save();
-    console.log(`PDF generated, size: ${pdfBytes.length} bytes`);
+    console.log("generate-application-pdf: pdf built", { bytes: pdfBytes.length });
 
-    // Upload PDF to storage
+    // Upload to private bucket
     const timestamp = Date.now();
     const fileName = `${data.user_id}/application_${timestamp}.pdf`;
 
@@ -368,44 +342,30 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (uploadError) {
-      console.error("PDF upload error:", uploadError);
       throw new Error(`Failed to upload PDF: ${uploadError.message}`);
     }
 
-    console.log(`PDF uploaded to: ${fileName}`);
-
-    // Generate signed URL (7 days = 604800 seconds)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from("applications-pdf")
       .createSignedUrl(fileName, 604800);
 
-    if (signedUrlError) {
-      console.error("Signed URL error:", signedUrlError);
-      throw new Error(`Failed to create signed URL: ${signedUrlError.message}`);
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      throw new Error(`Failed to create signed URL: ${signedUrlError?.message || "unknown error"}`);
     }
 
-    console.log("Signed URL generated successfully");
-
     return new Response(
-      JSON.stringify({
-        success: true,
-        pdf_url: signedUrlData.signedUrl,
-        file_name: fileName,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ success: true, pdf_url: signedUrlData.signedUrl, file_name: fileName }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error("Error in generate-application-pdf:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    console.error("generate-application-pdf: error", {
+      message: error?.message || String(error),
+    });
+
+    return new Response(JSON.stringify({ error: error?.message || "Unknown error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
