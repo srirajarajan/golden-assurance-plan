@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -176,11 +175,6 @@ const ApplicationPage: React.FC = () => {
     }
   }, [user]);
 
-  // Initialize EmailJS
-  useEffect(() => {
-    emailjs.init('gq4UP7sZykMwY4aQc');
-  }, []);
-
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
@@ -275,7 +269,7 @@ const ApplicationPage: React.FC = () => {
       const userId = user.id;
       const formData = new FormData(form);
 
-      // Step 1: Validate required image files exist (UI unchanged)
+      // Step 1: Validate required image files exist
       if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file || !pamphletImage.file) {
         throw new Error('Missing required images');
       }
@@ -296,11 +290,10 @@ const ApplicationPage: React.FC = () => {
       const pamphletImagePath = await uploadImageToPrivateStorage(pamphletImage.file, 'pamphlet_image', userId);
       if (!pamphletImagePath) throw new Error('Pamphlet image upload failed');
 
-      // Step 3: Generate PDF (must not start before uploads finish)
-      setSubmitStep(t.generatingPDF);
-      toast({ title: t.generatingPDF });
+      // Step 3: Submit to edge function (PDF + email run in background, returns immediately)
+      setSubmitStep(t.submitting);
 
-      const pdfPayload = {
+      const payload = {
         member_name: (formData.get('member_name') as string)?.trim() || 'Not Provided',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || 'Not Provided',
         gender: (formData.get('gender') as string)?.trim() || 'Not Provided',
@@ -319,7 +312,7 @@ const ApplicationPage: React.FC = () => {
         nominee2_age: (formData.get('nominee2_age') as string)?.trim() || 'Not Provided',
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || 'Not Provided',
         additional_message: (formData.get('additional_message') as string)?.trim() || 'Not Provided',
-        selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil',
+        selected_language: selectedLanguage,
         applicant_photo_path: applicantPhotoPath,
         aadhaar_front_path: aadhaarFrontPath,
         aadhaar_back_path: aadhaarBackPath,
@@ -327,47 +320,25 @@ const ApplicationPage: React.FC = () => {
         user_id: userId,
       };
 
-      const { data: pdfResponse, error: pdfError } = await supabase.functions.invoke('generate-application-pdf', {
-        body: pdfPayload,
+      const { error: fnError } = await supabase.functions.invoke('generate-application-pdf', {
+        body: payload,
       });
 
-      if (pdfError) {
-        throw new Error(`PDF generation failed: ${pdfError.message}`);
+      if (fnError) {
+        throw new Error(`Submission failed: ${fnError.message}`);
       }
 
-      if (!pdfResponse?.pdf_url) {
-        throw new Error('No PDF URL returned from server');
-      }
-
-      // Step 4: Send email with PDF URL only
-      setSubmitStep(t.sendingEmail);
-      toast({ title: t.sendingEmail });
-
-      const emailParams = {
-        member_name: pdfPayload.member_name,
-        mobile_number: pdfPayload.mobile_number,
-        pdf_url: pdfResponse.pdf_url,
-      };
-
-      const emailResponse = await emailjs.send(
-        'service_oayf2od',
-        'template_g6mbhol',
-        emailParams
-      );
-
-      if (emailResponse.status === 200) {
-        toast({
-          title: t.successTitle,
-          description: t.successMessage,
-        });
-        form.reset();
-        removeImage(setApplicantPhoto);
-        removeImage(setAadhaarFront);
-        removeImage(setAadhaarBack);
-        removeImage(setPamphletImage);
-      } else {
-        throw new Error('Email failed');
-      }
+      // Success - PDF generation and email happen in background
+      toast({
+        title: t.successTitle,
+        description: t.successMessage,
+      });
+      
+      form.reset();
+      removeImage(setApplicantPhoto);
+      removeImage(setAadhaarFront);
+      removeImage(setAadhaarBack);
+      removeImage(setPamphletImage);
     } catch (error) {
       console.error('Submit Error:', error);
       toast({

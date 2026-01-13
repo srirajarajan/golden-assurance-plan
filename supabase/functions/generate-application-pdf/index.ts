@@ -3,10 +3,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
+// Declare EdgeRuntime global (Supabase Edge Functions runtime)
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 interface ApplicationData {
   member_name: string;
@@ -111,7 +118,6 @@ async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Arra
 }
 
 async function embedImage(pdfDoc: PDFDocument, imageBytes: Uint8Array): Promise<any> {
-  // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
   const isPng =
     imageBytes.length > 8 &&
     imageBytes[0] === 0x89 &&
@@ -126,25 +132,17 @@ async function embedImage(pdfDoc: PDFDocument, imageBytes: Uint8Array): Promise<
   return isPng ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes);
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// Background task: generate PDF + send email
+async function generatePdfAndSendEmail(data: ApplicationData) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const data: ApplicationData = await req.json();
+    console.log("Background: Starting PDF generation", { user_id: data.user_id });
 
-    // Do not log PII
-    console.log("generate-application-pdf: request received", {
-      user_id: data.user_id,
-      selected_language: data.selected_language,
-    });
-
-    const labels = data.selected_language === "Tamil" ? tamilLabels : englishLabels;
+    const isTamil = data.selected_language === "Tamil" || data.selected_language === "ta";
+    const labels = isTamil ? tamilLabels : englishLabels;
     const notProvided = labels.notProvided;
 
     // Fetch required images
@@ -327,7 +325,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const pdfBytes = await pdfDoc.save();
-    console.log("generate-application-pdf: pdf built", { bytes: pdfBytes.length });
+    console.log("Background: PDF built", { bytes: pdfBytes.length });
 
     // Upload to private bucket
     const timestamp = Date.now();
@@ -342,30 +340,94 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (uploadError) {
-      throw new Error(`Failed to upload PDF: ${uploadError.message}`);
+      console.error("Background: PDF upload failed", uploadError.message);
+      return;
     }
 
+    // Create signed URL (7 days)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from("applications-pdf")
       .createSignedUrl(fileName, 604800);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
-      throw new Error(`Failed to create signed URL: ${signedUrlError?.message || "unknown error"}`);
+      console.error("Background: Signed URL creation failed", signedUrlError?.message);
+      return;
     }
 
+    console.log("Background: PDF uploaded, sending email");
+
+    // Convert PDF to base64 for attachment
+    const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
+
+    // Send email with PDF attached via Resend
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: "William Carey Insurance <onboarding@resend.dev>",
+        to: ["williamcareyfuneral99@gmail.com"],
+        subject: `New Application - ${safeText(data.member_name, "Unknown")}`,
+        html: `
+          <h1>New Insurance Application Received</h1>
+          <p><strong>Member Name:</strong> ${safeText(data.member_name, "Not Provided")}</p>
+          <p><strong>Mobile Number:</strong> ${safeText(data.mobile_number, "Not Provided")}</p>
+          <p><strong>Language:</strong> ${isTamil ? "Tamil" : "English"}</p>
+          <p>Please find the complete application PDF attached.</p>
+          <p><a href="${signedUrlData.signedUrl}">Download PDF (valid for 7 days)</a></p>
+        `,
+        attachments: [
+          {
+            filename: `application_${safeText(data.member_name, "applicant").replace(/\s+/g, "_")}.pdf`,
+            content: pdfBase64,
+          },
+        ],
+      }),
+    });
+
+    const emailResult = await emailResponse.json();
+    
+    if (emailResponse.ok) {
+      console.log("Background: Email sent successfully", emailResult);
+    } else {
+      console.error("Background: Email failed", emailResult);
+    }
+  } catch (error: any) {
+    console.error("Background: Error in PDF generation or email", error?.message || String(error));
+  }
+}
+
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const data: ApplicationData = await req.json();
+
+    console.log("generate-application-pdf: request received, starting background task", {
+      user_id: data.user_id,
+      selected_language: data.selected_language,
+    });
+
+    // Start background task - DO NOT await
+    EdgeRuntime.waitUntil(generatePdfAndSendEmail(data));
+
+    // Return immediately with 200
     return new Response(
-      JSON.stringify({ success: true, pdf_url: signedUrlData.signedUrl, file_name: fileName }),
+      JSON.stringify({ success: true, message: "Application received. PDF will be generated and emailed." }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error("generate-application-pdf: error", {
-      message: error?.message || String(error),
-    });
+    console.error("generate-application-pdf: error parsing request", error?.message || String(error));
 
-    return new Response(JSON.stringify({ error: error?.message || "Unknown error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    // ALWAYS return 200 per requirements
+    return new Response(
+      JSON.stringify({ success: false, message: "Request received but could not be processed." }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
   }
 };
 
