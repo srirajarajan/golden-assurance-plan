@@ -247,7 +247,7 @@ const ApplicationPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     if (!user) {
       toast({
         title: t.loginRequired,
@@ -275,46 +275,28 @@ const ApplicationPage: React.FC = () => {
       const userId = user.id;
       const formData = new FormData(form);
 
-      // Step 1: Upload images to private storage
+      // Step 1: Validate required image files exist (UI unchanged)
+      if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file || !pamphletImage.file) {
+        throw new Error('Missing required images');
+      }
+
+      // Step 2: Upload images sequentially (fail-fast)
       setSubmitStep(t.uploadingImages);
       toast({ title: t.uploadingImages });
 
-      const uploadPromises: Promise<string | null>[] = [];
+      const applicantPhotoPath = await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId);
+      if (!applicantPhotoPath) throw new Error('Applicant photo upload failed');
 
-      if (applicantPhoto.file) {
-        uploadPromises.push(uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId));
-      } else {
-        uploadPromises.push(Promise.resolve(null));
-      }
+      const aadhaarFrontPath = await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId);
+      if (!aadhaarFrontPath) throw new Error('Aadhaar front upload failed');
 
-      if (aadhaarFront.file) {
-        uploadPromises.push(uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId));
-      } else {
-        uploadPromises.push(Promise.resolve(null));
-      }
+      const aadhaarBackPath = await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId);
+      if (!aadhaarBackPath) throw new Error('Aadhaar back upload failed');
 
-      if (aadhaarBack.file) {
-        uploadPromises.push(uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId));
-      } else {
-        uploadPromises.push(Promise.resolve(null));
-      }
+      const pamphletImagePath = await uploadImageToPrivateStorage(pamphletImage.file, 'pamphlet_image', userId);
+      if (!pamphletImagePath) throw new Error('Pamphlet image upload failed');
 
-      if (pamphletImage.file) {
-        uploadPromises.push(uploadImageToPrivateStorage(pamphletImage.file, 'pamphlet_image', userId));
-      } else {
-        uploadPromises.push(Promise.resolve(null));
-      }
-
-      const [applicantPhotoPath, aadhaarFrontPath, aadhaarBackPath, pamphletImagePath] = await Promise.all(uploadPromises);
-
-      console.log('Images uploaded to private storage:', {
-        applicantPhotoPath,
-        aadhaarFrontPath,
-        aadhaarBackPath,
-        pamphletImagePath,
-      });
-
-      // Step 2: Generate PDF via edge function
+      // Step 3: Generate PDF (must not start before uploads finish)
       setSubmitStep(t.generatingPDF);
       toast({ title: t.generatingPDF });
 
@@ -338,21 +320,18 @@ const ApplicationPage: React.FC = () => {
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || 'Not Provided',
         additional_message: (formData.get('additional_message') as string)?.trim() || 'Not Provided',
         selected_language: selectedLanguage === 'en' ? 'English' : 'Tamil',
-        applicant_photo_path: applicantPhotoPath || 'Not Provided',
-        aadhaar_front_path: aadhaarFrontPath || 'Not Provided',
-        aadhaar_back_path: aadhaarBackPath || 'Not Provided',
-        pamphlet_image_path: pamphletImagePath || 'Not Provided',
+        applicant_photo_path: applicantPhotoPath,
+        aadhaar_front_path: aadhaarFrontPath,
+        aadhaar_back_path: aadhaarBackPath,
+        pamphlet_image_path: pamphletImagePath,
         user_id: userId,
       };
-
-      console.log('Calling PDF generation edge function...');
 
       const { data: pdfResponse, error: pdfError } = await supabase.functions.invoke('generate-application-pdf', {
         body: pdfPayload,
       });
 
       if (pdfError) {
-        console.error('PDF generation error:', pdfError);
         throw new Error(`PDF generation failed: ${pdfError.message}`);
       }
 
@@ -360,9 +339,7 @@ const ApplicationPage: React.FC = () => {
         throw new Error('No PDF URL returned from server');
       }
 
-      console.log('PDF generated successfully:', pdfResponse.pdf_url);
-
-      // Step 3: Send email with PDF URL only
+      // Step 4: Send email with PDF URL only
       setSubmitStep(t.sendingEmail);
       toast({ title: t.sendingEmail });
 
@@ -372,15 +349,11 @@ const ApplicationPage: React.FC = () => {
         pdf_url: pdfResponse.pdf_url,
       };
 
-      console.log('Sending email with PDF URL:', emailParams);
-
       const emailResponse = await emailjs.send(
         'service_oayf2od',
         'template_g6mbhol',
         emailParams
       );
-
-      console.log('EmailJS Response:', emailResponse);
 
       if (emailResponse.status === 200) {
         toast({
