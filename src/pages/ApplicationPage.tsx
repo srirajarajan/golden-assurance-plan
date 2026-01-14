@@ -13,7 +13,6 @@ import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase
 
 type Language = 'en' | 'ta';
 
-// Complete translations - STRICT language separation
 const formTranslations = {
   en: {
     title: "Funeral Insurance Application",
@@ -148,7 +147,7 @@ const formTranslations = {
 interface ImageState {
   file: File | null;
   preview: string;
-  path: string; // Storage path, not URL
+  path: string;
 }
 
 const ApplicationPage: React.FC = () => {
@@ -159,7 +158,6 @@ const ApplicationPage: React.FC = () => {
   const [submitStep, setSubmitStep] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('ta');
   
-  // Image states - now storing paths instead of URLs
   const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', path: '' });
@@ -168,14 +166,12 @@ const ApplicationPage: React.FC = () => {
   const { toast } = useToast();
   const t = formTranslations[selectedLanguage];
 
-  // Check user status on mount
   useEffect(() => {
     if (user) {
       checkUserStatus();
     }
   }, [user]);
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       const previews = [applicantPhoto.preview, aadhaarFront.preview, aadhaarBack.preview, pamphletImage.preview];
@@ -183,10 +179,8 @@ const ApplicationPage: React.FC = () => {
         if (p?.startsWith('blob:')) URL.revokeObjectURL(p);
       });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Image handler
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setImageState: React.Dispatch<React.SetStateAction<ImageState>>
@@ -269,49 +263,45 @@ const ApplicationPage: React.FC = () => {
       const userId = user.id;
       const formData = new FormData(form);
 
-      // Step 1: Validate required image files exist
       if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file || !pamphletImage.file) {
-        throw new Error('Missing required images');
+        throw new Error('Please upload all required images');
       }
 
-      // Step 2: Upload images sequentially (fail-fast)
       setSubmitStep(t.uploadingImages);
-      toast({ title: t.uploadingImages });
 
       const applicantPhotoPath = await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId);
-      if (!applicantPhotoPath) throw new Error('Applicant photo upload failed');
+      if (!applicantPhotoPath) throw new Error('Failed to upload applicant photo');
 
       const aadhaarFrontPath = await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId);
-      if (!aadhaarFrontPath) throw new Error('Aadhaar front upload failed');
+      if (!aadhaarFrontPath) throw new Error('Failed to upload Aadhaar front');
 
       const aadhaarBackPath = await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId);
-      if (!aadhaarBackPath) throw new Error('Aadhaar back upload failed');
+      if (!aadhaarBackPath) throw new Error('Failed to upload Aadhaar back');
 
       const pamphletImagePath = await uploadImageToPrivateStorage(pamphletImage.file, 'pamphlet_image', userId);
-      if (!pamphletImagePath) throw new Error('Pamphlet image upload failed');
+      if (!pamphletImagePath) throw new Error('Failed to upload pamphlet image');
 
-      // Step 3: Submit to edge function (PDF + email run in background, returns immediately)
       setSubmitStep(t.submitting);
 
       const payload = {
-        member_name: (formData.get('member_name') as string)?.trim() || 'Not Provided',
-        guardian_name: (formData.get('guardian_name') as string)?.trim() || 'Not Provided',
-        gender: (formData.get('gender') as string)?.trim() || 'Not Provided',
-        occupation: (formData.get('occupation') as string)?.trim() || 'Not Provided',
-        ration_card: (formData.get('ration_card') as string)?.trim() || 'Not Provided',
-        annual_income: (formData.get('annual_income') as string)?.trim() || 'Not Provided',
-        aadhaar_number: (formData.get('aadhaar_number') as string)?.trim() || 'Not Provided',
-        mobile_number: (formData.get('mobile_number') as string)?.trim() || 'Not Provided',
-        address: (formData.get('address') as string)?.trim() || 'Not Provided',
-        nominee1_name: (formData.get('nominee1_name') as string)?.trim() || 'Not Provided',
-        nominee1_gender: (formData.get('nominee1_gender') as string)?.trim() || 'Not Provided',
-        nominee1_age: (formData.get('nominee1_age') as string)?.trim() || 'Not Provided',
-        nominee1_relation: (formData.get('nominee1_relation') as string)?.trim() || 'Not Provided',
-        nominee2_name: (formData.get('nominee2_name') as string)?.trim() || 'Not Provided',
-        nominee2_gender: (formData.get('nominee2_gender') as string)?.trim() || 'Not Provided',
-        nominee2_age: (formData.get('nominee2_age') as string)?.trim() || 'Not Provided',
-        nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || 'Not Provided',
-        additional_message: (formData.get('additional_message') as string)?.trim() || 'Not Provided',
+        member_name: (formData.get('member_name') as string)?.trim() || '',
+        guardian_name: (formData.get('guardian_name') as string)?.trim() || '',
+        gender: (formData.get('gender') as string)?.trim() || '',
+        occupation: (formData.get('occupation') as string)?.trim() || '',
+        ration_card: (formData.get('ration_card') as string)?.trim() || '',
+        annual_income: (formData.get('annual_income') as string)?.trim() || '',
+        aadhaar_number: (formData.get('aadhaar_number') as string)?.trim() || '',
+        mobile_number: (formData.get('mobile_number') as string)?.trim() || '',
+        address: (formData.get('address') as string)?.trim() || '',
+        nominee1_name: (formData.get('nominee1_name') as string)?.trim() || '',
+        nominee1_gender: (formData.get('nominee1_gender') as string)?.trim() || '',
+        nominee1_age: (formData.get('nominee1_age') as string)?.trim() || '',
+        nominee1_relation: (formData.get('nominee1_relation') as string)?.trim() || '',
+        nominee2_name: (formData.get('nominee2_name') as string)?.trim() || '',
+        nominee2_gender: (formData.get('nominee2_gender') as string)?.trim() || '',
+        nominee2_age: (formData.get('nominee2_age') as string)?.trim() || '',
+        nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '',
+        additional_message: (formData.get('additional_message') as string)?.trim() || '',
         selected_language: selectedLanguage,
         applicant_photo_path: applicantPhotoPath,
         aadhaar_front_path: aadhaarFrontPath,
@@ -320,15 +310,10 @@ const ApplicationPage: React.FC = () => {
         user_id: userId,
       };
 
-      const { error: fnError } = await supabase.functions.invoke('generate-application-pdf', {
+      await supabase.functions.invoke('generate-application-pdf', {
         body: payload,
       });
 
-      if (fnError) {
-        throw new Error(`Submission failed: ${fnError.message}`);
-      }
-
-      // Success - PDF generation and email happen in background
       toast({
         title: t.successTitle,
         description: t.successMessage,
@@ -339,11 +324,11 @@ const ApplicationPage: React.FC = () => {
       removeImage(setAadhaarFront);
       removeImage(setAadhaarBack);
       removeImage(setPamphletImage);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Submit Error:', error);
       toast({
         title: t.errorTitle,
-        description: t.errorMessage,
+        description: error?.message || t.errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -352,7 +337,6 @@ const ApplicationPage: React.FC = () => {
     }
   };
 
-  // Image Upload Component
   const ImageUpload = ({
     label,
     preview,
@@ -402,7 +386,6 @@ const ApplicationPage: React.FC = () => {
     </div>
   );
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -411,7 +394,6 @@ const ApplicationPage: React.FC = () => {
     );
   }
 
-  // Not logged in
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
@@ -429,7 +411,6 @@ const ApplicationPage: React.FC = () => {
     );
   }
 
-  // Account pending approval
   if (userStatus === 'pending') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
@@ -444,7 +425,6 @@ const ApplicationPage: React.FC = () => {
     );
   }
 
-  // Account rejected
   if (userStatus === 'rejected') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
@@ -470,7 +450,6 @@ const ApplicationPage: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
-            {/* Language Selector */}
             <div className="flex justify-end mb-4">
               <div className="inline-flex rounded-lg border border-input bg-background p-1">
                 <button
@@ -509,7 +488,6 @@ const ApplicationPage: React.FC = () => {
           <CardContent className="p-6">
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
               
-              {/* 1. Applicant Photo */}
               <ImageUpload
                 label={t.applicantPhoto}
                 preview={applicantPhoto.preview}
@@ -518,7 +496,6 @@ const ApplicationPage: React.FC = () => {
                 icon={Camera}
               />
 
-              {/* 2-10. Applicant Details */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <User className="w-5 h-5 text-primary" />
@@ -526,19 +503,16 @@ const ApplicationPage: React.FC = () => {
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* 2. Member Name */}
                   <div>
                     <Label htmlFor="member_name">{t.memberName}</Label>
                     <Input id="member_name" name="member_name" placeholder={t.memberNamePlaceholder} className="mt-1" />
                   </div>
                   
-                  {/* 3. Guardian Name */}
                   <div>
                     <Label htmlFor="guardian_name">{t.guardianName}</Label>
                     <Input id="guardian_name" name="guardian_name" placeholder={t.guardianNamePlaceholder} className="mt-1" />
                   </div>
                   
-                  {/* 4. Gender */}
                   <div>
                     <Label htmlFor="gender">{t.gender}</Label>
                     <select 
@@ -553,7 +527,6 @@ const ApplicationPage: React.FC = () => {
                     </select>
                   </div>
                   
-                  {/* 5. Occupation */}
                   <div>
                     <Label htmlFor="occupation" className="flex items-center gap-1">
                       <Briefcase className="w-4 h-4" />
@@ -562,7 +535,6 @@ const ApplicationPage: React.FC = () => {
                     <Input id="occupation" name="occupation" placeholder={t.occupationPlaceholder} className="mt-1" />
                   </div>
                   
-                  {/* 6. Ration Card */}
                   <div>
                     <Label htmlFor="ration_card" className="flex items-center gap-1">
                       <CreditCard className="w-4 h-4" />
@@ -571,7 +543,6 @@ const ApplicationPage: React.FC = () => {
                     <Input id="ration_card" name="ration_card" placeholder={t.rationCardPlaceholder} className="mt-1" />
                   </div>
                   
-                  {/* 7. Annual Income */}
                   <div>
                     <Label htmlFor="annual_income" className="flex items-center gap-1">
                       <IndianRupee className="w-4 h-4" />
@@ -580,7 +551,6 @@ const ApplicationPage: React.FC = () => {
                     <Input id="annual_income" name="annual_income" placeholder={t.annualIncomePlaceholder} className="mt-1" />
                   </div>
                   
-                  {/* 8. Aadhaar Number */}
                   <div>
                     <Label htmlFor="aadhaar_number" className="flex items-center gap-1">
                       <Shield className="w-4 h-4" />
@@ -589,7 +559,6 @@ const ApplicationPage: React.FC = () => {
                     <Input id="aadhaar_number" name="aadhaar_number" placeholder={t.aadhaarPlaceholder} maxLength={14} className="mt-1" />
                   </div>
                   
-                  {/* 9. Mobile Number */}
                   <div>
                     <Label htmlFor="mobile_number" className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
@@ -599,7 +568,6 @@ const ApplicationPage: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* 10. Address */}
                 <div>
                   <Label htmlFor="address" className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
@@ -609,7 +577,6 @@ const ApplicationPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 11-12. Aadhaar Images */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-primary" />
@@ -633,7 +600,6 @@ const ApplicationPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Pamphlet Image */}
               <ImageUpload
                 label={t.pamphletImage}
                 preview={pamphletImage.preview}
@@ -642,7 +608,6 @@ const ApplicationPage: React.FC = () => {
                 icon={Image}
               />
 
-              {/* Nominee 1 - Required */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
@@ -687,7 +652,6 @@ const ApplicationPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Nominee 2 - Optional */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
@@ -732,7 +696,6 @@ const ApplicationPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Additional Message */}
               <div className="space-y-2">
                 <Label htmlFor="additional_message">{t.additionalMessage}</Label>
                 <Textarea 
@@ -743,7 +706,6 @@ const ApplicationPage: React.FC = () => {
                 />
               </div>
 
-              {/* Submit Button */}
               <Button 
                 type="submit" 
                 className="w-full text-lg py-6"
