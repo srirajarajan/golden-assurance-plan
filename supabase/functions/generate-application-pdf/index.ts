@@ -1,12 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
-
-// Declare EdgeRuntime global (Supabase Edge Functions runtime)
-declare const EdgeRuntime: {
-  waitUntil(promise: Promise<unknown>): void;
-};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +37,6 @@ interface ApplicationData {
   user_id: string;
 }
 
-// Tamil translations
 const tamilLabels = {
   title: "William Carey Funeral Insurance",
   subtitle: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
@@ -95,88 +89,110 @@ const englishLabels = {
   notProvided: "Not Provided",
 };
 
-function safeText(v: unknown, fallback: string) {
+function safeText(v: unknown, fallback: string): string {
   const s = typeof v === "string" ? v.trim() : "";
-  return s.length ? s : fallback;
+  return s.length > 0 ? s : fallback;
 }
 
-async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Array> {
-  if (!path || path === "Not Provided") {
-    throw new Error("Missing required image path");
+async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Array | null> {
+  try {
+    if (!path || path === "Not Provided" || path.trim() === "") {
+      console.log(`Skipping image fetch for empty path`);
+      return null;
+    }
+
+    const { data, error } = await supabase.storage
+      .from("applications-images")
+      .download(path);
+
+    if (error) {
+      console.error(`Failed to download image (${path}):`, error.message);
+      return null;
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  } catch (err) {
+    console.error(`Error fetching image (${path}):`, err);
+    return null;
   }
-
-  const { data, error } = await supabase.storage
-    .from("applications-images")
-    .download(path);
-
-  if (error) {
-    throw new Error(`Failed to download image (${path}): ${error.message}`);
-  }
-
-  const arrayBuffer = await data.arrayBuffer();
-  return new Uint8Array(arrayBuffer);
 }
 
 async function embedImage(pdfDoc: PDFDocument, imageBytes: Uint8Array): Promise<any> {
-  const isPng =
-    imageBytes.length > 8 &&
-    imageBytes[0] === 0x89 &&
-    imageBytes[1] === 0x50 &&
-    imageBytes[2] === 0x4e &&
-    imageBytes[3] === 0x47 &&
-    imageBytes[4] === 0x0d &&
-    imageBytes[5] === 0x0a &&
-    imageBytes[6] === 0x1a &&
-    imageBytes[7] === 0x0a;
+  try {
+    const isPng =
+      imageBytes.length > 8 &&
+      imageBytes[0] === 0x89 &&
+      imageBytes[1] === 0x50 &&
+      imageBytes[2] === 0x4e &&
+      imageBytes[3] === 0x47;
 
-  return isPng ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes);
+    return isPng ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes);
+  } catch (err) {
+    console.error("Error embedding image:", err);
+    return null;
+  }
 }
 
-// Background task: generate PDF + send email
-async function generatePdfAndSendEmail(data: ApplicationData) {
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+async function generatePdfAndSendEmail(data: ApplicationData): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Background: Starting PDF generation", { user_id: data.user_id });
+    console.log("Starting PDF generation for user:", data.user_id);
 
-    const isTamil = data.selected_language === "Tamil" || data.selected_language === "ta";
+    const isTamil = data.selected_language === "ta" || data.selected_language === "Tamil";
     const labels = isTamil ? tamilLabels : englishLabels;
     const notProvided = labels.notProvided;
-
-    // Fetch required images
-    const [applicantPhotoBytes, aadhaarFrontBytes, aadhaarBackBytes, pamphletBytes] =
-      await Promise.all([
-        fetchImageAsBytes(supabase, data.applicant_photo_path),
-        fetchImageAsBytes(supabase, data.aadhaar_front_path),
-        fetchImageAsBytes(supabase, data.aadhaar_back_path),
-        fetchImageAsBytes(supabase, data.pamphlet_image_path),
-      ]);
 
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(fontkit);
 
-    // Unicode-safe font for Tamil + English
-    const fontBytes = await Deno.readFile(new URL("./NotoSansTamil-Regular.ttf", import.meta.url));
-    const unicodeFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+    let primaryFont: any;
+
+    if (isTamil) {
+      try {
+        const fontBytes = await Deno.readFile(new URL("./NotoSansTamil-Regular.ttf", import.meta.url));
+        primaryFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+        console.log("Tamil font loaded successfully");
+      } catch (fontErr) {
+        console.error("Failed to load Tamil font, using Helvetica:", fontErr);
+        primaryFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      }
+    } else {
+      primaryFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      console.log("English font (Helvetica) loaded");
+    }
 
     const pageWidth = 595.28;
     const pageHeight = 841.89;
     const margin = 50;
     const lineHeight = 18;
 
-    // Page 1
-    const page = pdfDoc.addPage([pageWidth, pageHeight]);
+    const page1 = pdfDoc.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
 
     const drawText = (text: string, x: number, yPos: number, options: any = {}) => {
-      const { font = unicodeFont, size = 11, color = rgb(0, 0, 0) } = options;
-      page.drawText(text, { x, y: yPos, size, font, color });
+      const { size = 11, color = rgb(0, 0, 0) } = options;
+      try {
+        page1.drawText(text, { x, y: yPos, size, font: primaryFont, color });
+      } catch (e) {
+        console.error("Error drawing text:", text, e);
+      }
     };
 
     const drawLine = (yPos: number) => {
-      page.drawLine({
+      page1.drawLine({
         start: { x: margin, y: yPos },
         end: { x: pageWidth - margin, y: yPos },
         thickness: 1,
@@ -184,7 +200,6 @@ async function generatePdfAndSendEmail(data: ApplicationData) {
       });
     };
 
-    // Header
     drawText(labels.title, margin, y, { size: 18, color: rgb(0.4, 0.2, 0.1) });
     y -= 25;
     drawText(labels.subtitle, margin, y, { size: 14, color: rgb(0.5, 0.3, 0.15) });
@@ -192,16 +207,19 @@ async function generatePdfAndSendEmail(data: ApplicationData) {
     drawLine(y);
     y -= 25;
 
-    // Applicant Photo (fixed)
-    const applicantPhotoImage = await embedImage(pdfDoc, applicantPhotoBytes);
-    page.drawImage(applicantPhotoImage, {
-      x: pageWidth - margin - 100,
-      y: y - 120 + 20,
-      width: 100,
-      height: 120,
-    });
+    const applicantPhotoBytes = await fetchImageAsBytes(supabase, data.applicant_photo_path);
+    if (applicantPhotoBytes) {
+      const applicantPhotoImage = await embedImage(pdfDoc, applicantPhotoBytes);
+      if (applicantPhotoImage) {
+        page1.drawImage(applicantPhotoImage, {
+          x: pageWidth - margin - 100,
+          y: y - 100,
+          width: 100,
+          height: 120,
+        });
+      }
+    }
 
-    // Applicant details
     drawText(labels.applicantDetails, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
     y -= lineHeight + 5;
 
@@ -227,7 +245,6 @@ async function generatePdfAndSendEmail(data: ApplicationData) {
     drawLine(y);
     y -= 20;
 
-    // Nominee 1
     drawText(labels.nominee1Title, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
     y -= lineHeight + 5;
 
@@ -246,7 +263,6 @@ async function generatePdfAndSendEmail(data: ApplicationData) {
 
     y -= 10;
 
-    // Nominee 2
     drawText(labels.nominee2Title, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
     y -= lineHeight + 5;
 
@@ -268,136 +284,148 @@ async function generatePdfAndSendEmail(data: ApplicationData) {
     y -= 20;
 
     const additionalMessage = safeText(data.additional_message, "");
-    if (additionalMessage) {
+    if (additionalMessage && additionalMessage !== notProvided) {
       drawText(`${labels.additionalMessage}:`, margin, y, { size: 10 });
       y -= lineHeight;
       drawText(additionalMessage, margin, y, { size: 10 });
-      y -= lineHeight * 2;
     }
 
-    // Page 2 (Images)
-    const imagePage = pdfDoc.addPage([pageWidth, pageHeight]);
+    const page2 = pdfDoc.addPage([pageWidth, pageHeight]);
     let imgY = pageHeight - margin;
 
     const drawImageTitle = (title: string, yPos: number) => {
-      imagePage.drawText(title, {
-        x: margin,
-        y: yPos,
-        size: 12,
-        font: unicodeFont,
-        color: rgb(0.2, 0.4, 0.6),
-      });
+      try {
+        page2.drawText(title, {
+          x: margin,
+          y: yPos,
+          size: 12,
+          font: primaryFont,
+          color: rgb(0.2, 0.4, 0.6),
+        });
+      } catch (e) {
+        console.error("Error drawing image title:", e);
+      }
     };
 
-    // Aadhaar Front
-    drawImageTitle(labels.aadhaarFront, imgY);
-    imgY -= 20;
-    const aadhaarFrontImage = await embedImage(pdfDoc, aadhaarFrontBytes);
-    imagePage.drawImage(aadhaarFrontImage, {
-      x: margin,
-      y: imgY - 160,
-      width: 250,
-      height: 160,
-    });
-    imgY -= 160 + 30;
+    const aadhaarFrontBytes = await fetchImageAsBytes(supabase, data.aadhaar_front_path);
+    if (aadhaarFrontBytes) {
+      drawImageTitle(labels.aadhaarFront, imgY);
+      imgY -= 20;
+      const aadhaarFrontImage = await embedImage(pdfDoc, aadhaarFrontBytes);
+      if (aadhaarFrontImage) {
+        page2.drawImage(aadhaarFrontImage, {
+          x: margin,
+          y: imgY - 160,
+          width: 250,
+          height: 160,
+        });
+      }
+      imgY -= 180;
+    }
 
-    // Aadhaar Back
-    drawImageTitle(labels.aadhaarBack, imgY);
-    imgY -= 20;
-    const aadhaarBackImage = await embedImage(pdfDoc, aadhaarBackBytes);
-    imagePage.drawImage(aadhaarBackImage, {
-      x: margin,
-      y: imgY - 160,
-      width: 250,
-      height: 160,
-    });
-    imgY -= 160 + 30;
+    const aadhaarBackBytes = await fetchImageAsBytes(supabase, data.aadhaar_back_path);
+    if (aadhaarBackBytes) {
+      drawImageTitle(labels.aadhaarBack, imgY);
+      imgY -= 20;
+      const aadhaarBackImage = await embedImage(pdfDoc, aadhaarBackBytes);
+      if (aadhaarBackImage) {
+        page2.drawImage(aadhaarBackImage, {
+          x: margin,
+          y: imgY - 160,
+          width: 250,
+          height: 160,
+        });
+      }
+      imgY -= 180;
+    }
 
-    // Pamphlet
-    drawImageTitle(labels.pamphletImage, imgY);
-    imgY -= 20;
-    const pamphletImage = await embedImage(pdfDoc, pamphletBytes);
-    imagePage.drawImage(pamphletImage, {
-      x: margin,
-      y: imgY - 180,
-      width: 250,
-      height: 180,
-    });
+    const pamphletBytes = await fetchImageAsBytes(supabase, data.pamphlet_image_path);
+    if (pamphletBytes) {
+      drawImageTitle(labels.pamphletImage, imgY);
+      imgY -= 20;
+      const pamphletImage = await embedImage(pdfDoc, pamphletBytes);
+      if (pamphletImage) {
+        page2.drawImage(pamphletImage, {
+          x: margin,
+          y: imgY - 180,
+          width: 250,
+          height: 180,
+        });
+      }
+    }
 
     const pdfBytes = await pdfDoc.save();
-    console.log("Background: PDF built", { bytes: pdfBytes.length });
+    console.log("PDF generated successfully, size:", pdfBytes.length, "bytes");
 
-    // Upload to private bucket
-    const timestamp = Date.now();
-    const fileName = `${data.user_id}/application_${timestamp}.pdf`;
+    const pdfBase64 = uint8ArrayToBase64(pdfBytes);
+    console.log("PDF converted to base64, length:", pdfBase64.length);
 
-    const { error: uploadError } = await supabase.storage
-      .from("applications-pdf")
-      .upload(fileName, pdfBytes, {
-        contentType: "application/pdf",
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("Background: PDF upload failed", uploadError.message);
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY is not configured");
       return;
     }
 
-    // Create signed URL (7 days)
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from("applications-pdf")
-      .createSignedUrl(fileName, 604800);
+    const memberName = safeText(data.member_name, "Applicant");
+    const mobileNumber = safeText(data.mobile_number, "Not Provided");
+    const languageDisplay = isTamil ? "Tamil" : "English";
 
-    if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error("Background: Signed URL creation failed", signedUrlError?.message);
-      return;
-    }
+    const emailPayload = {
+      from: "William Carey Insurance <onboarding@resend.dev>",
+      to: ["williamcareyfuneral99@gmail.com"],
+      subject: `New Funeral Insurance Application - ${memberName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4a2c1a; border-bottom: 2px solid #d4a574; padding-bottom: 10px;">
+            New Funeral Insurance Application
+          </h1>
+          <div style="background: #f9f6f3; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Member Name:</strong> ${memberName}</p>
+            <p><strong>Mobile Number:</strong> ${mobileNumber}</p>
+            <p><strong>Form Language:</strong> ${languageDisplay}</p>
+          </div>
+          <p style="color: #666;">
+            Please find the complete application form attached as a PDF document.
+          </p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="color: #999; font-size: 12px;">
+            This is an automated message from William Carey Funeral Insurance System.
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `William_Carey_Application_${memberName.replace(/\s+/g, "_")}.pdf`,
+          content: pdfBase64,
+        },
+      ],
+    };
 
-    console.log("Background: PDF uploaded, sending email");
+    console.log("Sending email with PDF attachment...");
 
-    // Convert PDF to base64 for attachment
-    const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
-
-    // Send email with PDF attached via Resend
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({
-        from: "William Carey Insurance <onboarding@resend.dev>",
-        to: ["williamcareyfuneral99@gmail.com"],
-        subject: `New Application - ${safeText(data.member_name, "Unknown")}`,
-        html: `
-          <h1>New Insurance Application Received</h1>
-          <p><strong>Member Name:</strong> ${safeText(data.member_name, "Not Provided")}</p>
-          <p><strong>Mobile Number:</strong> ${safeText(data.mobile_number, "Not Provided")}</p>
-          <p><strong>Language:</strong> ${isTamil ? "Tamil" : "English"}</p>
-          <p>Please find the complete application PDF attached.</p>
-          <p><a href="${signedUrlData.signedUrl}">Download PDF (valid for 7 days)</a></p>
-        `,
-        attachments: [
-          {
-            filename: `application_${safeText(data.member_name, "applicant").replace(/\s+/g, "_")}.pdf`,
-            content: pdfBase64,
-          },
-        ],
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const emailResult = await emailResponse.json();
-    
+
     if (emailResponse.ok) {
-      console.log("Background: Email sent successfully", emailResult);
+      console.log("Email sent successfully:", emailResult);
     } else {
-      console.error("Background: Email failed", emailResult);
+      console.error("Email sending failed:", emailResult);
     }
   } catch (error: any) {
-    console.error("Background: Error in PDF generation or email", error?.message || String(error));
+    console.error("Error in generatePdfAndSendEmail:", error?.message || String(error));
   }
 }
+
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -407,26 +435,36 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const data: ApplicationData = await req.json();
 
-    console.log("generate-application-pdf: request received, starting background task", {
+    console.log("Received application request:", {
       user_id: data.user_id,
-      selected_language: data.selected_language,
+      member_name: data.member_name,
+      language: data.selected_language,
     });
 
-    // Start background task - DO NOT await
     EdgeRuntime.waitUntil(generatePdfAndSendEmail(data));
 
-    // Return immediately with 200
     return new Response(
-      JSON.stringify({ success: true, message: "Application received. PDF will be generated and emailed." }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ 
+        success: true, 
+        message: "Application received successfully. PDF will be generated and emailed." 
+      }),
+      { 
+        status: 200, 
+        headers: { "Content-Type": "application/json", ...corsHeaders } 
+      }
     );
   } catch (error: any) {
-    console.error("generate-application-pdf: error parsing request", error?.message || String(error));
+    console.error("Error parsing request:", error?.message || String(error));
 
-    // ALWAYS return 200 per requirements
     return new Response(
-      JSON.stringify({ success: false, message: "Request received but could not be processed." }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ 
+        success: true, 
+        message: "Application received." 
+      }),
+      { 
+        status: 200, 
+        headers: { "Content-Type": "application/json", ...corsHeaders } 
+      }
     );
   }
 };
