@@ -310,8 +310,22 @@ const ApplicationPage: React.FC = () => {
         user_id: userId,
       };
 
-      await supabase.functions.invoke('generate-application-pdf', {
-        body: payload,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
+      const supabaseUrl = (supabase as any).supabaseUrl as string;
+      const supabaseKey = (supabase as any).supabaseKey as string;
+
+      await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(supabaseKey ? { apikey: supabaseKey } : {}),
+        },
+        body: JSON.stringify({
+          ...payload,
+          language: selectedLanguage,
+        }),
       });
 
       toast({
