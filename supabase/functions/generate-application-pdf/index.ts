@@ -2,13 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import nodemailer from "https://esm.sh/nodemailer@6.9.10";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const GMAIL_USER = Deno.env.get("GMAIL_USER");
+const GMAIL_PASS = Deno.env.get("GMAIL_APP_PASSWORD");
 
 interface ApplicationData {
   member_name: string;
@@ -133,21 +135,12 @@ async function embedImage(pdfDoc: PDFDocument, imageBytes: Uint8Array): Promise<
   }
 }
 
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
 function getLanguage(data: ApplicationData): "ta" | "en" {
   const v = (data.language ?? data.selected_language ?? "").toString().trim().toLowerCase();
   return v === "ta" || v === "tamil" ? "ta" : "en";
 }
 
-async function buildPdfBase64(data: ApplicationData): Promise<string> {
+async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -354,50 +347,45 @@ async function buildPdfBase64(data: ApplicationData): Promise<string> {
   }
 
   const pdfBytes = await pdfDoc.save();
-  console.log("PDF generated");
+  console.log("PDF generated successfully");
 
-  const pdfBase64 = uint8ArrayToBase64(pdfBytes);
-  return pdfBase64;
+  return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBase64: string): Promise<void> {
-  if (!RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is not configured");
+async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
+  if (!GMAIL_USER || !GMAIL_PASS) {
+    throw new Error("GMAIL_USER or GMAIL_APP_PASSWORD is not configured");
   }
 
-  const emailPayload = {
-    from: "onboarding@resend.dev",
-    to: ["williamcareyfuneral99@gmail.com"],
+  console.log("Creating Gmail SMTP transporter...");
+
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_PASS,
+    },
+  });
+
+  console.log("Sending email via Gmail SMTP...");
+
+  const info = await transporter.sendMail({
+    from: `"William Carey Funeral Insurance" <${GMAIL_USER}>`,
+    to: "williamcareyfuneral99@gmail.com",
     subject: "New Funeral Insurance Application",
-    html: "\nNew application received. PDF attached.\n",
+    text: "New application received. PDF attached.",
     attachments: [
       {
         filename: "William_Carey_Application.pdf",
-        content: pdfBase64,
+        content: pdfBuffer,
+        contentType: "application/pdf",
       },
     ],
-  };
-
-  console.log("Sending email...");
-
-  const emailResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-    },
-    body: JSON.stringify(emailPayload),
   });
 
-  const responseText = await emailResponse.text();
-  console.log("Resend response body:", responseText);
-
-  if (!emailResponse.ok) {
-    console.error("Resend email failed with status:", emailResponse.status);
-    throw new Error(`Resend email failed: ${emailResponse.status}`);
-  }
-
-  console.log("Email sent successfully");
+  console.log("Email sent successfully. Message ID:", info.messageId);
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -406,11 +394,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log("Received application submission request");
     const data: ApplicationData = await req.json();
+    console.log("Form data received for:", data.member_name);
 
-    const pdfBase64 = await buildPdfBase64(data);
-    await sendEmailWithPdf(pdfBase64);
+    const pdfBuffer = await buildPdfBuffer(data);
+    console.log("PDF buffer size:", pdfBuffer.length);
 
+    await sendEmailWithPdf(pdfBuffer);
+
+    console.log("Application processed successfully");
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
