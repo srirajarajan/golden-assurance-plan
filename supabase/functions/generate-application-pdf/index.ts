@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
-import nodemailer from "https://esm.sh/nodemailer@6.9.10";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -357,35 +358,43 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
     throw new Error("GMAIL_USER or GMAIL_APP_PASSWORD is not configured");
   }
 
-  console.log("Creating Gmail SMTP transporter...");
+  console.log("Creating Gmail SMTP client...");
+  console.log("GMAIL_USER:", GMAIL_USER);
 
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_PASS,
+  const client = new SMTPClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465,
+      tls: true,
+      auth: {
+        username: GMAIL_USER,
+        password: GMAIL_PASS,
+      },
     },
   });
 
   console.log("Sending email via Gmail SMTP...");
 
-  const info = await transporter.sendMail({
-    from: `"William Carey Funeral Insurance" <${GMAIL_USER}>`,
+  const pdfBase64 = base64Encode(new Uint8Array(pdfBuffer).buffer as ArrayBuffer);
+
+  await client.send({
+    from: GMAIL_USER,
     to: "williamcareyfuneral99@gmail.com",
     subject: "New Funeral Insurance Application",
-    text: "New application received. PDF attached.",
+    content: "New application received. PDF attached.",
     attachments: [
       {
         filename: "William_Carey_Application.pdf",
-        content: pdfBuffer,
+        content: pdfBase64,
+        encoding: "base64",
         contentType: "application/pdf",
       },
     ],
   });
 
-  console.log("Email sent successfully. Message ID:", info.messageId);
+  await client.close();
+
+  console.log("Email sent successfully via Gmail SMTP");
 }
 
 const handler = async (req: Request): Promise<Response> => {
