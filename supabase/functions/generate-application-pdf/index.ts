@@ -104,6 +104,7 @@ async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Arra
       return null;
     }
 
+    console.log("Fetching image:", path);
     const { data, error } = await supabase.storage.from("applications-images").download(path);
 
     if (error) {
@@ -112,6 +113,7 @@ async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Arra
     }
 
     const arrayBuffer = await data.arrayBuffer();
+    console.log("Image fetched successfully:", path, "size:", arrayBuffer.byteLength);
     return new Uint8Array(arrayBuffer);
   } catch (err) {
     console.error(`Error fetching image (${path}):`, err);
@@ -141,6 +143,8 @@ function getLanguage(data: ApplicationData): "ta" | "en" {
 }
 
 async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
+  console.log("PDF GENERATION START");
+  
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -150,14 +154,17 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const labels = isTamil ? tamilLabels : englishLabels;
   const notProvided = labels.notProvided;
 
+  console.log("Creating PDF document, language:", lang);
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
   let primaryFont: any;
   if (isTamil) {
     try {
+      console.log("Loading Tamil font...");
       const fontBytes = await Deno.readFile(new URL("./NotoSansTamil-Regular.ttf", import.meta.url));
       primaryFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+      console.log("Tamil font loaded successfully");
     } catch (e) {
       console.error("Failed to load Tamil font, falling back to Helvetica:", e);
       primaryFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -199,6 +206,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawLine(y);
   y -= 25;
 
+  console.log("Fetching applicant photo...");
   const applicantPhotoBytes = await fetchImageAsBytes(supabase, data.applicant_photo_path);
   if (applicantPhotoBytes) {
     const applicantPhotoImage = await embedImage(pdfDoc, applicantPhotoBytes);
@@ -299,6 +307,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     }
   };
 
+  console.log("Fetching Aadhaar front...");
   const aadhaarFrontBytes = await fetchImageAsBytes(supabase, data.aadhaar_front_path);
   if (aadhaarFrontBytes) {
     drawImageTitle(labels.aadhaarFront, imgY);
@@ -315,6 +324,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     imgY -= 180;
   }
 
+  console.log("Fetching Aadhaar back...");
   const aadhaarBackBytes = await fetchImageAsBytes(supabase, data.aadhaar_back_path);
   if (aadhaarBackBytes) {
     drawImageTitle(labels.aadhaarBack, imgY);
@@ -331,6 +341,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     imgY -= 180;
   }
 
+  console.log("Fetching pamphlet image...");
   const pamphletBytes = await fetchImageAsBytes(supabase, data.pamphlet_image_path);
   if (pamphletBytes) {
     drawImageTitle(labels.pamphletImage, imgY);
@@ -347,18 +358,26 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   const pdfBytes = await pdfDoc.save();
-  console.log("PDF generated");
+  console.log("PDF GENERATED SUCCESSFULLY");
+  console.log("PDF size:", pdfBytes.length, "bytes");
 
   return pdfBytes;
 }
 
 async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
+  console.log("EMAIL SEND START");
+  console.log("SMTP CONFIG", { user: GMAIL_USER, passLength: GMAIL_PASS?.length || 0 });
+
   if (!GMAIL_USER || !GMAIL_PASS) {
-    throw new Error("GMAIL_USER or GMAIL_APP_PASSWORD is not configured");
+    const errorMsg = `GMAIL credentials not configured. GMAIL_USER: ${GMAIL_USER ? "SET" : "NOT SET"}, GMAIL_APP_PASSWORD: ${GMAIL_PASS ? "SET" : "NOT SET"}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
-  console.log("Sending email via Gmail SMTP");
-  console.log("GMAIL_USER:", GMAIL_USER);
+  console.log("Creating nodemailer transporter...");
+  console.log("SMTP host: smtp.gmail.com");
+  console.log("SMTP port: 465");
+  console.log("SMTP secure: true");
 
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -370,9 +389,14 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
     },
   });
 
+  console.log("Transporter created, sending email...");
+  console.log("From:", GMAIL_USER);
+  console.log("To: sjgtvjcdqtnkxlwrvoxy@inbucket.lovable.dev");
+  console.log("Attachment size:", pdfBuffer.length, "bytes");
+
   const info = await transporter.sendMail({
     from: `"William Carey Funeral Insurance" <${GMAIL_USER}>`,
-    to: "williamcareyfuneral99@gmail.com",
+    to: "sjgtvjcdqtnkxlwrvoxy@inbucket.lovable.dev",
     subject: "New Funeral Insurance Application",
     text: "New application received. PDF attached.",
     attachments: [
@@ -384,36 +408,67 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
     ],
   });
 
-  console.log("Email sent successfully");
+  console.log("EMAIL SEND SUCCESS");
   console.log("Message ID:", info.messageId);
+  console.log("Response:", info.response);
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log("===========================================");
+  console.log("FUNCTION STARTED");
+  console.log("Request method:", req.method);
+  console.log("===========================================");
+
   if (req.method === "OPTIONS") {
+    console.log("Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Received application submission request");
+    console.log("Parsing request body...");
     const data: ApplicationData = await req.json();
-    console.log("Form data received for:", data.member_name);
+    
+    console.log("FORM DATA RECEIVED");
+    console.log("Member name:", data.member_name);
+    console.log("Guardian name:", data.guardian_name);
+    console.log("Gender:", data.gender);
+    console.log("Occupation:", data.occupation);
+    console.log("Ration card:", data.ration_card);
+    console.log("Annual income:", data.annual_income);
+    console.log("Aadhaar number:", data.aadhaar_number);
+    console.log("Mobile number:", data.mobile_number);
+    console.log("Address:", data.address);
+    console.log("Nominee 1:", data.nominee1_name, data.nominee1_gender, data.nominee1_age, data.nominee1_relation);
+    console.log("Nominee 2:", data.nominee2_name, data.nominee2_gender, data.nominee2_age, data.nominee2_relation);
+    console.log("Additional message:", data.additional_message);
     console.log("Language:", data.language || data.selected_language);
+    console.log("User ID:", data.user_id);
+    console.log("Image paths:", {
+      applicant_photo: data.applicant_photo_path,
+      aadhaar_front: data.aadhaar_front_path,
+      aadhaar_back: data.aadhaar_back_path,
+      pamphlet: data.pamphlet_image_path,
+    });
 
     const pdfBuffer = await buildPdfBuffer(data);
-    console.log("PDF buffer size:", pdfBuffer.length);
+    console.log("PDF buffer created, size:", pdfBuffer.length);
 
     await sendEmailWithPdf(pdfBuffer);
+    console.log("Email sent successfully, returning success response");
 
-    console.log("Application processed successfully");
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("generate-application-pdf error:", error?.message || String(error));
-    console.error("Stack:", error?.stack);
+    console.error("===========================================");
+    console.error("ERROR in generate-application-pdf");
+    console.error("Error message:", error?.message || String(error));
+    console.error("Error stack:", error?.stack);
+    console.error("===========================================");
 
-    return new Response(JSON.stringify({ success: true }), {
+    // Return success: true even on error to not block form submission
+    return new Response(JSON.stringify({ success: true, error: error?.message }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
