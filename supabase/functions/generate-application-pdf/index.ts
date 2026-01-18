@@ -362,28 +362,39 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
+async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string): Promise<{ ok: boolean; error?: string }>
+{
   console.log("EMAIL SEND START");
   console.log("RESEND_API_KEY:", RESEND_API_KEY ? "SET" : "NOT SET");
 
   if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured");
-    return;
+    const msg = "RESEND_API_KEY not configured";
+    console.error(msg);
+    return { ok: false, error: msg };
   }
 
-  // Convert Uint8Array to base64
-  const base64Pdf = btoa(String.fromCharCode(...pdfBuffer));
+  // Convert Uint8Array -> base64 safely (avoid call stack limits)
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < pdfBuffer.length; i += chunkSize) {
+    binary += String.fromCharCode(...pdfBuffer.slice(i, i + chunkSize));
+  }
+  const base64Pdf = btoa(binary);
   console.log("PDF converted to base64, length:", base64Pdf.length);
+
+  const safeName = (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
+  const filename = `Application_${safeName}.pdf`;
 
   const emailPayload = {
     from: "William Carey Funeral Insurance <onboarding@resend.dev>",
     to: ["williamcareyfuneral99@gmail.com"],
-    subject: "New Funeral Insurance Application",
-    text: "New application received. PDF attached.",
+    subject: `New Application Submission from ${fullName || safeName}`,
+    text: "A new application has been submitted. Please see the attached PDF.",
     attachments: [
       {
-        filename: "William_Carey_Application.pdf",
+        filename,
         content: base64Pdf,
+        content_type: "application/pdf",
       },
     ],
   };
@@ -392,26 +403,33 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array): Promise<void> {
   console.log("From:", emailPayload.from);
   console.log("To:", emailPayload.to);
   console.log("Subject:", emailPayload.subject);
+  console.log("Attachment filename:", filename);
+  console.log("Attachment bytes:", pdfBuffer.length);
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(emailPayload),
-  });
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailPayload),
+    });
 
-  const responseData = await response.json();
-  console.log("RESEND API RESPONSE STATUS:", response.status);
-  console.log("RESEND API RESPONSE:", JSON.stringify(responseData));
+    const responseText = await response.text();
+    console.log("RESEND API RESPONSE STATUS:", response.status);
+    console.log("RESEND API RESPONSE RAW:", responseText);
 
-  if (response.ok) {
-    console.log("EMAIL SEND SUCCESS");
-    console.log("Email ID:", responseData.id);
-  } else {
-    console.error("EMAIL SEND FAILED");
-    console.error("Error:", responseData);
+    if (response.ok) {
+      console.log("Email sent successfully");
+      return { ok: true };
+    }
+
+    return { ok: false, error: `Resend API error (${response.status}): ${responseText}` };
+  } catch (err: any) {
+    const msg = `Failed to call Resend API: ${err?.message || String(err)}`;
+    console.error(msg);
+    return { ok: false, error: msg };
   }
 }
 
@@ -455,10 +473,20 @@ const handler = async (req: Request): Promise<Response> => {
     const pdfBuffer = await buildPdfBuffer(data);
     console.log("PDF buffer created, size:", pdfBuffer.length);
 
-    await sendEmailWithPdf(pdfBuffer);
-    console.log("Email sent successfully, returning success response");
+    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name);
 
-    return new Response(JSON.stringify({ success: true }), {
+    if (emailResult.ok) {
+      console.log("Email sent successfully, returning success response");
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.error("Email send failed, returning error response");
+    console.error("Email error:", emailResult.error);
+
+    return new Response(JSON.stringify({ success: false, error: emailResult.error }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
@@ -469,8 +497,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("Error stack:", error?.stack);
     console.error("===========================================");
 
-    // Return success: true even on error to not block form submission
-    return new Response(JSON.stringify({ success: true, error: error?.message }), {
+    return new Response(JSON.stringify({ success: false, error: error?.message || String(error) }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
