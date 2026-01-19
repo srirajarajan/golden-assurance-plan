@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
-import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1?bundle";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -159,10 +159,18 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   let primaryFont: any;
   if (isTamil) {
     try {
-      console.log("Loading Tamil font...");
-      const fontBytes = await Deno.readFile(new URL("./NotoSansTamil-Regular.ttf", import.meta.url));
+      console.log("Loading Tamil font from Google Fonts CDN...");
+      // Use official Google Fonts CDN for Noto Sans Tamil
+      const fontUrl = "https://fonts.gstatic.com/s/notosanstamil/v27/ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70RqKDt_EvT.ttf";
+      const fontResponse = await fetch(fontUrl);
+      if (!fontResponse.ok) {
+        throw new Error(`Failed to fetch font: ${fontResponse.status}`);
+      }
+      const fontBuffer = await fontResponse.arrayBuffer();
+      const fontBytes = new Uint8Array(fontBuffer);
+      console.log("Font downloaded, size:", fontBytes.length, "bytes");
       primaryFont = await pdfDoc.embedFont(fontBytes, { subset: true });
-      console.log("Tamil font loaded successfully");
+      console.log("Tamil font embedded successfully");
     } catch (e) {
       console.error("Failed to load Tamil font, falling back to Helvetica:", e);
       primaryFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
