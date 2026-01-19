@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
-import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1?bundle";
+import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,53 +39,57 @@ interface ApplicationData {
 
 const tamilLabels = {
   title: "William Carey Funeral Insurance",
-  subtitle: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
-  applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
-  memberName: "உறுப்பினர் பெயர்",
-  guardianName: "தகப்பனார் / கணவர் பெயர்",
-  gender: "பாலினம்",
-  occupation: "தொழில்",
-  rationCard: "குடும்ப அட்டை எண்",
-  annualIncome: "ஆண்டு வருமானம்",
-  aadhaarNumber: "ஆதார் எண்",
-  mobileNumber: "கைபேசி எண்",
-  address: "நிரந்தர முகவரி",
-  nominee1Title: "வாரிசு 1",
-  nominee2Title: "வாரிசு 2",
-  nomineeName: "பெயர்",
-  nomineeAge: "வயது",
-  nomineeRelation: "உறவு முறை",
-  additionalMessage: "கூடுதல் செய்தி",
-  applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
-  aadhaarFront: "ஆதார் முன்பக்கம்",
-  aadhaarBack: "ஆதார் பின்பக்கம்",
-  pamphletImage: "துண்டுப்பிரசுரம்",
-  notProvided: "வழங்கப்படவில்லை",
+  subtitle: "Application Form / விண்ணப்பப் படிவம்",
+  applicantPhoto: "Applicant Photo / விண்ணப்பதாரர் புகைப்படம்",
+  applicantDetails: "Applicant Details / விண்ணப்பதாரர் விவரங்கள்",
+  memberName: "Member Name / உறுப்பினர் பெயர்",
+  guardianName: "Father/Husband Name / தகப்பனார்/கணவர் பெயர்",
+  gender: "Gender / பாலினம்",
+  occupation: "Occupation / தொழில்",
+  rationCard: "Ration Card Number / குடும்ப அட்டை எண்",
+  annualIncome: "Annual Income / ஆண்டு வருமானம்",
+  aadhaarNumber: "Aadhaar Number / ஆதார் எண்",
+  mobileNumber: "Mobile Number / கைபேசி எண்",
+  address: "Permanent Address / நிரந்தர முகவரி",
+  aadhaarImages: "Aadhaar Card Images / ஆதார் அட்டை படங்கள்",
+  aadhaarFront: "Aadhaar Front Side / ஆதார் முன்பக்கம்",
+  aadhaarBack: "Aadhaar Back Side / ஆதார் பின்பக்கம்",
+  pamphletImage: "Pamphlet Image / துண்டுப்பிரசுரம்",
+  nominee1Title: "Nominee 1 (Required) / வாரிசு 1 (கட்டாயம்)",
+  nominee2Title: "Nominee 2 (Optional) / வாரிசு 2 (விருப்பம்)",
+  nomineeName: "Nominee Name / வாரிசு பெயர்",
+  nomineeGender: "Gender / பாலினம்",
+  nomineeAge: "Age / வயது",
+  nomineeRelation: "Relationship / உறவு முறை",
+  additionalMessage: "Additional Message / கூடுதல் செய்தி",
+  notProvided: "Not Provided",
 };
 
 const englishLabels = {
   title: "William Carey Funeral Insurance",
-  subtitle: "Funeral Insurance Application",
+  subtitle: "Application Form",
+  applicantPhoto: "Applicant Photo",
   applicantDetails: "Applicant Details",
   memberName: "Member Name",
   guardianName: "Father/Husband Name",
   gender: "Gender",
   occupation: "Occupation",
   rationCard: "Ration Card Number",
-  annualIncome: "Annual Income",
-  aadhaarNumber: "Aadhaar Number",
+  annualIncome: "Annual Income (Max ₹1.75 Lakhs)",
+  aadhaarNumber: "Aadhaar Number (12 digits)",
   mobileNumber: "Mobile Number",
   address: "Permanent Address",
-  nominee1Title: "Nominee 1",
-  nominee2Title: "Nominee 2",
-  nomineeName: "Name",
-  nomineeAge: "Age",
-  nomineeRelation: "Relation",
-  additionalMessage: "Additional Message",
-  applicantPhoto: "Applicant Photo",
-  aadhaarFront: "Aadhaar Front",
-  aadhaarBack: "Aadhaar Back",
+  aadhaarImages: "Aadhaar Card Images",
+  aadhaarFront: "Aadhaar Front Side",
+  aadhaarBack: "Aadhaar Back Side",
   pamphletImage: "Pamphlet Image",
+  nominee1Title: "Nominee 1 (Required)",
+  nominee2Title: "Nominee 2 (Optional)",
+  nomineeName: "Nominee Name",
+  nomineeGender: "Gender",
+  nomineeAge: "Age",
+  nomineeRelation: "Relationship",
+  additionalMessage: "Additional Message",
   notProvided: "Not Provided",
 };
 
@@ -95,7 +98,7 @@ function safeText(v: unknown, fallback: string): string {
   return s.length > 0 ? s : fallback;
 }
 
-async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Array | null> {
+async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64: string; type: string } | null> {
   try {
     if (!path || path.trim() === "") {
       console.log("Skipping image fetch for empty path");
@@ -111,26 +114,24 @@ async function fetchImageAsBytes(supabase: any, path: string): Promise<Uint8Arra
     }
 
     const arrayBuffer = await data.arrayBuffer();
-    console.log("Image fetched successfully:", path, "size:", arrayBuffer.byteLength);
-    return new Uint8Array(arrayBuffer);
+    const bytes = new Uint8Array(arrayBuffer);
+    console.log("Image fetched successfully:", path, "size:", bytes.length);
+
+    // Detect image type
+    const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+    const type = isPng ? "PNG" : "JPEG";
+
+    // Convert to base64
+    const chunkSize = 0x8000;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
+
+    return { base64, type };
   } catch (err) {
     console.error(`Error fetching image (${path}):`, err);
-    return null;
-  }
-}
-
-async function embedImage(pdfDoc: PDFDocument, imageBytes: Uint8Array): Promise<any> {
-  try {
-    const isPng =
-      imageBytes.length > 8 &&
-      imageBytes[0] === 0x89 &&
-      imageBytes[1] === 0x50 &&
-      imageBytes[2] === 0x4e &&
-      imageBytes[3] === 0x47;
-
-    return isPng ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes);
-  } catch (err) {
-    console.error("Error embedding image:", err);
     return null;
   }
 }
@@ -142,7 +143,7 @@ function getLanguage(data: ApplicationData): "ta" | "en" {
 
 async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   console.log("PDF GENERATION START");
-  
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -153,225 +154,296 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const notProvided = labels.notProvided;
 
   console.log("Creating PDF document, language:", lang);
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
 
-  let primaryFont: any;
-  if (isTamil) {
-    try {
-      console.log("Loading Tamil font from Google Fonts CDN...");
-      // Use official Google Fonts CDN for Noto Sans Tamil
-      const fontUrl = "https://fonts.gstatic.com/s/notosanstamil/v27/ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70RqKDt_EvT.ttf";
-      const fontResponse = await fetch(fontUrl);
-      if (!fontResponse.ok) {
-        throw new Error(`Failed to fetch font: ${fontResponse.status}`);
-      }
+  // Create jsPDF document
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 15;
+  const contentWidth = pageWidth - 2 * margin;
+
+  let y = margin;
+
+  // Load Noto Sans font for Unicode support
+  try {
+    console.log("Loading Noto Sans font for Unicode support...");
+    const fontUrl = "https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-all-400-normal.woff";
+    const fontResponse = await fetch(fontUrl);
+    if (fontResponse.ok) {
       const fontBuffer = await fontResponse.arrayBuffer();
-      const fontBytes = new Uint8Array(fontBuffer);
-      console.log("Font downloaded, size:", fontBytes.length, "bytes");
-      primaryFont = await pdfDoc.embedFont(fontBytes, { subset: true });
-      console.log("Tamil font embedded successfully");
-    } catch (e) {
-      console.error("Failed to load Tamil font, falling back to Helvetica:", e);
-      primaryFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontBuffer)));
+      doc.addFileToVFS("NotoSans-Regular.ttf", fontBase64);
+      doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
+      doc.setFont("NotoSans");
+      console.log("Noto Sans font loaded successfully");
     }
-  } else {
-    primaryFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  } catch (e) {
+    console.log("Font loading failed, using default font:", e);
   }
 
-  const pageWidth = 595.28;
-  const pageHeight = 841.89;
-  const margin = 50;
-  const lineHeight = 18;
+  // Helper functions
+  const drawSectionHeader = (title: string) => {
+    doc.setFillColor(139, 90, 43); // Brown color
+    doc.rect(margin, y, contentWidth, 8, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(title, margin + 3, y + 5.5);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    y += 12;
+  };
 
-  const page1 = pdfDoc.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - margin;
+  const drawField = (label: string, value: string) => {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(label + ":", margin + 2, y);
+    doc.setFont("helvetica", "normal");
+    
+    // Handle long text wrapping
+    const labelWidth = 55;
+    const valueWidth = contentWidth - labelWidth - 5;
+    const lines = doc.splitTextToSize(value, valueWidth);
+    doc.text(lines, margin + labelWidth, y);
+    y += Math.max(6, lines.length * 5);
+  };
 
-  const drawText = (text: string, x: number, yPos: number, options: any = {}) => {
-    const { size = 11, color = rgb(0, 0, 0) } = options;
-    try {
-      page1.drawText(text, { x, y: yPos, size, font: primaryFont, color });
-    } catch (e) {
-      console.error("Error drawing text:", text, e);
+  const drawTableRow = (cells: string[], colWidths: number[], isHeader = false) => {
+    const rowHeight = 7;
+    let x = margin;
+    
+    if (isHeader) {
+      doc.setFillColor(218, 165, 32); // Gold color
+      doc.rect(margin, y, contentWidth, rowHeight, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+    } else {
+      doc.setFillColor(255, 250, 240); // Light cream
+      doc.rect(margin, y, contentWidth, rowHeight, "F");
+      doc.setFont("helvetica", "normal");
     }
-  };
-
-  const drawLine = (yPos: number) => {
-    page1.drawLine({
-      start: { x: margin, y: yPos },
-      end: { x: pageWidth - margin, y: yPos },
-      thickness: 1,
-      color: rgb(0.7, 0.7, 0.7),
+    
+    doc.setFontSize(8);
+    cells.forEach((cell, i) => {
+      doc.text(cell, x + 2, y + 5);
+      x += colWidths[i];
     });
+    
+    // Draw borders
+    doc.setDrawColor(139, 90, 43);
+    doc.rect(margin, y, contentWidth, rowHeight, "S");
+    x = margin;
+    colWidths.slice(0, -1).forEach((w) => {
+      x += w;
+      doc.line(x, y, x, y + rowHeight);
+    });
+    
+    y += rowHeight;
+    doc.setTextColor(0, 0, 0);
   };
 
-  drawText(labels.title, margin, y, { size: 18, color: rgb(0.4, 0.2, 0.1) });
-  y -= 25;
-  drawText(labels.subtitle, margin, y, { size: 14, color: rgb(0.5, 0.3, 0.15) });
-  y -= 30;
-  drawLine(y);
-  y -= 25;
+  // ===== TITLE SECTION =====
+  doc.setFillColor(139, 90, 43); // Brown
+  doc.rect(0, 0, pageWidth, 25, "F");
+  doc.setTextColor(255, 215, 0); // Gold
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(labels.title, pageWidth / 2, 10, { align: "center" });
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  doc.text(labels.subtitle, pageWidth / 2, 18, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+  y = 32;
+
+  // ===== APPLICANT PHOTO SECTION =====
+  drawSectionHeader(labels.applicantPhoto);
 
   console.log("Fetching applicant photo...");
-  const applicantPhotoBytes = await fetchImageAsBytes(supabase, data.applicant_photo_path);
-  if (applicantPhotoBytes) {
-    const applicantPhotoImage = await embedImage(pdfDoc, applicantPhotoBytes);
-    if (applicantPhotoImage) {
-      page1.drawImage(applicantPhotoImage, {
-        x: pageWidth - margin - 100,
-        y: y - 100,
-        width: 100,
-        height: 120,
-      });
-    }
-  }
-
-  drawText(labels.applicantDetails, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
-  y -= lineHeight + 5;
-
-  const fields: Array<[string, string]> = [
-    [labels.memberName, safeText(data.member_name, notProvided)],
-    [labels.guardianName, safeText(data.guardian_name, notProvided)],
-    [labels.gender, safeText(data.gender, notProvided)],
-    [labels.occupation, safeText(data.occupation, notProvided)],
-    [labels.rationCard, safeText(data.ration_card, notProvided)],
-    [labels.annualIncome, safeText(data.annual_income, notProvided)],
-    [labels.aadhaarNumber, safeText(data.aadhaar_number, notProvided)],
-    [labels.mobileNumber, safeText(data.mobile_number, notProvided)],
-    [labels.address, safeText(data.address, notProvided)],
-  ];
-
-  for (const [label, value] of fields) {
-    drawText(`${label}:`, margin, y, { size: 10 });
-    drawText(String(value), margin + 150, y, { size: 10 });
-    y -= lineHeight;
-  }
-
-  y -= 10;
-  drawLine(y);
-  y -= 20;
-
-  drawText(labels.nominee1Title, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
-  y -= lineHeight + 5;
-
-  const nominee1Fields: Array<[string, string]> = [
-    [labels.nomineeName, safeText(data.nominee1_name, notProvided)],
-    [labels.gender, safeText(data.nominee1_gender, notProvided)],
-    [labels.nomineeAge, safeText(data.nominee1_age, notProvided)],
-    [labels.nomineeRelation, safeText(data.nominee1_relation, notProvided)],
-  ];
-
-  for (const [label, value] of nominee1Fields) {
-    drawText(`${label}:`, margin, y, { size: 10 });
-    drawText(String(value), margin + 150, y, { size: 10 });
-    y -= lineHeight;
-  }
-
-  y -= 10;
-
-  drawText(labels.nominee2Title, margin, y, { size: 13, color: rgb(0.2, 0.4, 0.6) });
-  y -= lineHeight + 5;
-
-  const nominee2Fields: Array<[string, string]> = [
-    [labels.nomineeName, safeText(data.nominee2_name, notProvided)],
-    [labels.gender, safeText(data.nominee2_gender, notProvided)],
-    [labels.nomineeAge, safeText(data.nominee2_age, notProvided)],
-    [labels.nomineeRelation, safeText(data.nominee2_relation, notProvided)],
-  ];
-
-  for (const [label, value] of nominee2Fields) {
-    drawText(`${label}:`, margin, y, { size: 10 });
-    drawText(String(value), margin + 150, y, { size: 10 });
-    y -= lineHeight;
-  }
-
-  y -= 10;
-  drawLine(y);
-  y -= 20;
-
-  const additionalMessage = safeText(data.additional_message, "");
-  if (additionalMessage && additionalMessage !== notProvided) {
-    drawText(`${labels.additionalMessage}:`, margin, y, { size: 10 });
-    y -= lineHeight;
-    drawText(additionalMessage, margin, y, { size: 10 });
-  }
-
-  const page2 = pdfDoc.addPage([pageWidth, pageHeight]);
-  let imgY = pageHeight - margin;
-
-  const drawImageTitle = (title: string, yPos: number) => {
+  const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
+  if (applicantPhoto) {
     try {
-      page2.drawText(title, {
-        x: margin,
-        y: yPos,
-        size: 12,
-        font: primaryFont,
-        color: rgb(0.2, 0.4, 0.6),
-      });
+      doc.addImage(applicantPhoto.base64, applicantPhoto.type, margin + 2, y, 35, 45);
+      y += 50;
     } catch (e) {
-      console.error("Error drawing image title:", e);
+      console.error("Error adding applicant photo:", e);
+      y += 5;
     }
-  };
+  } else {
+    doc.setFontSize(9);
+    doc.text("Photo not available", margin + 2, y + 5);
+    y += 10;
+  }
+
+  y += 5;
+
+  // ===== APPLICANT DETAILS SECTION =====
+  drawSectionHeader(labels.applicantDetails);
+
+  drawField(labels.memberName, safeText(data.member_name, notProvided));
+  drawField(labels.guardianName, safeText(data.guardian_name, notProvided));
+  drawField(labels.gender, safeText(data.gender, notProvided));
+  drawField(labels.occupation, safeText(data.occupation, notProvided));
+  drawField(labels.rationCard, safeText(data.ration_card, notProvided));
+  drawField(labels.annualIncome, safeText(data.annual_income, notProvided));
+  drawField(labels.aadhaarNumber, safeText(data.aadhaar_number, notProvided));
+  drawField(labels.mobileNumber, safeText(data.mobile_number, notProvided));
+  drawField(labels.address, safeText(data.address, notProvided));
+
+  y += 5;
+
+  // ===== AADHAAR CARD IMAGES SECTION =====
+  drawSectionHeader(labels.aadhaarImages);
 
   console.log("Fetching Aadhaar front...");
-  const aadhaarFrontBytes = await fetchImageAsBytes(supabase, data.aadhaar_front_path);
-  if (aadhaarFrontBytes) {
-    drawImageTitle(labels.aadhaarFront, imgY);
-    imgY -= 20;
-    const aadhaarFrontImage = await embedImage(pdfDoc, aadhaarFrontBytes);
-    if (aadhaarFrontImage) {
-      page2.drawImage(aadhaarFrontImage, {
-        x: margin,
-        y: imgY - 160,
-        width: 250,
-        height: 160,
-      });
+  const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
+  
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(labels.aadhaarFront + ":", margin + 2, y);
+  y += 5;
+
+  if (aadhaarFront) {
+    try {
+      doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y, 80, 50);
+      y += 55;
+    } catch (e) {
+      console.error("Error adding Aadhaar front:", e);
+      doc.setFont("helvetica", "normal");
+      doc.text("Image not available", margin + 2, y);
+      y += 8;
     }
-    imgY -= 180;
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.text("Image not available", margin + 2, y);
+    y += 8;
   }
 
   console.log("Fetching Aadhaar back...");
-  const aadhaarBackBytes = await fetchImageAsBytes(supabase, data.aadhaar_back_path);
-  if (aadhaarBackBytes) {
-    drawImageTitle(labels.aadhaarBack, imgY);
-    imgY -= 20;
-    const aadhaarBackImage = await embedImage(pdfDoc, aadhaarBackBytes);
-    if (aadhaarBackImage) {
-      page2.drawImage(aadhaarBackImage, {
-        x: margin,
-        y: imgY - 160,
-        width: 250,
-        height: 160,
-      });
+  const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
+
+  doc.setFont("helvetica", "bold");
+  doc.text(labels.aadhaarBack + ":", margin + 2, y);
+  y += 5;
+
+  if (aadhaarBack) {
+    try {
+      doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + 2, y, 80, 50);
+      y += 55;
+    } catch (e) {
+      console.error("Error adding Aadhaar back:", e);
+      doc.setFont("helvetica", "normal");
+      doc.text("Image not available", margin + 2, y);
+      y += 8;
     }
-    imgY -= 180;
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.text("Image not available", margin + 2, y);
+    y += 8;
   }
+
+  // ===== PAGE 2 =====
+  doc.addPage();
+  y = margin;
+
+  // ===== PAMPHLET IMAGE SECTION =====
+  drawSectionHeader(labels.pamphletImage);
 
   console.log("Fetching pamphlet image...");
-  const pamphletBytes = await fetchImageAsBytes(supabase, data.pamphlet_image_path);
-  if (pamphletBytes) {
-    drawImageTitle(labels.pamphletImage, imgY);
-    imgY -= 20;
-    const pamphletImage = await embedImage(pdfDoc, pamphletBytes);
-    if (pamphletImage) {
-      page2.drawImage(pamphletImage, {
-        x: margin,
-        y: imgY - 180,
-        width: 250,
-        height: 180,
-      });
+  const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
+
+  if (pamphletImage) {
+    try {
+      doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y, 100, 70);
+      y += 75;
+    } catch (e) {
+      console.error("Error adding pamphlet:", e);
+      doc.setFontSize(9);
+      doc.text("Image not available", margin + 2, y + 5);
+      y += 10;
     }
+  } else {
+    doc.setFontSize(9);
+    doc.text("Image not available", margin + 2, y + 5);
+    y += 10;
   }
 
-  const pdfBytes = await pdfDoc.save();
+  y += 5;
+
+  // ===== NOMINEE 1 SECTION =====
+  drawSectionHeader(labels.nominee1Title);
+
+  const nomineeColWidths = [45, 45, 30, 60];
+  drawTableRow(
+    [labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation],
+    nomineeColWidths,
+    true
+  );
+  drawTableRow(
+    [
+      safeText(data.nominee1_name, notProvided),
+      safeText(data.nominee1_gender, notProvided),
+      safeText(data.nominee1_age, notProvided),
+      safeText(data.nominee1_relation, notProvided),
+    ],
+    nomineeColWidths
+  );
+
+  y += 8;
+
+  // ===== NOMINEE 2 SECTION =====
+  drawSectionHeader(labels.nominee2Title);
+
+  const hasNominee2 = safeText(data.nominee2_name, "") !== "";
+  
+  drawTableRow(
+    [labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation],
+    nomineeColWidths,
+    true
+  );
+
+  if (hasNominee2) {
+    drawTableRow(
+      [
+        safeText(data.nominee2_name, notProvided),
+        safeText(data.nominee2_gender, notProvided),
+        safeText(data.nominee2_age, notProvided),
+        safeText(data.nominee2_relation, notProvided),
+      ],
+      nomineeColWidths
+    );
+  } else {
+    drawTableRow([notProvided, notProvided, notProvided, notProvided], nomineeColWidths);
+  }
+
+  y += 8;
+
+  // ===== ADDITIONAL MESSAGE SECTION =====
+  const additionalMessage = safeText(data.additional_message, "");
+  if (additionalMessage && additionalMessage !== notProvided && additionalMessage.length > 0) {
+    drawSectionHeader(labels.additionalMessage);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const messageLines = doc.splitTextToSize(additionalMessage, contentWidth - 4);
+    doc.text(messageLines, margin + 2, y);
+    y += messageLines.length * 5 + 5;
+  }
+
+  // Generate PDF bytes
+  const pdfArrayBuffer = doc.output("arraybuffer");
+  const pdfBytes = new Uint8Array(pdfArrayBuffer);
+  
   console.log("PDF GENERATED SUCCESSFULLY");
   console.log("PDF size:", pdfBytes.length, "bytes");
 
   return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string): Promise<{ ok: boolean; error?: string }>
-{
+async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string): Promise<{ ok: boolean; error?: string }> {
   console.log("EMAIL SEND START");
   console.log("RESEND_API_KEY:", RESEND_API_KEY ? "SET" : "NOT SET");
 
@@ -455,28 +527,11 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("Parsing request body...");
     const data: ApplicationData = await req.json();
-    
+
     console.log("FORM DATA RECEIVED");
     console.log("Member name:", data.member_name);
-    console.log("Guardian name:", data.guardian_name);
-    console.log("Gender:", data.gender);
-    console.log("Occupation:", data.occupation);
-    console.log("Ration card:", data.ration_card);
-    console.log("Annual income:", data.annual_income);
-    console.log("Aadhaar number:", data.aadhaar_number);
-    console.log("Mobile number:", data.mobile_number);
-    console.log("Address:", data.address);
-    console.log("Nominee 1:", data.nominee1_name, data.nominee1_gender, data.nominee1_age, data.nominee1_relation);
-    console.log("Nominee 2:", data.nominee2_name, data.nominee2_gender, data.nominee2_age, data.nominee2_relation);
-    console.log("Additional message:", data.additional_message);
     console.log("Language:", data.language || data.selected_language);
     console.log("User ID:", data.user_id);
-    console.log("Image paths:", {
-      applicant_photo: data.applicant_photo_path,
-      aadhaar_front: data.aadhaar_front_path,
-      aadhaar_back: data.aadhaar_back_path,
-      pamphlet: data.pamphlet_image_path,
-    });
 
     const pdfBuffer = await buildPdfBuffer(data);
     console.log("PDF buffer created, size:", pdfBuffer.length);
@@ -498,14 +553,9 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
-    console.error("===========================================");
-    console.error("ERROR in generate-application-pdf");
-    console.error("Error message:", error?.message || String(error));
-    console.error("Error stack:", error?.stack);
-    console.error("===========================================");
-
-    return new Response(JSON.stringify({ success: false, error: error?.message || String(error) }), {
+  } catch (err: any) {
+    console.error("ERROR:", err);
+    return new Response(JSON.stringify({ success: false, error: err?.message || String(err) }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
