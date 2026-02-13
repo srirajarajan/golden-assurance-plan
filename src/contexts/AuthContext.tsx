@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserStatus = 'pending' | 'active' | 'rejected';
+type UserStatus = 'pending' | 'active' | 'rejected' | 'terminated';
 type UserRole = 'admin' | 'user';
 
 interface AuthContextType {
