@@ -35,6 +35,7 @@ interface ApplicationData {
   aadhaar_back_path: string;
   pamphlet_image_path: string;
   user_id: string;
+  serial_number?: string;
 }
 
 const tamilLabels = {
@@ -258,7 +259,15 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setTextColor(255, 255, 255);
   doc.text(labels.subtitle, pageWidth / 2, 18, { align: "center" });
   doc.setTextColor(0, 0, 0);
-  y = 32;
+  y = 30;
+
+  // ===== SERIAL NUMBER on top =====
+  if (data.serial_number) {
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Serial No: ${data.serial_number}`, pageWidth - margin, y, { align: "right" });
+    y += 7;
+  }
 
   // ===== APPLICANT PHOTO SECTION =====
   drawSectionHeader(labels.applicantPhoto);
@@ -462,8 +471,9 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string): Promis
   const base64Pdf = btoa(binary);
   console.log("PDF converted to base64, length:", base64Pdf.length);
 
-  const safeName = (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
-  const filename = `Application_${safeName}.pdf`;
+  // Use serial number as filename if available
+  const safeName = data.serial_number || (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
+  const filename = data.serial_number ? `${data.serial_number}.pdf` : `Application_${safeName}.pdf`;
 
   const emailPayload = {
     from: "William Carey Funeral Insurance <onboarding@resend.dev>",

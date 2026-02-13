@@ -14,30 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          id: string
+          member_name: string | null
+          pdf_path: string | null
+          serial_number: string
+          staff_email: string
+          staff_user_id: string
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          member_name?: string | null
+          pdf_path?: string | null
+          serial_number: string
+          staff_email: string
+          staff_user_id: string
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          member_name?: string | null
+          pdf_path?: string | null
+          serial_number?: string
+          staff_email?: string
+          staff_user_id?: string
+          submitted_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
+          current_serial: number | null
           email: string
           full_name: string | null
           id: string
+          range_end: number | null
+          range_start: number | null
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          current_serial?: number | null
           email: string
           full_name?: string | null
           id?: string
+          range_end?: number | null
+          range_start?: number | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          current_serial?: number | null
           email?: string
           full_name?: string | null
           id?: string
+          range_end?: number | null
+          range_start?: number | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id?: string
@@ -70,6 +109,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_next_serial: {
+        Args: { p_staff_user_id: string }
+        Returns: string
+      }
       get_user_status: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_status"]
@@ -81,10 +124,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_serial_range: {
+        Args: { p_range_end: number; p_range_start: number; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
-      user_status: "pending" | "active" | "rejected"
+      user_status: "pending" | "active" | "rejected" | "terminated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -213,7 +260,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      user_status: ["pending", "active", "rejected"],
+      user_status: ["pending", "active", "rejected", "terminated"],
     },
   },
 } as const

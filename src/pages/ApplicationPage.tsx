@@ -283,6 +283,29 @@ const ApplicationPage: React.FC = () => {
 
       setSubmitStep(t.submitting);
 
+      // Generate serial number atomically
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
+      const supabaseUrl = (supabase as any).supabaseUrl as string;
+      const supabaseKey = (supabase as any).supabaseKey as string;
+
+      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(supabaseKey ? { apikey: supabaseKey } : {}),
+        },
+        body: JSON.stringify({ staff_user_id: userId }),
+      });
+
+      const serialData = await serialRes.json();
+      if (!serialRes.ok || serialData.error) {
+        throw new Error(serialData.error || 'Failed to generate serial number');
+      }
+
+      const serialNumber = serialData.serial_number;
+
       const payload = {
         member_name: (formData.get('member_name') as string)?.trim() || '',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || '',
@@ -308,12 +331,8 @@ const ApplicationPage: React.FC = () => {
         aadhaar_back_path: aadhaarBackPath,
         pamphlet_image_path: pamphletImagePath,
         user_id: userId,
+        serial_number: serialNumber,
       };
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData?.session;
-      const supabaseUrl = (supabase as any).supabaseUrl as string;
-      const supabaseKey = (supabase as any).supabaseKey as string;
 
       await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
         method: 'POST',
@@ -328,9 +347,18 @@ const ApplicationPage: React.FC = () => {
         }),
       });
 
+      // Record the application in the database
+      await supabase.from('applications').insert({
+        serial_number: serialNumber,
+        staff_user_id: userId,
+        staff_email: user.email || '',
+        member_name: payload.member_name,
+        pdf_path: `${serialNumber}.pdf`,
+      });
+
       toast({
         title: t.successTitle,
-        description: t.successMessage,
+        description: `${t.successMessage} (Serial: ${serialNumber})`,
       });
       
       form.reset();
@@ -439,19 +467,22 @@ const ApplicationPage: React.FC = () => {
     );
   }
 
-  if (userStatus === 'rejected') {
+  if ((userStatus as string) === 'rejected' || (userStatus as string) === 'terminated') {
+    const isTerminated = (userStatus as string) === 'terminated';
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center py-12 px-4">
         <Card className="w-full max-w-md shadow-xl border-2">
           <CardContent className="p-8 text-center">
             <X className="h-16 w-16 text-destructive mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-destructive mb-2">
-              {selectedLanguage === 'en' ? 'Account Rejected' : 'கணக்கு நிராகரிக்கப்பட்டது'}
+              {selectedLanguage === 'en' 
+                ? (isTerminated ? 'Account Terminated' : 'Account Rejected')
+                : (isTerminated ? 'கணக்கு நிறுத்தப்பட்டது' : 'கணக்கு நிராகரிக்கப்பட்டது')}
             </h2>
             <p className="text-muted-foreground">
               {selectedLanguage === 'en' 
-                ? 'Your account has been rejected. Please contact support.'
-                : 'உங்கள் கணக்கு நிராகரிக்கப்பட்டது. ஆதரவைத் தொடர்பு கொள்ளவும்.'}
+                ? (isTerminated ? 'Your account has been terminated. Contact admin.' : 'Your account has been rejected. Please contact support.')
+                : (isTerminated ? 'உங்கள் கணக்கு நிறுத்தப்பட்டது. நிர்வாகியை தொடர்பு கொள்ளவும்.' : 'உங்கள் கணக்கு நிராகரிக்கப்பட்டது. ஆதரவைத் தொடர்பு கொள்ளவும்.')}
             </p>
           </CardContent>
         </Card>
