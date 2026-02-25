@@ -1,13 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import nodemailer from "npm:nodemailer@6.9.12";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const GMAIL_USER = Deno.env.get("GMAIL_USER");
+const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
 
 interface ApplicationData {
   member_name: string;
@@ -452,74 +454,58 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string): Promise<{ ok: boolean; error?: string }> {
-  console.log("EMAIL SEND START");
-  console.log("RESEND_API_KEY:", RESEND_API_KEY ? "SET" : "NOT SET");
+async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string): Promise<{ ok: boolean; error?: string }> {
+  console.log("EMAIL SEND START via Gmail SMTP");
+  console.log("GMAIL_USER:", GMAIL_USER ? "SET" : "NOT SET");
+  console.log("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD ? "SET" : "NOT SET");
 
-  if (!RESEND_API_KEY) {
-    const msg = "RESEND_API_KEY not configured";
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    const msg = "Email service not configured. Contact developer.";
     console.error(msg);
     return { ok: false, error: msg };
   }
 
-  // Convert Uint8Array -> base64 safely (avoid call stack limits)
-  const chunkSize = 0x8000;
-  let binary = "";
-  for (let i = 0; i < pdfBuffer.length; i += chunkSize) {
-    binary += String.fromCharCode(...pdfBuffer.slice(i, i + chunkSize));
-  }
-  const base64Pdf = btoa(binary);
-  console.log("PDF converted to base64, length:", base64Pdf.length);
-
-  // Use serial number as filename if available
-  const safeName = data.serial_number || (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
-  const filename = data.serial_number ? `${data.serial_number}.pdf` : `Application_${safeName}.pdf`;
-
-  const emailPayload = {
-    from: "William Carey Funeral Insurance <onboarding@resend.dev>",
-    to: ["williamcareyfuneral99@gmail.com"],
-    subject: `New Application Submission from ${fullName || safeName}`,
-    text: "A new application has been submitted. Please see the attached PDF.",
-    attachments: [
-      {
-        filename,
-        content: base64Pdf,
-        content_type: "application/pdf",
-      },
-    ],
-  };
-
-  console.log("Sending email via Resend API...");
-  console.log("From:", emailPayload.from);
-  console.log("To:", emailPayload.to);
-  console.log("Subject:", emailPayload.subject);
-  console.log("Attachment filename:", filename);
-  console.log("Attachment bytes:", pdfBuffer.length);
+  const safeName = serialNumber || (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
+  const filename = serialNumber ? `${serialNumber}.pdf` : `Application_${safeName}.pdf`;
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_APP_PASSWORD,
       },
-      body: JSON.stringify(emailPayload),
     });
 
-    const responseText = await response.text();
-    console.log("RESEND API RESPONSE STATUS:", response.status);
-    console.log("RESEND API RESPONSE RAW:", responseText);
+    const mailOptions = {
+      from: `William Carey Funeral Insurance <${GMAIL_USER}>`,
+      to: "williamcareyfuneral99@gmail.com",
+      subject: `New Application Submission from ${fullName || safeName}`,
+      text: "A new application has been submitted. Please see the attached PDF.",
+      attachments: [
+        {
+          filename,
+          content: Buffer.from(pdfBuffer),
+          contentType: "application/pdf",
+        },
+      ],
+    };
 
-    if (response.ok) {
-      console.log("Email sent successfully");
-      return { ok: true };
-    }
+    console.log("Sending email via Gmail SMTP...");
+    console.log("From:", mailOptions.from);
+    console.log("To:", mailOptions.to);
+    console.log("Subject:", mailOptions.subject);
+    console.log("Attachment filename:", filename);
 
-    return { ok: false, error: `Resend API error (${response.status}): ${responseText}` };
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully, messageId:", info.messageId);
+    return { ok: true };
   } catch (err: any) {
-    const msg = `Failed to call Resend API: ${err?.message || String(err)}`;
+    const msg = `Failed to send email: ${err?.message || String(err)}`;
     console.error(msg);
-    return { ok: false, error: msg };
+    return { ok: false, error: "Email service not configured. Contact developer." };
   }
 }
 
@@ -546,7 +532,7 @@ const handler = async (req: Request): Promise<Response> => {
     const pdfBuffer = await buildPdfBuffer(data);
     console.log("PDF buffer created, size:", pdfBuffer.length);
 
-    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name);
+    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number);
 
     if (emailResult.ok) {
       console.log("Email sent successfully, returning success response");
