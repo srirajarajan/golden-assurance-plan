@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +25,8 @@ import {
   Ban,
   RotateCcw,
   Hash,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 
 interface UserProfile {
@@ -500,7 +504,167 @@ const AdminDashboard: React.FC = () => {
         staffName={selectedUser?.full_name || selectedUser?.email}
         language={language}
       />
+
+      {/* Change Password Section */}
+      <ChangePasswordSection language={language} />
     </div>
+  );
+};
+
+const changePasswordTranslations = {
+  en: {
+    title: 'Change Password',
+    oldPassword: 'Old Password',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm Password',
+    submit: 'Update Password',
+    updating: 'Updating...',
+    successTitle: 'Password Updated',
+    successMsg: 'Your password has been updated successfully.',
+    errorTitle: 'Error',
+    mismatch: 'Passwords do not match',
+    tooShort: 'Password must be at least 8 characters',
+    weakPassword: 'Password must include letters and numbers',
+    wrongOldPassword: 'Old password is incorrect',
+  },
+  ta: {
+    title: 'கடவுச்சொல்லை மாற்று',
+    oldPassword: 'பழைய கடவுச்சொல்',
+    newPassword: 'புதிய கடவுச்சொல்',
+    confirmPassword: 'கடவுச்சொல்லை உறுதிப்படுத்து',
+    submit: 'கடவுச்சொல்லை புதுப்பி',
+    updating: 'புதுப்பிக்கிறது...',
+    successTitle: 'கடவுச்சொல் புதுப்பிக்கப்பட்டது',
+    successMsg: 'உங்கள் கடவுச்சொல் வெற்றிகரமாக புதுப்பிக்கப்பட்டது.',
+    errorTitle: 'பிழை',
+    mismatch: 'கடவுச்சொற்கள் பொருந்தவில்லை',
+    tooShort: 'கடவுச்சொல் குறைந்தது 8 எழுத்துக்கள் இருக்க வேண்டும்',
+    weakPassword: 'கடவுச்சொல்லில் எழுத்துகளும் எண்களும் இருக்க வேண்டும்',
+    wrongOldPassword: 'பழைய கடவுச்சொல் தவறானது',
+  },
+};
+
+const ChangePasswordSection: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const t = changePasswordTranslations[language];
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    if (newPassword !== confirmPassword) {
+      toast({ title: t.errorTitle, description: t.mismatch, variant: 'destructive' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ title: t.errorTitle, description: t.tooShort, variant: 'destructive' });
+      return;
+    }
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      toast({ title: t.errorTitle, description: t.weakPassword, variant: 'destructive' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Verify old password by re-signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: oldPassword,
+      });
+
+      if (signInError) {
+        toast({ title: t.errorTitle, description: t.wrongOldPassword, variant: 'destructive' });
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      toast({ title: t.successTitle, description: t.successMsg });
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      toast({ title: t.errorTitle, description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className="max-w-7xl mx-auto mt-6 shadow-xl border-2">
+      <CardHeader className="bg-primary/5 border-b">
+        <CardTitle className="text-lg font-bold text-primary flex items-center gap-2">
+          <KeyRound className="h-5 w-5" />
+          {t.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
+          <div>
+            <Label htmlFor="oldPassword" className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              {t.oldPassword}
+            </Label>
+            <Input
+              id="oldPassword"
+              type="password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              className="mt-1"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="adminNewPassword" className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              {t.newPassword}
+            </Label>
+            <Input
+              id="adminNewPassword"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="mt-1"
+              required
+              minLength={8}
+            />
+          </div>
+          <div>
+            <Label htmlFor="adminConfirmPassword" className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              {t.confirmPassword}
+            </Label>
+            <Input
+              id="adminConfirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1"
+              required
+              minLength={8}
+            />
+          </div>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t.updating}
+              </>
+            ) : (
+              t.submit
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
