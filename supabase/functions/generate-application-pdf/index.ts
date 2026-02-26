@@ -1,15 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
-import nodemailer from "npm:nodemailer@6.9.12";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GMAIL_USER = Deno.env.get("GMAIL_USER");
-const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 interface ApplicationData {
   member_name: string;
@@ -104,40 +102,23 @@ function safeText(v: unknown, fallback: string): string {
 
 async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64: string; type: string } | null> {
   try {
-    if (!path || path.trim() === "") {
-      console.log("Skipping image fetch for empty path");
-      return null;
-    }
-
+    if (!path || path.trim() === "") return null;
     console.log("Fetching image:", path);
     const { data, error } = await supabase.storage.from("applications-images").download(path);
-
-    if (error) {
-      console.error(`Failed to download image (${path}):`, error.message);
-      return null;
-    }
-
+    if (error) { console.error(`Failed to download image (${path}):`, error.message); return null; }
     const arrayBuffer = await data.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     console.log("Image fetched successfully:", path, "size:", bytes.length);
-
-    // Detect image type
     const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
     const type = isPng ? "PNG" : "JPEG";
-
-    // Convert to base64
     const chunkSize = 0x8000;
     let binary = "";
     for (let i = 0; i < bytes.length; i += chunkSize) {
       binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
     }
     const base64 = btoa(binary);
-
     return { base64, type };
-  } catch (err) {
-    console.error(`Error fetching image (${path}):`, err);
-    return null;
-  }
+  } catch (err) { console.error(`Error fetching image (${path}):`, err); return null; }
 }
 
 function getLanguage(data: ApplicationData): "ta" | "en" {
@@ -147,7 +128,6 @@ function getLanguage(data: ApplicationData): "ta" | "en" {
 
 async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   console.log("PDF GENERATION START");
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -157,42 +137,17 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const labels = isTamil ? tamilLabels : englishLabels;
   const notProvided = labels.notProvided;
 
-  console.log("Creating PDF document, language:", lang);
-
-  // Create jsPDF document
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
-
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = 210;
-  const pageHeight = 297;
   const margin = 15;
   const contentWidth = pageWidth - 2 * margin;
-
   let y = margin;
 
-  // Load Noto Sans font for Unicode support
-  try {
-    console.log("Loading Noto Sans font for Unicode support...");
-    const fontUrl = "https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-all-400-normal.woff";
-    const fontResponse = await fetch(fontUrl);
-    if (fontResponse.ok) {
-      const fontBuffer = await fontResponse.arrayBuffer();
-      const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontBuffer)));
-      doc.addFileToVFS("NotoSans-Regular.ttf", fontBase64);
-      doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
-      doc.setFont("NotoSans");
-      console.log("Noto Sans font loaded successfully");
-    }
-  } catch (e) {
-    console.log("Font loading failed, using default font:", e);
-  }
+  // Skip custom font loading (causes stack overflow in Deno), use helvetica
+  doc.setFont("helvetica", "normal");
 
-  // Helper functions
   const drawSectionHeader = (title: string) => {
-    doc.setFillColor(139, 90, 43); // Brown color
+    doc.setFillColor(139, 90, 43);
     doc.rect(margin, y, contentWidth, 8, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
@@ -208,8 +163,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.setFont("helvetica", "bold");
     doc.text(label + ":", margin + 2, y);
     doc.setFont("helvetica", "normal");
-    
-    // Handle long text wrapping
     const labelWidth = 55;
     const valueWidth = contentWidth - labelWidth - 5;
     const lines = doc.splitTextToSize(value, valueWidth);
@@ -220,41 +173,30 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const drawTableRow = (cells: string[], colWidths: number[], isHeader = false) => {
     const rowHeight = 7;
     let x = margin;
-    
     if (isHeader) {
-      doc.setFillColor(218, 165, 32); // Gold color
+      doc.setFillColor(218, 165, 32);
       doc.rect(margin, y, contentWidth, rowHeight, "F");
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
     } else {
-      doc.setFillColor(255, 250, 240); // Light cream
+      doc.setFillColor(255, 250, 240);
       doc.rect(margin, y, contentWidth, rowHeight, "F");
       doc.setFont("helvetica", "normal");
     }
-    
     doc.setFontSize(8);
-    cells.forEach((cell, i) => {
-      doc.text(cell, x + 2, y + 5);
-      x += colWidths[i];
-    });
-    
-    // Draw borders
+    cells.forEach((cell, i) => { doc.text(cell, x + 2, y + 5); x += colWidths[i]; });
     doc.setDrawColor(139, 90, 43);
     doc.rect(margin, y, contentWidth, rowHeight, "S");
     x = margin;
-    colWidths.slice(0, -1).forEach((w) => {
-      x += w;
-      doc.line(x, y, x, y + rowHeight);
-    });
-    
+    colWidths.slice(0, -1).forEach((w) => { x += w; doc.line(x, y, x, y + rowHeight); });
     y += rowHeight;
     doc.setTextColor(0, 0, 0);
   };
 
-  // ===== TITLE SECTION =====
-  doc.setFillColor(139, 90, 43); // Brown
+  // Title
+  doc.setFillColor(139, 90, 43);
   doc.rect(0, 0, pageWidth, 25, "F");
-  doc.setTextColor(255, 215, 0); // Gold
+  doc.setTextColor(255, 215, 0);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.text(labels.title, pageWidth / 2, 10, { align: "center" });
@@ -264,7 +206,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setTextColor(0, 0, 0);
   y = 30;
 
-  // ===== SERIAL NUMBER on top =====
   if (data.serial_number) {
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
@@ -272,30 +213,17 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     y += 7;
   }
 
-  // ===== APPLICANT PHOTO SECTION =====
+  // Applicant Photo
   drawSectionHeader(labels.applicantPhoto);
-
-  console.log("Fetching applicant photo...");
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
   if (applicantPhoto) {
-    try {
-      doc.addImage(applicantPhoto.base64, applicantPhoto.type, margin + 2, y, 35, 45);
-      y += 50;
-    } catch (e) {
-      console.error("Error adding applicant photo:", e);
-      y += 5;
-    }
-  } else {
-    doc.setFontSize(9);
-    doc.text("Photo not available", margin + 2, y + 5);
-    y += 10;
-  }
-
+    try { doc.addImage(applicantPhoto.base64, applicantPhoto.type, margin + 2, y, 35, 45); y += 50; }
+    catch (e) { console.error("Error adding applicant photo:", e); y += 5; }
+  } else { doc.setFontSize(9); doc.text("Photo not available", margin + 2, y + 5); y += 10; }
   y += 5;
 
-  // ===== APPLICANT DETAILS SECTION =====
+  // Applicant Details
   drawSectionHeader(labels.applicantDetails);
-
   drawField(labels.memberName, safeText(data.member_name, notProvided));
   drawField(labels.guardianName, safeText(data.guardian_name, notProvided));
   drawField(labels.gender, safeText(data.gender, notProvided));
@@ -305,162 +233,85 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawField(labels.aadhaarNumber, safeText(data.aadhaar_number, notProvided));
   drawField(labels.mobileNumber, safeText(data.mobile_number, notProvided));
   drawField(labels.address, safeText(data.address, notProvided));
-
   y += 5;
 
-  // ===== AADHAAR CARD IMAGES SECTION =====
+  // Aadhaar Images
   drawSectionHeader(labels.aadhaarImages);
-
-  console.log("Fetching Aadhaar front...");
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
-  
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(labels.aadhaarFront + ":", margin + 2, y);
-  y += 5;
-
+  doc.setFontSize(9); doc.setFont("helvetica", "bold");
+  doc.text(labels.aadhaarFront + ":", margin + 2, y); y += 5;
   if (aadhaarFront) {
-    try {
-      doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y, 80, 50);
-      y += 55;
-    } catch (e) {
-      console.error("Error adding Aadhaar front:", e);
-      doc.setFont("helvetica", "normal");
-      doc.text("Image not available", margin + 2, y);
-      y += 8;
-    }
-  } else {
-    doc.setFont("helvetica", "normal");
-    doc.text("Image not available", margin + 2, y);
-    y += 8;
-  }
+    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y, 80, 50); y += 55; }
+    catch (e) { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+  } else { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
 
-  console.log("Fetching Aadhaar back...");
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
-
   doc.setFont("helvetica", "bold");
-  doc.text(labels.aadhaarBack + ":", margin + 2, y);
-  y += 5;
-
+  doc.text(labels.aadhaarBack + ":", margin + 2, y); y += 5;
   if (aadhaarBack) {
-    try {
-      doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + 2, y, 80, 50);
-      y += 55;
-    } catch (e) {
-      console.error("Error adding Aadhaar back:", e);
-      doc.setFont("helvetica", "normal");
-      doc.text("Image not available", margin + 2, y);
-      y += 8;
-    }
-  } else {
-    doc.setFont("helvetica", "normal");
-    doc.text("Image not available", margin + 2, y);
-    y += 8;
-  }
+    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + 2, y, 80, 50); y += 55; }
+    catch (e) { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+  } else { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
 
-  // ===== PAGE 2 =====
-  doc.addPage();
-  y = margin;
+  // Page 2
+  doc.addPage(); y = margin;
 
-  // ===== PAMPHLET IMAGE SECTION =====
+  // Pamphlet
   drawSectionHeader(labels.pamphletImage);
-
-  console.log("Fetching pamphlet image...");
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
-
   if (pamphletImage) {
-    try {
-      doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y, 100, 70);
-      y += 75;
-    } catch (e) {
-      console.error("Error adding pamphlet:", e);
-      doc.setFontSize(9);
-      doc.text("Image not available", margin + 2, y + 5);
-      y += 10;
-    }
-  } else {
-    doc.setFontSize(9);
-    doc.text("Image not available", margin + 2, y + 5);
-    y += 10;
-  }
-
+    try { doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y, 100, 70); y += 75; }
+    catch (e) { doc.setFontSize(9); doc.text("Image not available", margin + 2, y + 5); y += 10; }
+  } else { doc.setFontSize(9); doc.text("Image not available", margin + 2, y + 5); y += 10; }
   y += 5;
 
-  // ===== NOMINEE 1 SECTION =====
-  drawSectionHeader(labels.nominee1Title);
-
+  // Nominees
   const nomineeColWidths = [45, 45, 30, 60];
-  drawTableRow(
-    [labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation],
-    nomineeColWidths,
-    true
-  );
-  drawTableRow(
-    [
-      safeText(data.nominee1_name, notProvided),
-      safeText(data.nominee1_gender, notProvided),
-      safeText(data.nominee1_age, notProvided),
-      safeText(data.nominee1_relation, notProvided),
-    ],
-    nomineeColWidths
-  );
-
+  drawSectionHeader(labels.nominee1Title);
+  drawTableRow([labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation], nomineeColWidths, true);
+  drawTableRow([safeText(data.nominee1_name, notProvided), safeText(data.nominee1_gender, notProvided), safeText(data.nominee1_age, notProvided), safeText(data.nominee1_relation, notProvided)], nomineeColWidths);
   y += 8;
 
-  // ===== NOMINEE 2 SECTION =====
   drawSectionHeader(labels.nominee2Title);
-
   const hasNominee2 = safeText(data.nominee2_name, "") !== "";
-  
-  drawTableRow(
-    [labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation],
-    nomineeColWidths,
-    true
-  );
-
+  drawTableRow([labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation], nomineeColWidths, true);
   if (hasNominee2) {
-    drawTableRow(
-      [
-        safeText(data.nominee2_name, notProvided),
-        safeText(data.nominee2_gender, notProvided),
-        safeText(data.nominee2_age, notProvided),
-        safeText(data.nominee2_relation, notProvided),
-      ],
-      nomineeColWidths
-    );
+    drawTableRow([safeText(data.nominee2_name, notProvided), safeText(data.nominee2_gender, notProvided), safeText(data.nominee2_age, notProvided), safeText(data.nominee2_relation, notProvided)], nomineeColWidths);
   } else {
     drawTableRow([notProvided, notProvided, notProvided, notProvided], nomineeColWidths);
   }
-
   y += 8;
 
-  // ===== ADDITIONAL MESSAGE SECTION =====
+  // Additional message
   const additionalMessage = safeText(data.additional_message, "");
   if (additionalMessage && additionalMessage !== notProvided && additionalMessage.length > 0) {
     drawSectionHeader(labels.additionalMessage);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
     const messageLines = doc.splitTextToSize(additionalMessage, contentWidth - 4);
     doc.text(messageLines, margin + 2, y);
     y += messageLines.length * 5 + 5;
   }
 
-  // Generate PDF bytes
   const pdfArrayBuffer = doc.output("arraybuffer");
   const pdfBytes = new Uint8Array(pdfArrayBuffer);
-  
-  console.log("PDF GENERATED SUCCESSFULLY");
-  console.log("PDF size:", pdfBytes.length, "bytes");
-
+  console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes");
   return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string, staffEmail?: string): Promise<{ ok: boolean; error?: string }> {
-  console.log("EMAIL SEND START via Gmail SMTP");
-  console.log("GMAIL_USER:", GMAIL_USER ? "SET" : "NOT SET");
-  console.log("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD ? "SET" : "NOT SET");
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string): Promise<{ ok: boolean; error?: string }> {
+  console.log("EMAIL SEND START via Resend API");
+  console.log("RESEND_API_KEY:", RESEND_API_KEY ? "SET" : "NOT SET");
+
+  if (!RESEND_API_KEY) {
     const msg = "Email service not configured. Contact developer.";
     console.error(msg);
     return { ok: false, error: msg };
@@ -470,99 +321,91 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   const filename = serialNumber ? `${serialNumber}.pdf` : `Application_${safeName}.pdf`;
   const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
 
-  // Build recipient list: admin + staff
-  const recipients = ["williamcareyfuneral99@gmail.com"];
-  if (staffEmail && staffEmail.trim() && !recipients.includes(staffEmail.trim())) {
-    recipients.push(staffEmail.trim());
-  }
+  const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
+
+  const emailPayload = {
+    from: "William Carey Funeral Insurance <onboarding@resend.dev>",
+    to: ["williamcareyfuneral99@gmail.com"],
+    subject: "New Application Received – William Carey Funeral Insurance",
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <h2 style="color:#8B5A2B">New Application Received</h2>
+      <p>A new application has been submitted successfully.</p>
+      <table style="border-collapse:collapse;width:100%;margin:16px 0">
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Serial Number</td><td style="padding:8px;border:1px solid #ddd">${serialNumber || "N/A"}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Applicant Name</td><td style="padding:8px;border:1px solid #ddd">${fullName || "N/A"}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Submission Date</td><td style="padding:8px;border:1px solid #ddd">${submissionDate}</td></tr>
+      </table>
+      <p>Please see the attached PDF for full details.</p>
+      <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
+      <p style="color:#888;font-size:12px">William Carey Funeral Insurance</p>
+    </div>`,
+    attachments: [
+      {
+        filename,
+        content: pdfBase64,
+      },
+    ],
+  };
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_APP_PASSWORD,
-      },
-    });
-
-    const mailOptions = {
-      from: `William Carey Funeral Insurance <${GMAIL_USER}>`,
-      to: recipients.join(", "),
-      subject: `New Application Received – William Carey Funeral Insurance`,
-      text: `A new application has been submitted successfully.\n\nSerial Number: ${serialNumber || "N/A"}\nApplicant Name: ${fullName || "N/A"}\nSubmission Date: ${submissionDate}\n\nPlease see the attached PDF for full details.`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-        <h2 style="color:#8B5A2B">New Application Received</h2>
-        <p>A new application has been submitted successfully.</p>
-        <table style="border-collapse:collapse;width:100%;margin:16px 0">
-          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Serial Number</td><td style="padding:8px;border:1px solid #ddd">${serialNumber || "N/A"}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Applicant Name</td><td style="padding:8px;border:1px solid #ddd">${fullName || "N/A"}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Submission Date</td><td style="padding:8px;border:1px solid #ddd">${submissionDate}</td></tr>
-        </table>
-        <p>Please see the attached PDF for full details.</p>
-        <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
-        <p style="color:#888;font-size:12px">William Carey Funeral Insurance</p>
-      </div>`,
-      attachments: [
-        {
-          filename,
-          content: Buffer.from(pdfBuffer),
-          contentType: "application/pdf",
-        },
-      ],
-    };
-
-    console.log("Sending email to:", recipients.join(", "));
-    console.log("Subject:", mailOptions.subject);
+    console.log("Sending email via Resend to: williamcareyfuneral99@gmail.com");
     console.log("Attachment filename:", filename);
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully, messageId:", info.messageId);
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify(emailPayload),
+    });
+
+    const resendData = await resendRes.json();
+    console.log("Resend API response status:", resendRes.status);
+    console.log("Resend API response body:", JSON.stringify(resendData));
+
+    if (!resendRes.ok) {
+      const msg = `Resend API error: ${resendData?.message || resendRes.statusText}`;
+      console.error(msg);
+      return { ok: false, error: msg };
+    }
+
+    console.log("Email sent successfully via Resend, id:", resendData.id);
     return { ok: true };
   } catch (err: any) {
-    const msg = `Failed to send email: ${err?.message || String(err)}`;
+    const msg = `Failed to send email via Resend: ${err?.message || String(err)}`;
     console.error(msg);
     return { ok: false, error: "Email service not configured. Contact developer." };
   }
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("===========================================");
-  console.log("FUNCTION STARTED");
+  console.log("=== FUNCTION STARTED ===");
   console.log("Request method:", req.method);
-  console.log("===========================================");
 
   if (req.method === "OPTIONS") {
-    console.log("Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Parsing request body...");
     const data: ApplicationData = await req.json();
-
-    console.log("FORM DATA RECEIVED");
     console.log("Member name:", data.member_name);
-    console.log("Language:", data.language || data.selected_language);
-    console.log("User ID:", data.user_id);
+    console.log("Serial number:", data.serial_number);
 
     const pdfBuffer = await buildPdfBuffer(data);
     console.log("PDF buffer created, size:", pdfBuffer.length);
 
-    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number, data.staff_email);
+    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number);
 
     if (emailResult.ok) {
-      console.log("Email sent successfully, returning success response");
+      console.log("Email sent successfully");
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    console.error("Email send failed, returning error response");
-    console.error("Email error:", emailResult.error);
-
+    console.error("Email failed:", emailResult.error);
     return new Response(JSON.stringify({ success: false, error: emailResult.error }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
