@@ -334,7 +334,9 @@ const ApplicationPage: React.FC = () => {
         serial_number: serialNumber,
       };
 
-      await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
+      setSubmitStep(t.sendingEmail);
+
+      const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -344,8 +346,21 @@ const ApplicationPage: React.FC = () => {
         body: JSON.stringify({
           ...payload,
           language: selectedLanguage,
+          staff_email: user.email || '',
         }),
       });
+
+      let emailFailed = false;
+      try {
+        const pdfData = await pdfRes.json();
+        if (!pdfData.success) {
+          console.error('Email send failed:', pdfData.error);
+          emailFailed = true;
+        }
+      } catch {
+        console.error('Failed to parse PDF/email response');
+        emailFailed = true;
+      }
 
       // Record the application in the database
       await supabase.from('applications').insert({
@@ -358,7 +373,10 @@ const ApplicationPage: React.FC = () => {
 
       toast({
         title: t.successTitle,
-        description: `${t.successMessage} (Serial: ${serialNumber})`,
+        description: emailFailed
+          ? `Application saved but email not sent. (Serial: ${serialNumber})`
+          : `${t.successMessage} (Serial: ${serialNumber})`,
+        variant: emailFailed ? "destructive" : "default",
       });
       
       form.reset();

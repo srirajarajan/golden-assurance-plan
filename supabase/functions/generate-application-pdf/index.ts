@@ -32,6 +32,7 @@ interface ApplicationData {
   additional_message: string;
   selected_language?: string;
   language?: "ta" | "en" | string;
+  staff_email?: string;
   applicant_photo_path: string;
   aadhaar_front_path: string;
   aadhaar_back_path: string;
@@ -454,7 +455,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string): Promise<{ ok: boolean; error?: string }> {
+async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string, staffEmail?: string): Promise<{ ok: boolean; error?: string }> {
   console.log("EMAIL SEND START via Gmail SMTP");
   console.log("GMAIL_USER:", GMAIL_USER ? "SET" : "NOT SET");
   console.log("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD ? "SET" : "NOT SET");
@@ -467,6 +468,13 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
 
   const safeName = serialNumber || (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
   const filename = serialNumber ? `${serialNumber}.pdf` : `Application_${safeName}.pdf`;
+  const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
+
+  // Build recipient list: admin + staff
+  const recipients = ["williamcareyfuneral99@gmail.com"];
+  if (staffEmail && staffEmail.trim() && !recipients.includes(staffEmail.trim())) {
+    recipients.push(staffEmail.trim());
+  }
 
   try {
     const transporter = nodemailer.createTransport({
@@ -481,9 +489,21 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
 
     const mailOptions = {
       from: `William Carey Funeral Insurance <${GMAIL_USER}>`,
-      to: "williamcareyfuneral99@gmail.com",
-      subject: `New Application Submission from ${fullName || safeName}`,
-      text: "A new application has been submitted. Please see the attached PDF.",
+      to: recipients.join(", "),
+      subject: `New Application Received – William Carey Funeral Insurance`,
+      text: `A new application has been submitted successfully.\n\nSerial Number: ${serialNumber || "N/A"}\nApplicant Name: ${fullName || "N/A"}\nSubmission Date: ${submissionDate}\n\nPlease see the attached PDF for full details.`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#8B5A2B">New Application Received</h2>
+        <p>A new application has been submitted successfully.</p>
+        <table style="border-collapse:collapse;width:100%;margin:16px 0">
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Serial Number</td><td style="padding:8px;border:1px solid #ddd">${serialNumber || "N/A"}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Applicant Name</td><td style="padding:8px;border:1px solid #ddd">${fullName || "N/A"}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Submission Date</td><td style="padding:8px;border:1px solid #ddd">${submissionDate}</td></tr>
+        </table>
+        <p>Please see the attached PDF for full details.</p>
+        <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
+        <p style="color:#888;font-size:12px">William Carey Funeral Insurance</p>
+      </div>`,
       attachments: [
         {
           filename,
@@ -493,9 +513,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
       ],
     };
 
-    console.log("Sending email via Gmail SMTP...");
-    console.log("From:", mailOptions.from);
-    console.log("To:", mailOptions.to);
+    console.log("Sending email to:", recipients.join(", "));
     console.log("Subject:", mailOptions.subject);
     console.log("Attachment filename:", filename);
 
@@ -532,7 +550,7 @@ const handler = async (req: Request): Promise<Response> => {
     const pdfBuffer = await buildPdfBuffer(data);
     console.log("PDF buffer created, size:", pdfBuffer.length);
 
-    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number);
+    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number, data.staff_email);
 
     if (emailResult.ok) {
       console.log("Email sent successfully, returning success response");
