@@ -283,28 +283,10 @@ const ApplicationPage: React.FC = () => {
 
       setSubmitStep(t.submitting);
 
-      // Generate serial number atomically
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
       const supabaseUrl = (supabase as any).supabaseUrl as string;
       const supabaseKey = (supabase as any).supabaseKey as string;
-
-      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          ...(supabaseKey ? { apikey: supabaseKey } : {}),
-        },
-        body: JSON.stringify({ staff_user_id: userId }),
-      });
-
-      const serialData = await serialRes.json();
-      if (!serialRes.ok || serialData.error) {
-        throw new Error(serialData.error || 'Failed to generate serial number');
-      }
-
-      const serialNumber = serialData.serial_number;
 
       const payload = {
         member_name: (formData.get('member_name') as string)?.trim() || '',
@@ -331,9 +313,9 @@ const ApplicationPage: React.FC = () => {
         aadhaar_back_path: aadhaarBackPath,
         pamphlet_image_path: pamphletImagePath,
         user_id: userId,
-        serial_number: serialNumber,
       };
 
+      // Step 1: Generate PDF and send email (without serial number first)
       setSubmitStep(t.sendingEmail);
 
       const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
@@ -350,19 +332,46 @@ const ApplicationPage: React.FC = () => {
         }),
       });
 
-      let emailFailed = false;
+      let emailSuccess = false;
       try {
         const pdfData = await pdfRes.json();
-        if (!pdfData.success) {
+        if (pdfData.success) {
+          emailSuccess = true;
+        } else {
           console.error('Email send failed:', pdfData.error);
-          emailFailed = true;
         }
       } catch {
         console.error('Failed to parse PDF/email response');
-        emailFailed = true;
       }
 
-      // Record the application in the database
+      if (!emailSuccess) {
+        toast({
+          title: t.errorTitle,
+          description: 'Application saved but email not sent.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Step 2: Only generate serial AFTER email succeeds
+      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(supabaseKey ? { apikey: supabaseKey } : {}),
+        },
+        body: JSON.stringify({ staff_user_id: userId }),
+      });
+
+      const serialData = await serialRes.json();
+      if (!serialRes.ok || serialData.error) {
+        throw new Error(serialData.error || 'Failed to generate serial number');
+      }
+
+      const serialNumber = serialData.serial_number;
+
+      // Step 3: Record application in DB
       await supabase.from('applications').insert({
         serial_number: serialNumber,
         staff_user_id: userId,
@@ -373,10 +382,7 @@ const ApplicationPage: React.FC = () => {
 
       toast({
         title: t.successTitle,
-        description: emailFailed
-          ? `Application saved but email not sent. (Serial: ${serialNumber})`
-          : `${t.successMessage} (Serial: ${serialNumber})`,
-        variant: emailFailed ? "destructive" : "default",
+        description: `${t.successMessage} (Serial: ${serialNumber})`,
       });
       
       form.reset();
