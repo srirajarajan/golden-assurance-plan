@@ -57,35 +57,22 @@ const LoginPage: React.FC = () => {
 
   const t = loginTranslations[language];
 
+  // Only auto-redirect if user was already logged in on page load
   useEffect(() => {
-    const handleRedirect = async () => {
-      if (user && !isLoading) {
-        const isAdmin = await checkIsAdmin();
-        if (isAdmin) {
-          navigate('/admin');
+    const handleExistingSession = async () => {
+      if (user && !isLoading && !isSubmitting) {
+        const adminStatus = await checkIsAdmin();
+        if (adminStatus) {
+          navigate('/admin', { replace: true });
           return;
         }
-
         const status = await checkUserStatus();
         if (status === 'active') {
-          navigate('/apply');
-        } else if (status === 'pending') {
-          toast({
-            title: t.errorTitle,
-            description: t.pendingApproval,
-            variant: 'destructive',
-          });
-        } else if (status === 'rejected') {
-          toast({
-            title: t.errorTitle,
-            description: t.rejectedAccount,
-            variant: 'destructive',
-          });
+          navigate('/apply', { replace: true });
         }
       }
     };
-
-    handleRedirect();
+    handleExistingSession();
   }, [user, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +90,32 @@ const LoginPage: React.FC = () => {
           description: t.invalidCredentials,
           variant: 'destructive',
         });
+        setIsSubmitting(false);
         return;
+      }
+
+      // After successful sign-in, directly check role and redirect
+      const adminStatus = await checkIsAdmin();
+      if (adminStatus) {
+        navigate('/admin', { replace: true });
+        return;
+      }
+
+      const status = await checkUserStatus();
+      if (status === 'active') {
+        navigate('/apply', { replace: true });
+      } else if (status === 'pending') {
+        toast({
+          title: t.errorTitle,
+          description: t.pendingApproval,
+          variant: 'destructive',
+        });
+      } else if (status === 'rejected') {
+        toast({
+          title: t.errorTitle,
+          description: t.rejectedAccount,
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       toast({

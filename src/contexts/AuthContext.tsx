@@ -77,17 +77,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer additional Supabase calls
         if (session?.user) {
-          setTimeout(() => {
-            checkUserStatus();
-            checkIsAdmin();
+          // Use setTimeout to avoid deadlock with Supabase internals,
+          // but keep it minimal
+          setTimeout(async () => {
+            if (!mounted) return;
+            try {
+              const { data: statusData } = await supabase
+                .from('profiles')
+                .select('status')
+                .eq('user_id', session.user.id)
+                .single();
+              if (mounted && statusData) setUserStatus(statusData.status as UserStatus);
+
+              const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .eq('role', 'admin')
+                .maybeSingle();
+              if (mounted) setIsAdmin(!!roleData);
+            } catch (e) {
+              console.error('Error fetching user data:', e);
+            }
           }, 0);
         } else {
           setUserStatus(null);
@@ -100,20 +121,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => {
-          checkUserStatus();
-          checkIsAdmin();
-        }, 0);
+        Promise.all([
+          supabase.from('profiles').select('status').eq('user_id', session.user.id).single(),
+          supabase.from('user_roles').select('role').eq('user_id', session.user.id).eq('role', 'admin').maybeSingle(),
+        ]).then(([statusRes, roleRes]) => {
+          if (!mounted) return;
+          if (statusRes.data) setUserStatus(statusRes.data.status as UserStatus);
+          setIsAdmin(!!roleRes.data);
+          setIsLoading(false);
+        }).catch(() => {
+          if (mounted) setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
