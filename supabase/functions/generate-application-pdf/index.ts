@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FAST2SMS_API_KEY = Deno.env.get("FAST2SMS_API_KEY");
+
 
 interface ApplicationData {
   member_name: string;
@@ -405,59 +405,6 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   }
 }
 
-async function sendSmsConfirmation(mobileNumber: string): Promise<{ ok: boolean; error?: string }> {
-  console.log("SMS SEND START via Fast2SMS");
-  console.log("FAST2SMS_API_KEY:", FAST2SMS_API_KEY ? "SET" : "NOT SET");
-
-  if (!FAST2SMS_API_KEY) {
-    console.error("Fast2SMS API key not configured");
-    return { ok: false, error: "SMS service not configured" };
-  }
-
-  // Ensure 10-digit number
-  const cleanNumber = mobileNumber.replace(/\D/g, "").slice(-10);
-  if (cleanNumber.length !== 10) {
-    console.error("Invalid mobile number for SMS:", mobileNumber);
-    return { ok: false, error: "Invalid mobile number" };
-  }
-
-  const message = "வில்லியம் கேரி ஈமச்சடங்கு காப்பீட்டு திட்டத்தில் இணைந்ததற்கு நன்றி - உங்கள் காப்பீட்டுத் தொகை ரூ.3,000 செலுத்திய விண்ணப்ப படிவம் ஆன்லைன் மூலம் வெற்றிகரமாக பதிவு செய்யப்பட்டுள்ளது.";
-
-  try {
-    const res = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: FAST2SMS_API_KEY,
-      },
-      body: JSON.stringify({
-        route: "q",
-        message: message,
-        language: "unicode",
-        flash: 0,
-        numbers: cleanNumber,
-      }),
-    });
-
-    const resData = await res.json();
-    console.log("Fast2SMS response status:", res.status);
-    console.log("Fast2SMS response:", JSON.stringify(resData));
-
-    if (resData.return === true || resData.status_code === 200) {
-      console.log("SMS sent successfully to:", cleanNumber);
-      return { ok: true };
-    } else {
-      const msg = resData.message || "SMS sending failed";
-      console.error("SMS failed:", msg);
-      return { ok: false, error: msg };
-    }
-  } catch (err: any) {
-    const msg = `SMS error: ${err?.message || String(err)}`;
-    console.error(msg);
-    return { ok: false, error: msg };
-  }
-}
-
 const handler = async (req: Request): Promise<Response> => {
   console.log("=== FUNCTION STARTED ===");
   console.log("Request method:", req.method);
@@ -487,20 +434,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Email sent successfully");
 
-    // Send SMS confirmation after successful email
-    let smsResult = { ok: false, error: "No mobile number" };
-    const mobileNumber = data.mobile_number?.replace(/\D/g, "");
-    if (mobileNumber && mobileNumber.length === 10) {
-      smsResult = await sendSmsConfirmation(mobileNumber);
-    } else {
-      console.log("Skipping SMS - no valid mobile number provided");
-    }
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      sms_sent: smsResult.ok,
-      sms_error: smsResult.ok ? undefined : smsResult.error,
-    }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

@@ -347,15 +347,10 @@ const ApplicationPage: React.FC = () => {
       });
 
       let emailSuccess = false;
-      let smsSent = false;
       try {
         const pdfData = await pdfRes.json();
         if (pdfData.success) {
           emailSuccess = true;
-          smsSent = pdfData.sms_sent === true;
-          if (!smsSent && pdfData.sms_error) {
-            console.warn('SMS not sent:', pdfData.sms_error);
-          }
         } else {
           console.error('Email send failed:', pdfData.error);
         }
@@ -372,7 +367,7 @@ const ApplicationPage: React.FC = () => {
         return;
       }
 
-      // Step 2: Only generate serial AFTER email succeeds
+      // Step 2: Generate serial AFTER email succeeds
       const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
         method: 'POST',
         headers: {
@@ -390,7 +385,32 @@ const ApplicationPage: React.FC = () => {
 
       const serialNumber = serialData.serial_number;
 
-      // Step 3: Record application in DB
+      // Step 3: Send SMS confirmation AFTER serial generated
+      const mobileNum = (formData.get('mobile_number') as string)?.replace(/\D/g, '') || '';
+      if (mobileNum.length === 10) {
+        try {
+          console.log('Sending confirmation SMS to:', mobileNum);
+          const smsRes = await fetch(`${supabaseUrl}/functions/v1/send-confirmation-sms`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+              ...(supabaseKey ? { apikey: supabaseKey } : {}),
+            },
+            body: JSON.stringify({ mobile_number: mobileNum, serial_number: serialNumber }),
+          });
+          const smsData = await smsRes.json();
+          if (smsData.success) {
+            console.log('SMS sent successfully');
+          } else {
+            console.error('SMS failed:', smsData.error);
+          }
+        } catch (smsErr) {
+          console.error('SMS sending error:', smsErr);
+        }
+      }
+
+      // Step 4: Record application in DB
       await supabase.from('applications').insert({
         serial_number: serialNumber,
         staff_user_id: userId,
