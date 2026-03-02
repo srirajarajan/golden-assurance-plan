@@ -263,6 +263,20 @@ const ApplicationPage: React.FC = () => {
       const userId = user.id;
       const formData = new FormData(form);
 
+      // Validate mobile number (10 digits, numbers only)
+      const mobileNumber = (formData.get('mobile_number') as string)?.replace(/\D/g, '') || '';
+      if (mobileNumber.length !== 10) {
+        toast({
+          title: t.errorTitle,
+          description: selectedLanguage === 'ta' 
+            ? 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்' 
+            : 'Enter valid 10-digit mobile number',
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file || !pamphletImage.file) {
         throw new Error('Please upload all required images');
       }
@@ -333,10 +347,15 @@ const ApplicationPage: React.FC = () => {
       });
 
       let emailSuccess = false;
+      let smsSent = false;
       try {
         const pdfData = await pdfRes.json();
         if (pdfData.success) {
           emailSuccess = true;
+          smsSent = pdfData.sms_sent === true;
+          if (!smsSent && pdfData.sms_error) {
+            console.warn('SMS not sent:', pdfData.sms_error);
+          }
         } else {
           console.error('Email send failed:', pdfData.error);
         }
@@ -631,9 +650,34 @@ const ApplicationPage: React.FC = () => {
                   <div>
                     <Label htmlFor="mobile_number" className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
-                      {t.mobileNumber}
+                      {t.mobileNumber} <span className="text-destructive">*</span>
                     </Label>
-                    <Input id="mobile_number" name="mobile_number" type="tel" placeholder={t.mobilePlaceholder} className="mt-1" />
+                    <Input 
+                      id="mobile_number" 
+                      name="mobile_number" 
+                      type="tel" 
+                      placeholder={t.mobilePlaceholder} 
+                      className="mt-1" 
+                      required
+                      maxLength={10}
+                      pattern="[0-9]{10}"
+                      inputMode="numeric"
+                      onInput={(e) => {
+                        const input = e.target as HTMLInputElement;
+                        input.value = input.value.replace(/\D/g, '').slice(0, 10);
+                      }}
+                      onInvalid={(e) => {
+                        const input = e.target as HTMLInputElement;
+                        input.setCustomValidity(
+                          selectedLanguage === 'ta' 
+                            ? 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்' 
+                            : 'Enter valid 10-digit mobile number'
+                        );
+                      }}
+                      onChange={(e) => {
+                        (e.target as HTMLInputElement).setCustomValidity('');
+                      }}
+                    />
                   </div>
                 </div>
                 
