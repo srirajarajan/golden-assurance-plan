@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,7 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const FAST2SMS_API_KEY = Deno.env.get("FAST2SMS_API_KEY");
 
 interface ApplicationData {
   member_name: string;
@@ -41,30 +43,30 @@ interface ApplicationData {
 
 const tamilLabels = {
   title: "William Carey Funeral Insurance",
-  subtitle: "Application Form / விண்ணப்பப் படிவம்",
-  applicantPhoto: "Applicant Photo / விண்ணப்பதாரர் புகைப்படம்",
-  applicantDetails: "Applicant Details / விண்ணப்பதாரர் விவரங்கள்",
-  memberName: "Member Name / உறுப்பினர் பெயர்",
-  guardianName: "Father/Husband Name / தகப்பனார்/கணவர் பெயர்",
-  gender: "Gender / பாலினம்",
-  occupation: "Occupation / தொழில்",
-  rationCard: "Ration Card Number / குடும்ப அட்டை எண்",
-  annualIncome: "Annual Income / ஆண்டு வருமானம்",
-  aadhaarNumber: "Aadhaar Number / ஆதார் எண்",
-  mobileNumber: "Mobile Number / கைபேசி எண்",
-  address: "Permanent Address / நிரந்தர முகவரி",
-  aadhaarImages: "Aadhaar Card Images / ஆதார் அட்டை படங்கள்",
-  aadhaarFront: "Aadhaar Front Side / ஆதார் முன்பக்கம்",
-  aadhaarBack: "Aadhaar Back Side / ஆதார் பின்பக்கம்",
-  pamphletImage: "Pamphlet Image / துண்டுப்பிரசுரம்",
-  nominee1Title: "Nominee 1 (Required) / வாரிசு 1 (கட்டாயம்)",
-  nominee2Title: "Nominee 2 (Optional) / வாரிசு 2 (விருப்பம்)",
-  nomineeName: "Nominee Name / வாரிசு பெயர்",
-  nomineeGender: "Gender / பாலினம்",
-  nomineeAge: "Age / வயது",
-  nomineeRelation: "Relationship / உறவு முறை",
-  additionalMessage: "Additional Message / கூடுதல் செய்தி",
-  notProvided: "Not Provided",
+  subtitle: "விண்ணப்பப் படிவம்",
+  applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
+  applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
+  memberName: "உறுப்பினர் பெயர்",
+  guardianName: "தகப்பனார்/கணவர் பெயர்",
+  gender: "பாலினம்",
+  occupation: "தொழில்",
+  rationCard: "குடும்ப அட்டை எண்",
+  annualIncome: "ஆண்டு வருமானம்",
+  aadhaarNumber: "ஆதார் எண்",
+  mobileNumber: "கைபேசி எண்",
+  address: "நிரந்தர முகவரி",
+  aadhaarImages: "ஆதார் அட்டை படங்கள்",
+  aadhaarFront: "ஆதார் முன்பக்கம்",
+  aadhaarBack: "ஆதார் பின்பக்கம்",
+  pamphletImage: "துண்டுப்பிரசுரம்",
+  nominee1Title: "வாரிசு 1 (கட்டாயம்)",
+  nominee2Title: "வாரிசு 2 (விருப்பம்)",
+  nomineeName: "வாரிசு பெயர்",
+  nomineeGender: "பாலினம்",
+  nomineeAge: "வயது",
+  nomineeRelation: "உறவு முறை",
+  additionalMessage: "கூடுதல் செய்தி",
+  notProvided: "வழங்கப்படவில்லை",
 };
 
 const englishLabels = {
@@ -111,19 +113,38 @@ async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64
     console.log("Image fetched successfully:", path, "size:", bytes.length);
     const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
     const type = isPng ? "PNG" : "JPEG";
-    const chunkSize = 0x8000;
-    let binary = "";
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
-    }
-    const base64 = btoa(binary);
-    return { base64, type };
+    const b64 = uint8ArrayToBase64(bytes);
+    return { base64: b64, type };
   } catch (err) { console.error(`Error fetching image (${path}):`, err); return null; }
 }
 
 function getLanguage(data: ApplicationData): "ta" | "en" {
   const v = (data.language ?? data.selected_language ?? "").toString().trim().toLowerCase();
   return v === "ta" || v === "tamil" ? "ta" : "en";
+}
+
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+// Load the Tamil font file and return base64 string
+async function loadTamilFont(): Promise<string | null> {
+  try {
+    const fontPath = new URL("./NotoSansTamil-Regular.ttf", import.meta.url);
+    const fontBytes = await Deno.readFile(fontPath);
+    console.log("Tamil font loaded, size:", fontBytes.length, "bytes");
+    // Use Deno's base64 encode for large binary
+    const b64 = base64Encode(fontBytes);
+    return b64;
+  } catch (err) {
+    console.error("Failed to load Tamil font:", err);
+    return null;
+  }
 }
 
 async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
@@ -143,26 +164,42 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const contentWidth = pageWidth - 2 * margin;
   let y = margin;
 
-  // Skip custom font loading (causes stack overflow in Deno), use helvetica
-  doc.setFont("helvetica", "normal");
+  // Load and register Tamil font for Unicode support
+  let fontFamily = "helvetica";
+  if (isTamil) {
+    const tamilFontBase64 = await loadTamilFont();
+    if (tamilFontBase64) {
+      try {
+        doc.addFileToVFS("NotoSansTamil-Regular.ttf", tamilFontBase64);
+        doc.addFont("NotoSansTamil-Regular.ttf", "NotoSansTamil", "normal");
+        fontFamily = "NotoSansTamil";
+        console.log("Tamil font registered successfully");
+      } catch (e) {
+        console.error("Failed to register Tamil font:", e);
+        fontFamily = "helvetica";
+      }
+    }
+  }
+
+  doc.setFont(fontFamily, "normal");
 
   const drawSectionHeader = (title: string) => {
     doc.setFillColor(139, 90, 43);
     doc.rect(margin, y, contentWidth, 8, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(fontFamily, "bold");
     doc.text(title, margin + 3, y + 5.5);
     doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(fontFamily, "normal");
     y += 12;
   };
 
   const drawField = (label: string, value: string) => {
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(fontFamily, "bold");
     doc.text(label + ":", margin + 2, y);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(fontFamily, "normal");
     const labelWidth = 55;
     const valueWidth = contentWidth - labelWidth - 5;
     const lines = doc.splitTextToSize(value, valueWidth);
@@ -176,12 +213,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     if (isHeader) {
       doc.setFillColor(218, 165, 32);
       doc.rect(margin, y, contentWidth, rowHeight, "F");
-      doc.setFont("helvetica", "bold");
+      doc.setFont(fontFamily, "bold");
       doc.setTextColor(0, 0, 0);
     } else {
       doc.setFillColor(255, 250, 240);
       doc.rect(margin, y, contentWidth, rowHeight, "F");
-      doc.setFont("helvetica", "normal");
+      doc.setFont(fontFamily, "normal");
     }
     doc.setFontSize(8);
     cells.forEach((cell, i) => { doc.text(cell, x + 2, y + 5); x += colWidths[i]; });
@@ -198,7 +235,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.rect(0, 0, pageWidth, 25, "F");
   doc.setTextColor(255, 215, 0);
   doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(fontFamily, "bold");
   doc.text(labels.title, pageWidth / 2, 10, { align: "center" });
   doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
@@ -208,7 +245,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   if (data.serial_number) {
     doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(fontFamily, "bold");
     doc.text(`Serial No: ${data.serial_number}`, pageWidth - margin, y, { align: "right" });
     y += 7;
   }
@@ -238,20 +275,20 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // Aadhaar Images
   drawSectionHeader(labels.aadhaarImages);
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
-  doc.setFontSize(9); doc.setFont("helvetica", "bold");
+  doc.setFontSize(9); doc.setFont(fontFamily, "bold");
   doc.text(labels.aadhaarFront + ":", margin + 2, y); y += 5;
   if (aadhaarFront) {
     try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y, 80, 50); y += 55; }
-    catch (e) { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
-  } else { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+    catch (e) { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+  } else { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
 
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(fontFamily, "bold");
   doc.text(labels.aadhaarBack + ":", margin + 2, y); y += 5;
   if (aadhaarBack) {
     try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + 2, y, 80, 50); y += 55; }
-    catch (e) { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
-  } else { doc.setFont("helvetica", "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+    catch (e) { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+  } else { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
 
   // Page 2
   doc.addPage(); y = margin;
@@ -286,7 +323,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const additionalMessage = safeText(data.additional_message, "");
   if (additionalMessage && additionalMessage !== notProvided && additionalMessage.length > 0) {
     drawSectionHeader(labels.additionalMessage);
-    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.setFontSize(9); doc.setFont(fontFamily, "normal");
     const messageLines = doc.splitTextToSize(additionalMessage, contentWidth - 4);
     doc.text(messageLines, margin + 2, y);
     y += messageLines.length * 5 + 5;
@@ -296,15 +333,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const pdfBytes = new Uint8Array(pdfArrayBuffer);
   console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes");
   return pdfBytes;
-}
-
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  const chunkSize = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
-  }
-  return btoa(binary);
 }
 
 async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string): Promise<{ ok: boolean; error?: string }> {
@@ -349,8 +377,6 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
 
   try {
     console.log("Sending email via Resend to: williamcareyfuneral99@gmail.com");
-    console.log("Attachment filename:", filename);
-
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -379,6 +405,59 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   }
 }
 
+async function sendSmsConfirmation(mobileNumber: string): Promise<{ ok: boolean; error?: string }> {
+  console.log("SMS SEND START via Fast2SMS");
+  console.log("FAST2SMS_API_KEY:", FAST2SMS_API_KEY ? "SET" : "NOT SET");
+
+  if (!FAST2SMS_API_KEY) {
+    console.error("Fast2SMS API key not configured");
+    return { ok: false, error: "SMS service not configured" };
+  }
+
+  // Ensure 10-digit number
+  const cleanNumber = mobileNumber.replace(/\D/g, "").slice(-10);
+  if (cleanNumber.length !== 10) {
+    console.error("Invalid mobile number for SMS:", mobileNumber);
+    return { ok: false, error: "Invalid mobile number" };
+  }
+
+  const message = "வில்லியம் கேரி ஈமச்சடங்கு காப்பீட்டு திட்டத்தில் இணைந்ததற்கு நன்றி - உங்கள் காப்பீட்டுத் தொகை ரூ.3,000 செலுத்திய விண்ணப்ப படிவம் ஆன்லைன் மூலம் வெற்றிகரமாக பதிவு செய்யப்பட்டுள்ளது.";
+
+  try {
+    const res = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: FAST2SMS_API_KEY,
+      },
+      body: JSON.stringify({
+        route: "q",
+        message: message,
+        language: "unicode",
+        flash: 0,
+        numbers: cleanNumber,
+      }),
+    });
+
+    const resData = await res.json();
+    console.log("Fast2SMS response status:", res.status);
+    console.log("Fast2SMS response:", JSON.stringify(resData));
+
+    if (resData.return === true || resData.status_code === 200) {
+      console.log("SMS sent successfully to:", cleanNumber);
+      return { ok: true };
+    } else {
+      const msg = resData.message || "SMS sending failed";
+      console.error("SMS failed:", msg);
+      return { ok: false, error: msg };
+    }
+  } catch (err: any) {
+    const msg = `SMS error: ${err?.message || String(err)}`;
+    console.error(msg);
+    return { ok: false, error: msg };
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("=== FUNCTION STARTED ===");
   console.log("Request method:", req.method);
@@ -391,22 +470,37 @@ const handler = async (req: Request): Promise<Response> => {
     const data: ApplicationData = await req.json();
     console.log("Member name:", data.member_name);
     console.log("Serial number:", data.serial_number);
+    console.log("Language:", data.language || data.selected_language);
 
     const pdfBuffer = await buildPdfBuffer(data);
     console.log("PDF buffer created, size:", pdfBuffer.length);
 
     const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number);
 
-    if (emailResult.ok) {
-      console.log("Email sent successfully");
-      return new Response(JSON.stringify({ success: true }), {
+    if (!emailResult.ok) {
+      console.error("Email failed:", emailResult.error);
+      return new Response(JSON.stringify({ success: false, error: emailResult.error }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    console.error("Email failed:", emailResult.error);
-    return new Response(JSON.stringify({ success: false, error: emailResult.error }), {
+    console.log("Email sent successfully");
+
+    // Send SMS confirmation after successful email
+    let smsResult = { ok: false, error: "No mobile number" };
+    const mobileNumber = data.mobile_number?.replace(/\D/g, "");
+    if (mobileNumber && mobileNumber.length === 10) {
+      smsResult = await sendSmsConfirmation(mobileNumber);
+    } else {
+      console.log("Skipping SMS - no valid mobile number provided");
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      sms_sent: smsResult.ok,
+      sms_error: smsResult.ok ? undefined : smsResult.error,
+    }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
