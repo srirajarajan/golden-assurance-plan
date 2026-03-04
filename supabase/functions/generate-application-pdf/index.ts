@@ -10,9 +10,9 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-
 interface ApplicationData {
   member_name: string;
+  age: string;
   guardian_name: string;
   gender: string;
   occupation: string;
@@ -38,7 +38,7 @@ interface ApplicationData {
   aadhaar_back_path: string;
   pamphlet_image_path: string;
   user_id: string;
-  serial_number?: string;
+  serial_number: string;
 }
 
 const tamilLabels = {
@@ -47,6 +47,7 @@ const tamilLabels = {
   applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
   applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
   memberName: "உறுப்பினர் பெயர்",
+  age: "வயது",
   guardianName: "தகப்பனார்/கணவர் பெயர்",
   gender: "பாலினம்",
   occupation: "தொழில்",
@@ -75,12 +76,13 @@ const englishLabels = {
   applicantPhoto: "Applicant Photo",
   applicantDetails: "Applicant Details",
   memberName: "Member Name",
+  age: "Age",
   guardianName: "Father/Husband Name",
   gender: "Gender",
   occupation: "Occupation",
   rationCard: "Ration Card Number",
-  annualIncome: "Annual Income (Max ₹1.75 Lakhs)",
-  aadhaarNumber: "Aadhaar Number (12 digits)",
+  annualIncome: "Annual Income",
+  aadhaarNumber: "Aadhaar Number",
   mobileNumber: "Mobile Number",
   address: "Permanent Address",
   aadhaarImages: "Aadhaar Card Images",
@@ -105,12 +107,10 @@ function safeText(v: unknown, fallback: string): string {
 async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64: string; type: string } | null> {
   try {
     if (!path || path.trim() === "") return null;
-    console.log("Fetching image:", path);
     const { data, error } = await supabase.storage.from("applications-images").download(path);
     if (error) { console.error(`Failed to download image (${path}):`, error.message); return null; }
     const arrayBuffer = await data.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    console.log("Image fetched successfully:", path, "size:", bytes.length);
     const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
     const type = isPng ? "PNG" : "JPEG";
     const b64 = uint8ArrayToBase64(bytes);
@@ -132,13 +132,10 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-// Load the Tamil font file and return base64 string
 async function loadTamilFont(): Promise<string | null> {
   try {
     const fontPath = new URL("./NotoSansTamil-Regular.ttf", import.meta.url);
     const fontBytes = await Deno.readFile(fontPath);
-    console.log("Tamil font loaded, size:", fontBytes.length, "bytes");
-    // Use Deno's base64 encode for large binary
     const b64 = base64Encode(fontBytes);
     return b64;
   } catch (err) {
@@ -164,7 +161,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const contentWidth = pageWidth - 2 * margin;
   let y = margin;
 
-  // Load and register Tamil font for Unicode support
   let fontFamily = "helvetica";
   if (isTamil) {
     const tamilFontBase64 = await loadTamilFont();
@@ -173,29 +169,32 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
         doc.addFileToVFS("NotoSansTamil-Regular.ttf", tamilFontBase64);
         doc.addFont("NotoSansTamil-Regular.ttf", "NotoSansTamil", "normal");
         fontFamily = "NotoSansTamil";
-        console.log("Tamil font registered successfully");
       } catch (e) {
         console.error("Failed to register Tamil font:", e);
-        fontFamily = "helvetica";
       }
     }
   }
 
   doc.setFont(fontFamily, "normal");
 
+  // Increased field spacing for clarity
+  const fieldSpacing = 7;
+
   const drawSectionHeader = (title: string) => {
+    if (y > 270) { doc.addPage(); y = margin; }
     doc.setFillColor(139, 90, 43);
-    doc.rect(margin, y, contentWidth, 8, "F");
+    doc.rect(margin, y, contentWidth, 9, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont(fontFamily, "bold");
-    doc.text(title, margin + 3, y + 5.5);
+    doc.text(title, margin + 3, y + 6);
     doc.setTextColor(0, 0, 0);
     doc.setFont(fontFamily, "normal");
-    y += 12;
+    y += 13;
   };
 
   const drawField = (label: string, value: string) => {
+    if (y > 275) { doc.addPage(); y = margin; }
     doc.setFontSize(9);
     doc.setFont(fontFamily, "bold");
     doc.text(label + ":", margin + 2, y);
@@ -204,10 +203,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     const valueWidth = contentWidth - labelWidth - 5;
     const lines = doc.splitTextToSize(value, valueWidth);
     doc.text(lines, margin + labelWidth, y);
-    y += Math.max(6, lines.length * 5);
+    y += Math.max(fieldSpacing, lines.length * 5 + 2);
   };
 
   const drawTableRow = (cells: string[], colWidths: number[], isHeader = false) => {
+    if (y > 275) { doc.addPage(); y = margin; }
     const rowHeight = 7;
     let x = margin;
     if (isHeader) {
@@ -243,12 +243,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setTextColor(0, 0, 0);
   y = 30;
 
-  if (data.serial_number) {
-    doc.setFontSize(11);
-    doc.setFont(fontFamily, "bold");
-    doc.text(`Serial No: ${data.serial_number}`, pageWidth - margin, y, { align: "right" });
-    y += 7;
-  }
+  // Serial number (always present now)
+  doc.setFontSize(11);
+  doc.setFont(fontFamily, "bold");
+  doc.text(`Serial No: ${data.serial_number}`, pageWidth - margin, y, { align: "right" });
+  y += 8;
 
   // Applicant Photo
   drawSectionHeader(labels.applicantPhoto);
@@ -259,9 +258,10 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   } else { doc.setFontSize(9); doc.text("Photo not available", margin + 2, y + 5); y += 10; }
   y += 5;
 
-  // Applicant Details
+  // Applicant Details - with Age after Member Name
   drawSectionHeader(labels.applicantDetails);
   drawField(labels.memberName, safeText(data.member_name, notProvided));
+  drawField(labels.age, safeText(data.age, notProvided));
   drawField(labels.guardianName, safeText(data.guardian_name, notProvided));
   drawField(labels.gender, safeText(data.gender, notProvided));
   drawField(labels.occupation, safeText(data.occupation, notProvided));
@@ -335,18 +335,15 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   return pdfBytes;
 }
 
-async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber?: string): Promise<{ ok: boolean; error?: string }> {
+async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber: string): Promise<{ ok: boolean; error?: string }> {
   console.log("EMAIL SEND START via Resend API");
-  console.log("RESEND_API_KEY:", RESEND_API_KEY ? "SET" : "NOT SET");
 
   if (!RESEND_API_KEY) {
-    const msg = "Email service not configured. Contact developer.";
-    console.error(msg);
-    return { ok: false, error: msg };
+    return { ok: false, error: "Email service not configured. Contact developer." };
   }
 
-  const safeName = serialNumber || (fullName || "Application").toString().trim().replace(/[\\/:*?"<>|]+/g, "_");
-  const filename = serialNumber ? `${serialNumber}.pdf` : `Application_${safeName}.pdf`;
+  // PDF filename is always <SerialNumber>.pdf
+  const filename = `${serialNumber}.pdf`;
   const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
 
   const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
@@ -354,12 +351,12 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   const emailPayload = {
     from: "William Carey Funeral Insurance <onboarding@resend.dev>",
     to: ["williamcareyfuneral99@gmail.com"],
-    subject: "New Application Received – William Carey Funeral Insurance",
+    subject: `New Application Received - ${serialNumber}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
       <h2 style="color:#8B5A2B">New Application Received</h2>
       <p>A new application has been submitted successfully.</p>
       <table style="border-collapse:collapse;width:100%;margin:16px 0">
-        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Serial Number</td><td style="padding:8px;border:1px solid #ddd">${serialNumber || "N/A"}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Serial Number</td><td style="padding:8px;border:1px solid #ddd">${serialNumber}</td></tr>
         <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Applicant Name</td><td style="padding:8px;border:1px solid #ddd">${fullName || "N/A"}</td></tr>
         <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Submission Date</td><td style="padding:8px;border:1px solid #ddd">${submissionDate}</td></tr>
       </table>
@@ -367,16 +364,10 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
       <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
       <p style="color:#888;font-size:12px">William Carey Funeral Insurance</p>
     </div>`,
-    attachments: [
-      {
-        filename,
-        content: pdfBase64,
-      },
-    ],
+    attachments: [{ filename, content: pdfBase64 }],
   };
 
   try {
-    console.log("Sending email via Resend to: williamcareyfuneral99@gmail.com");
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -388,61 +379,50 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
 
     const resendData = await resendRes.json();
     console.log("Resend API response status:", resendRes.status);
-    console.log("Resend API response body:", JSON.stringify(resendData));
 
     if (!resendRes.ok) {
-      const msg = `Resend API error: ${resendData?.message || resendRes.statusText}`;
-      console.error(msg);
-      return { ok: false, error: msg };
+      return { ok: false, error: `Resend API error: ${resendData?.message || resendRes.statusText}` };
     }
 
     console.log("Email sent successfully via Resend, id:", resendData.id);
     return { ok: true };
   } catch (err: any) {
-    const msg = `Failed to send email via Resend: ${err?.message || String(err)}`;
-    console.error(msg);
     return { ok: false, error: "Email service not configured. Contact developer." };
   }
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("=== FUNCTION STARTED ===");
-  console.log("Request method:", req.method);
-
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const data: ApplicationData = await req.json();
-    console.log("Member name:", data.member_name);
-    console.log("Serial number:", data.serial_number);
-    console.log("Language:", data.language || data.selected_language);
+    console.log("Member name:", data.member_name, "Serial:", data.serial_number);
+
+    if (!data.serial_number) {
+      return new Response(JSON.stringify({ success: false, error: "Serial number is required" }), {
+        status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     const pdfBuffer = await buildPdfBuffer(data);
-    console.log("PDF buffer created, size:", pdfBuffer.length);
-
     const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number);
 
     if (!emailResult.ok) {
       console.error("Email failed:", emailResult.error);
       return new Response(JSON.stringify({ success: false, error: emailResult.error }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    console.log("Email sent successfully");
-
     return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (err: any) {
     console.error("ERROR:", err);
     return new Response(JSON.stringify({ success: false, error: err?.message || String(err) }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
 };
