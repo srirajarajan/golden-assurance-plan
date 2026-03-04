@@ -44,6 +44,8 @@ interface ApplicationData {
 const tamilLabels = {
   title: "William Carey Funeral Insurance",
   subtitle: "விண்ணப்பப் படிவம்",
+  applicationNo: "விண்ணப்ப எண்",
+  date: "தேதி",
   applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
   applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
   memberName: "உறுப்பினர் பெயர்",
@@ -60,21 +62,26 @@ const tamilLabels = {
   aadhaarFront: "ஆதார் முன்பக்கம்",
   aadhaarBack: "ஆதார் பின்பக்கம்",
   pamphletImage: "துண்டுப்பிரசுரம்",
-  nominee1Title: "வாரிசு 1 (கட்டாயம்)",
-  nominee2Title: "வாரிசு 2 (விருப்பம்)",
+  nomineeDetails: "வாரிசு விவரங்கள்",
+  nominee1Title: "வாரிசு 1",
+  nominee2Title: "வாரிசு 2",
   nomineeName: "வாரிசு பெயர்",
   nomineeGender: "பாலினம்",
   nomineeAge: "வயது",
   nomineeRelation: "உறவு முறை",
   additionalMessage: "கூடுதல் செய்தி",
   notProvided: "வழங்கப்படவில்லை",
+  footer: "இது கணினி மூலம் உருவாக்கப்பட்ட காப்பீட்டு விண்ணப்ப ஆவணம்.",
+  managingDirector: "நிர்வாக இயக்குநர்",
 };
 
 const englishLabels = {
   title: "William Carey Funeral Insurance",
   subtitle: "Application Form",
+  applicationNo: "Application No",
+  date: "Date",
   applicantPhoto: "Applicant Photo",
-  applicantDetails: "Applicant Details",
+  applicantDetails: "APPLICANT DETAILS",
   memberName: "Member Name",
   age: "Age",
   guardianName: "Father/Husband Name",
@@ -85,37 +92,26 @@ const englishLabels = {
   aadhaarNumber: "Aadhaar Number",
   mobileNumber: "Mobile Number",
   address: "Permanent Address",
-  aadhaarImages: "Aadhaar Card Images",
+  aadhaarImages: "AADHAAR CARD IMAGES",
   aadhaarFront: "Aadhaar Front Side",
   aadhaarBack: "Aadhaar Back Side",
-  pamphletImage: "Pamphlet Image",
-  nominee1Title: "Nominee 1 (Required)",
-  nominee2Title: "Nominee 2 (Optional)",
+  pamphletImage: "PAMPHLET IMAGE",
+  nomineeDetails: "NOMINEE DETAILS",
+  nominee1Title: "Nominee 1",
+  nominee2Title: "Nominee 2",
   nomineeName: "Nominee Name",
   nomineeGender: "Gender",
   nomineeAge: "Age",
   nomineeRelation: "Relationship",
-  additionalMessage: "Additional Message",
+  additionalMessage: "ADDITIONAL MESSAGE",
   notProvided: "Not Provided",
+  footer: "This is a system-generated insurance application document.",
+  managingDirector: "Managing Director",
 };
 
 function safeText(v: unknown, fallback: string): string {
   const s = typeof v === "string" ? v.trim() : "";
   return s.length > 0 ? s : fallback;
-}
-
-async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64: string; type: string } | null> {
-  try {
-    if (!path || path.trim() === "") return null;
-    const { data, error } = await supabase.storage.from("applications-images").download(path);
-    if (error) { console.error(`Failed to download image (${path}):`, error.message); return null; }
-    const arrayBuffer = await data.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
-    const type = isPng ? "PNG" : "JPEG";
-    const b64 = uint8ArrayToBase64(bytes);
-    return { base64: b64, type };
-  } catch (err) { console.error(`Error fetching image (${path}):`, err); return null; }
 }
 
 function getLanguage(data: ApplicationData): "ta" | "en" {
@@ -132,17 +128,51 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64: string; type: string } | null> {
+  try {
+    if (!path || path.trim() === "") return null;
+    const { data, error } = await supabase.storage.from("applications-images").download(path);
+    if (error) { console.error(`Failed to download image (${path}):`, error.message); return null; }
+    const arrayBuffer = await data.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50;
+    const type = isPng ? "PNG" : "JPEG";
+    return { base64: uint8ArrayToBase64(bytes), type };
+  } catch (err) { console.error(`Error fetching image (${path}):`, err); return null; }
+}
+
+async function loadLocalImage(filename: string): Promise<{ base64: string; type: string } | null> {
+  try {
+    const filePath = new URL(`./${filename}`, import.meta.url);
+    const bytes = await Deno.readFile(filePath);
+    const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50;
+    const type = isPng ? "PNG" : "JPEG";
+    return { base64: uint8ArrayToBase64(bytes), type };
+  } catch (err) {
+    console.error(`Failed to load local image ${filename}:`, err);
+    return null;
+  }
+}
+
 async function loadTamilFont(): Promise<string | null> {
   try {
     const fontPath = new URL("./NotoSansTamil-Regular.ttf", import.meta.url);
     const fontBytes = await Deno.readFile(fontPath);
-    const b64 = base64Encode(fontBytes);
-    return b64;
+    return base64Encode(fontBytes);
   } catch (err) {
     console.error("Failed to load Tamil font:", err);
     return null;
   }
 }
+
+// ─── Colors ───
+const DARK_BROWN = [62, 39, 22] as const;   // #3E2716
+const GOLD = [164, 127, 55] as const;       // #A47F37
+const LIGHT_GREY_BG = [245, 245, 245] as const;
+const MID_GREY = [200, 200, 200] as const;
+const TEXT_BLACK = [33, 33, 33] as const;
+const TEXT_GREY = [130, 130, 130] as const;
+const WHITE = [255, 255, 255] as const;
 
 async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   console.log("PDF GENERATION START");
@@ -153,199 +183,341 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const lang = getLanguage(data);
   const isTamil = lang === "ta";
   const labels = isTamil ? tamilLabels : englishLabels;
-  const notProvided = labels.notProvided;
+  const np = labels.notProvided;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageWidth = 210;
+  const pw = 210;
   const margin = 15;
-  const contentWidth = pageWidth - 2 * margin;
+  const cw = pw - 2 * margin;
   let y = margin;
 
+  // Font setup
   let fontFamily = "helvetica";
   if (isTamil) {
-    const tamilFontBase64 = await loadTamilFont();
-    if (tamilFontBase64) {
+    const tamilFontB64 = await loadTamilFont();
+    if (tamilFontB64) {
       try {
-        doc.addFileToVFS("NotoSansTamil-Regular.ttf", tamilFontBase64);
+        doc.addFileToVFS("NotoSansTamil-Regular.ttf", tamilFontB64);
         doc.addFont("NotoSansTamil-Regular.ttf", "NotoSansTamil", "normal");
         fontFamily = "NotoSansTamil";
-      } catch (e) {
-        console.error("Failed to register Tamil font:", e);
-      }
+      } catch (e) { console.error("Font registration failed:", e); }
     }
   }
-
   doc.setFont(fontFamily, "normal");
 
-  // Increased field spacing for clarity
-  const fieldSpacing = 7;
+  const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
 
-  const drawSectionHeader = (title: string) => {
-    if (y > 270) { doc.addPage(); y = margin; }
-    doc.setFillColor(139, 90, 43);
-    doc.rect(margin, y, contentWidth, 9, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
-    doc.setFont(fontFamily, "bold");
-    doc.text(title, margin + 3, y + 6);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(fontFamily, "normal");
-    y += 13;
+  // Helper: ensure page break
+  const ensureSpace = (needed: number) => {
+    if (y + needed > 282) { doc.addPage(); y = margin; }
   };
 
-  const drawField = (label: string, value: string) => {
-    if (y > 275) { doc.addPage(); y = margin; }
-    doc.setFontSize(9);
-    doc.setFont(fontFamily, "bold");
-    doc.text(label + ":", margin + 2, y);
-    doc.setFont(fontFamily, "normal");
-    const labelWidth = 55;
-    const valueWidth = contentWidth - labelWidth - 5;
-    const lines = doc.splitTextToSize(value, valueWidth);
-    doc.text(lines, margin + labelWidth, y);
-    y += Math.max(fieldSpacing, lines.length * 5 + 2);
-  };
+  // ═══════════════════════════════════════════
+  // PAGE 1 - HEADER
+  // ═══════════════════════════════════════════
 
-  const drawTableRow = (cells: string[], colWidths: number[], isHeader = false) => {
-    if (y > 275) { doc.addPage(); y = margin; }
-    const rowHeight = 7;
-    let x = margin;
-    if (isHeader) {
-      doc.setFillColor(218, 165, 32);
-      doc.rect(margin, y, contentWidth, rowHeight, "F");
-      doc.setFont(fontFamily, "bold");
-      doc.setTextColor(0, 0, 0);
-    } else {
-      doc.setFillColor(255, 250, 240);
-      doc.rect(margin, y, contentWidth, rowHeight, "F");
-      doc.setFont(fontFamily, "normal");
-    }
-    doc.setFontSize(8);
-    cells.forEach((cell, i) => { doc.text(cell, x + 2, y + 5); x += colWidths[i]; });
-    doc.setDrawColor(139, 90, 43);
-    doc.rect(margin, y, contentWidth, rowHeight, "S");
-    x = margin;
-    colWidths.slice(0, -1).forEach((w) => { x += w; doc.line(x, y, x, y + rowHeight); });
-    y += rowHeight;
-    doc.setTextColor(0, 0, 0);
-  };
-
-  // Title
-  doc.setFillColor(139, 90, 43);
-  doc.rect(0, 0, pageWidth, 25, "F");
-  doc.setTextColor(255, 215, 0);
-  doc.setFontSize(16);
+  // Top left: Company name + subtitle
+  doc.setFontSize(14);
   doc.setFont(fontFamily, "bold");
-  doc.text(labels.title, pageWidth / 2, 10, { align: "center" });
-  doc.setFontSize(12);
-  doc.setTextColor(255, 255, 255);
-  doc.text(labels.subtitle, pageWidth / 2, 18, { align: "center" });
-  doc.setTextColor(0, 0, 0);
-  y = 30;
+  doc.setTextColor(...DARK_BROWN);
+  doc.text(labels.title, margin, y + 5);
+  doc.setFontSize(10);
+  doc.setFont(fontFamily, "normal");
+  doc.setTextColor(...GOLD);
+  doc.text(labels.subtitle, margin, y + 11);
 
-  // Serial number (always present now)
-  doc.setFontSize(11);
+  // Top right: Application No + Date
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_BLACK);
   doc.setFont(fontFamily, "bold");
-  doc.text(`Serial No: ${data.serial_number}`, pageWidth - margin, y, { align: "right" });
+  doc.text(`${labels.applicationNo}: ${data.serial_number}`, pw - margin, y + 5, { align: "right" });
+  doc.setFont(fontFamily, "normal");
+  doc.text(`${labels.date}: ${submissionDate}`, pw - margin, y + 11, { align: "right" });
+
+  y += 16;
+
+  // Divider line
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pw - margin, y);
   y += 8;
 
-  // Applicant Photo
-  drawSectionHeader(labels.applicantPhoto);
+  // ═══════════════════════════════════════════
+  // APPLICANT PHOTO
+  // ═══════════════════════════════════════════
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
   if (applicantPhoto) {
-    try { doc.addImage(applicantPhoto.base64, applicantPhoto.type, margin + 2, y, 35, 45); y += 50; }
-    catch (e) { console.error("Error adding applicant photo:", e); y += 5; }
-  } else { doc.setFontSize(9); doc.text("Photo not available", margin + 2, y + 5); y += 10; }
-  y += 5;
+    // Photo on the right side of the header area
+    try {
+      const photoW = 30;
+      const photoH = 38;
+      // Border around photo
+      doc.setDrawColor(...MID_GREY);
+      doc.setLineWidth(0.3);
+      doc.rect(pw - margin - photoW - 1, y - 1, photoW + 2, photoH + 2, "S");
+      doc.addImage(applicantPhoto.base64, applicantPhoto.type, pw - margin - photoW, y, photoW, photoH);
+    } catch (e) { console.error("Photo error:", e); }
+  }
 
-  // Applicant Details - with Age after Member Name
+  // ═══════════════════════════════════════════
+  // APPLICANT DETAILS SECTION
+  // ═══════════════════════════════════════════
+  // Section header
+  const drawSectionHeader = (title: string) => {
+    ensureSpace(12);
+    doc.setFillColor(...LIGHT_GREY_BG);
+    doc.setDrawColor(...MID_GREY);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, y, cw, 8, "FD");
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK_BROWN);
+    doc.text(title, margin + 4, y + 5.5);
+    doc.setTextColor(...TEXT_BLACK);
+    y += 12;
+  };
+
   drawSectionHeader(labels.applicantDetails);
-  drawField(labels.memberName, safeText(data.member_name, notProvided));
-  drawField(labels.age, safeText(data.age, notProvided));
-  drawField(labels.guardianName, safeText(data.guardian_name, notProvided));
-  drawField(labels.gender, safeText(data.gender, notProvided));
-  drawField(labels.occupation, safeText(data.occupation, notProvided));
-  drawField(labels.rationCard, safeText(data.ration_card, notProvided));
-  drawField(labels.annualIncome, safeText(data.annual_income, notProvided));
-  drawField(labels.aadhaarNumber, safeText(data.aadhaar_number, notProvided));
-  drawField(labels.mobileNumber, safeText(data.mobile_number, notProvided));
-  drawField(labels.address, safeText(data.address, notProvided));
-  y += 5;
 
-  // Aadhaar Images
+  // Two-column table for details
+  const detailFields = [
+    [labels.memberName, safeText(data.member_name, np)],
+    [labels.age, safeText(data.age, np)],
+    [labels.guardianName, safeText(data.guardian_name, np)],
+    [labels.gender, safeText(data.gender, np)],
+    [labels.occupation, safeText(data.occupation, np)],
+    [labels.rationCard, safeText(data.ration_card, np)],
+    [labels.annualIncome, safeText(data.annual_income, np)],
+    [labels.aadhaarNumber, safeText(data.aadhaar_number, np)],
+    [labels.mobileNumber, safeText(data.mobile_number, np)],
+    [labels.address, safeText(data.address, np)],
+  ];
+
+  const labelColW = 50;
+  const valueColW = cw - labelColW;
+  const rowH = 7;
+
+  // Limit detail rows width so they don't overlap photo
+  const detailsMaxW = applicantPhoto ? cw - 36 : cw;
+
+  detailFields.forEach(([label, value], idx) => {
+    ensureSpace(rowH + 2);
+    const fillColor = idx % 2 === 0 ? WHITE : LIGHT_GREY_BG;
+    doc.setFillColor(...fillColor);
+    doc.rect(margin, y, detailsMaxW, rowH, "F");
+    // Bottom border
+    doc.setDrawColor(...MID_GREY);
+    doc.setLineWidth(0.15);
+    doc.line(margin, y + rowH, margin + detailsMaxW, y + rowH);
+
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...TEXT_BLACK);
+    doc.text(label, margin + 3, y + 5);
+
+    doc.setFont(fontFamily, "normal");
+    const valMaxW = detailsMaxW - labelColW - 6;
+    const lines = doc.splitTextToSize(value, valMaxW);
+    doc.text(lines, margin + labelColW, y + 5);
+
+    const lineH = Math.max(rowH, lines.length * 5 + 3);
+    y += lineH;
+  });
+
+  y += 8;
+
+  // ═══════════════════════════════════════════
+  // AADHAAR IMAGES
+  // ═══════════════════════════════════════════
   drawSectionHeader(labels.aadhaarImages);
+
+  const imgBoxW = (cw - 10) / 2;
+  const imgBoxH = 55;
+
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
-  doc.setFontSize(9); doc.setFont(fontFamily, "bold");
-  doc.text(labels.aadhaarFront + ":", margin + 2, y); y += 5;
-  if (aadhaarFront) {
-    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y, 80, 50); y += 55; }
-    catch (e) { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
-  } else { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
-
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
+
+  ensureSpace(imgBoxH + 12);
+
+  // Labels
   doc.setFont(fontFamily, "bold");
-  doc.text(labels.aadhaarBack + ":", margin + 2, y); y += 5;
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_GREY);
+  doc.text(labels.aadhaarFront, margin + imgBoxW / 2, y, { align: "center" });
+  doc.text(labels.aadhaarBack, margin + imgBoxW + 10 + imgBoxW / 2, y, { align: "center" });
+  y += 4;
+
+  // Bordered boxes
+  doc.setDrawColor(...MID_GREY);
+  doc.setLineWidth(0.3);
+  doc.rect(margin, y, imgBoxW, imgBoxH, "S");
+  doc.rect(margin + imgBoxW + 10, y, imgBoxW, imgBoxH, "S");
+
+  if (aadhaarFront) {
+    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y + 2, imgBoxW - 4, imgBoxH - 4); }
+    catch (e) { console.error("Aadhaar front error:", e); }
+  }
   if (aadhaarBack) {
-    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + 2, y, 80, 50); y += 55; }
-    catch (e) { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
-  } else { doc.setFont(fontFamily, "normal"); doc.text("Image not available", margin + 2, y); y += 8; }
+    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 12, y + 2, imgBoxW - 4, imgBoxH - 4); }
+    catch (e) { console.error("Aadhaar back error:", e); }
+  }
 
-  // Page 2
-  doc.addPage(); y = margin;
+  y += imgBoxH + 8;
 
-  // Pamphlet
+  // ═══════════════════════════════════════════
+  // PAGE 2
+  // ═══════════════════════════════════════════
+  doc.addPage();
+  y = margin;
+
+  // ═══════════════════════════════════════════
+  // PAMPHLET IMAGE
+  // ═══════════════════════════════════════════
   drawSectionHeader(labels.pamphletImage);
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
   if (pamphletImage) {
-    try { doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y, 100, 70); y += 75; }
-    catch (e) { doc.setFontSize(9); doc.text("Image not available", margin + 2, y + 5); y += 10; }
-  } else { doc.setFontSize(9); doc.text("Image not available", margin + 2, y + 5); y += 10; }
+    ensureSpace(75);
+    doc.setDrawColor(...MID_GREY);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, y, cw, 70, "S");
+    try { doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, cw - 4, 66); }
+    catch (e) { console.error("Pamphlet error:", e); }
+    y += 75;
+  } else {
+    doc.setFontSize(9);
+    doc.text("Image not available", margin + 3, y + 5);
+    y += 10;
+  }
+
   y += 5;
 
-  // Nominees
-  const nomineeColWidths = [45, 45, 30, 60];
-  drawSectionHeader(labels.nominee1Title);
-  drawTableRow([labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation], nomineeColWidths, true);
-  drawTableRow([safeText(data.nominee1_name, notProvided), safeText(data.nominee1_gender, notProvided), safeText(data.nominee1_age, notProvided), safeText(data.nominee1_relation, notProvided)], nomineeColWidths);
-  y += 8;
+  // ═══════════════════════════════════════════
+  // NOMINEE DETAILS
+  // ═══════════════════════════════════════════
+  drawSectionHeader(labels.nomineeDetails);
 
-  drawSectionHeader(labels.nominee2Title);
-  const hasNominee2 = safeText(data.nominee2_name, "") !== "";
-  drawTableRow([labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation], nomineeColWidths, true);
-  if (hasNominee2) {
-    drawTableRow([safeText(data.nominee2_name, notProvided), safeText(data.nominee2_gender, notProvided), safeText(data.nominee2_age, notProvided), safeText(data.nominee2_relation, notProvided)], nomineeColWidths);
-  } else {
-    drawTableRow([notProvided, notProvided, notProvided, notProvided], nomineeColWidths);
-  }
-  y += 8;
+  const nomColWidths = [50, 30, 20, 50];
+  const nomHeaders = [labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation];
 
-  // Additional message
-  const additionalMessage = safeText(data.additional_message, "");
-  if (additionalMessage && additionalMessage !== notProvided && additionalMessage.length > 0) {
+  const drawNomineeTable = (title: string, name: string, gender: string, age: string, relation: string) => {
+    ensureSpace(25);
+    // Sub-title
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...GOLD);
+    doc.text(title, margin + 2, y);
+    y += 5;
+
+    // Header row
+    let x = margin;
+    doc.setFillColor(...DARK_BROWN);
+    doc.rect(margin, y, cw, 7, "F");
+    doc.setTextColor(...WHITE);
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(8);
+    nomHeaders.forEach((h, i) => {
+      doc.text(h, x + 3, y + 5);
+      x += nomColWidths[i];
+    });
+    y += 7;
+
+    // Data row
+    x = margin;
+    doc.setFillColor(...WHITE);
+    doc.rect(margin, y, cw, 7, "F");
+    doc.setDrawColor(...MID_GREY);
+    doc.rect(margin, y, cw, 7, "S");
+    doc.setTextColor(...TEXT_BLACK);
+    doc.setFont(fontFamily, "normal");
+    [name, gender, age, relation].forEach((val, i) => {
+      doc.text(safeText(val, np), x + 3, y + 5);
+      x += nomColWidths[i];
+    });
+
+    // Vertical lines
+    x = margin;
+    nomColWidths.slice(0, -1).forEach((w) => {
+      x += w;
+      doc.line(x, y - 7, x, y + 7);
+    });
+
+    y += 10;
+  };
+
+  drawNomineeTable(labels.nominee1Title, data.nominee1_name, data.nominee1_gender, data.nominee1_age, data.nominee1_relation);
+  drawNomineeTable(labels.nominee2Title, data.nominee2_name, data.nominee2_gender, data.nominee2_age, data.nominee2_relation);
+
+  // ═══════════════════════════════════════════
+  // ADDITIONAL MESSAGE
+  // ═══════════════════════════════════════════
+  const msg = safeText(data.additional_message, "");
+  if (msg.length > 0) {
     drawSectionHeader(labels.additionalMessage);
-    doc.setFontSize(9); doc.setFont(fontFamily, "normal");
-    const messageLines = doc.splitTextToSize(additionalMessage, contentWidth - 4);
-    doc.text(messageLines, margin + 2, y);
-    y += messageLines.length * 5 + 5;
+    doc.setFontSize(9);
+    doc.setFont(fontFamily, "normal");
+    doc.setTextColor(...TEXT_BLACK);
+    const msgLines = doc.splitTextToSize(msg, cw - 6);
+    ensureSpace(msgLines.length * 5 + 5);
+    doc.text(msgLines, margin + 3, y);
+    y += msgLines.length * 5 + 8;
   }
 
-  const pdfArrayBuffer = doc.output("arraybuffer");
-  const pdfBytes = new Uint8Array(pdfArrayBuffer);
+  // ═══════════════════════════════════════════
+  // SIGNATURE & SEAL - bottom right of last page
+  // ═══════════════════════════════════════════
+  const signatureImg = await loadLocalImage("signature.jpeg");
+  const sealImg = await loadLocalImage("seal.jpeg");
+
+  // Ensure enough space at bottom
+  const sigBlockH = 60;
+  ensureSpace(sigBlockH);
+
+  // Position at bottom-right
+  const sigX = pw - margin - 55;
+  let sigY = Math.max(y + 10, 230); // push towards bottom
+
+  if (signatureImg) {
+    try { doc.addImage(signatureImg.base64, signatureImg.type, sigX + 5, sigY, 40, 20); }
+    catch (e) { console.error("Signature image error:", e); }
+    sigY += 22;
+  }
+
+  if (sealImg) {
+    try { doc.addImage(sealImg.base64, sealImg.type, sigX + 10, sigY, 30, 20); }
+    catch (e) { console.error("Seal image error:", e); }
+    sigY += 22;
+  }
+
+  doc.setFont(fontFamily, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...DARK_BROWN);
+  doc.text(labels.title, pw - margin, sigY, { align: "right" });
+  sigY += 4;
+  doc.text(labels.managingDirector, pw - margin, sigY, { align: "right" });
+
+  // ═══════════════════════════════════════════
+  // FOOTER on every page
+  // ═══════════════════════════════════════════
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont(fontFamily, "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...TEXT_GREY);
+    doc.text(labels.footer, pw / 2, 290, { align: "center" });
+  }
+
+  const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
   console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes");
   return pdfBytes;
 }
 
+// ─── Email ───
 async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber: string): Promise<{ ok: boolean; error?: string }> {
-  console.log("EMAIL SEND START via Resend API");
+  if (!RESEND_API_KEY) return { ok: false, error: "Email service not configured. Contact developer." };
 
-  if (!RESEND_API_KEY) {
-    return { ok: false, error: "Email service not configured. Contact developer." };
-  }
-
-  // PDF filename is always <SerialNumber>.pdf
   const filename = `${serialNumber}.pdf`;
   const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
-
   const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
 
   const emailPayload = {
@@ -353,8 +525,8 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
     to: ["williamcareyfuneral99@gmail.com"],
     subject: `New Application Received - ${serialNumber}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:#8B5A2B">New Application Received</h2>
-      <p>A new application has been submitted successfully.</p>
+      <h2 style="color:#3E2716">New Application Received</h2>
+      <p>A new application has been submitted.</p>
       <table style="border-collapse:collapse;width:100%;margin:16px 0">
         <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Serial Number</td><td style="padding:8px;border:1px solid #ddd">${serialNumber}</td></tr>
         <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Applicant Name</td><td style="padding:8px;border:1px solid #ddd">${fullName || "N/A"}</td></tr>
@@ -368,37 +540,27 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   };
 
   try {
-    const resendRes = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify(emailPayload),
     });
-
-    const resendData = await resendRes.json();
-    console.log("Resend API response status:", resendRes.status);
-
-    if (!resendRes.ok) {
-      return { ok: false, error: `Resend API error: ${resendData?.message || resendRes.statusText}` };
-    }
-
-    console.log("Email sent successfully via Resend, id:", resendData.id);
+    const resData = await res.json();
+    if (!res.ok) return { ok: false, error: `Resend API error: ${resData?.message || res.statusText}` };
+    console.log("Email sent, id:", resData.id);
     return { ok: true };
   } catch (err: any) {
-    return { ok: false, error: "Email service not configured. Contact developer." };
+    return { ok: false, error: "Email service error. Contact developer." };
   }
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+// ─── Handler ───
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const data: ApplicationData = await req.json();
-    console.log("Member name:", data.member_name, "Serial:", data.serial_number);
+    console.log("Member:", data.member_name, "Serial:", data.serial_number);
 
     if (!data.serial_number) {
       return new Response(JSON.stringify({ success: false, error: "Serial number is required" }), {
@@ -425,6 +587,4 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
-};
-
-serve(handler);
+});
