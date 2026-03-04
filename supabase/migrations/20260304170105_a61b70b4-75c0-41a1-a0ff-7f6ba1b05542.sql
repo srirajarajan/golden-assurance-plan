@@ -1,0 +1,1 @@
+UPDATE public.profiles SET range_start = 1, range_end = 99999 WHERE user_id = '81e9754a-acb2-48df-9101-3efe98b35a62' AND range_start IS NULL;
