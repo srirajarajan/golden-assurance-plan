@@ -304,6 +304,7 @@ const ApplicationPage: React.FC = () => {
 
       const payload = {
         member_name: (formData.get('member_name') as string)?.trim() || '',
+        age: (formData.get('age') as string)?.trim() || '',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || '',
         gender: (formData.get('gender') as string)?.trim() || '',
         occupation: (formData.get('occupation') as string)?.trim() || '',
@@ -329,7 +330,28 @@ const ApplicationPage: React.FC = () => {
         user_id: userId,
       };
 
-      // Step 1: Generate PDF and send email (without serial number first)
+      // Step 1: Generate serial number FIRST
+      setSubmitStep(selectedLanguage === 'ta' ? 'சீரியல் எண் உருவாக்குகிறது...' : 'Generating serial number...');
+
+      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(supabaseKey ? { apikey: supabaseKey } : {}),
+        },
+        body: JSON.stringify({ staff_user_id: userId }),
+      });
+
+      const serialData = await serialRes.json();
+      if (!serialRes.ok || serialData.error) {
+        throw new Error(serialData.error || 'Failed to generate serial number');
+      }
+
+      const serialNumber = serialData.serial_number;
+      console.log('Serial number generated:', serialNumber);
+
+      // Step 2: Generate PDF and send email WITH serial number
       setSubmitStep(t.sendingEmail);
 
       const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
@@ -343,6 +365,7 @@ const ApplicationPage: React.FC = () => {
           ...payload,
           language: selectedLanguage,
           staff_email: user.email || '',
+          serial_number: serialNumber,
         }),
       });
 
@@ -361,29 +384,11 @@ const ApplicationPage: React.FC = () => {
       if (!emailSuccess) {
         toast({
           title: t.errorTitle,
-          description: 'Application saved but email not sent.',
+          description: 'PDF/Email failed. Serial was generated but email not sent.',
           variant: 'destructive',
         });
         return;
       }
-
-      // Step 2: Generate serial AFTER email succeeds
-      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          ...(supabaseKey ? { apikey: supabaseKey } : {}),
-        },
-        body: JSON.stringify({ staff_user_id: userId }),
-      });
-
-      const serialData = await serialRes.json();
-      if (!serialRes.ok || serialData.error) {
-        throw new Error(serialData.error || 'Failed to generate serial number');
-      }
-
-      const serialNumber = serialData.serial_number;
 
       // Step 3: Send SMS confirmation AFTER serial generated
       const mobileNum = (formData.get('mobile_number') as string)?.replace(/\D/g, '') || '';
@@ -614,6 +619,34 @@ const ApplicationPage: React.FC = () => {
                   <div>
                     <Label htmlFor="member_name">{t.memberName}</Label>
                     <Input id="member_name" name="member_name" placeholder={t.memberNamePlaceholder} className="mt-1" />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="age">
+                      {selectedLanguage === 'ta' ? 'வயது' : 'Age'} <span className="text-destructive">*</span>
+                    </Label>
+                    <Input 
+                      id="age" 
+                      name="age" 
+                      type="number" 
+                      placeholder={selectedLanguage === 'ta' ? 'வயது உள்ளிடவும்' : 'Enter age'} 
+                      className="mt-1" 
+                      required
+                      min={1}
+                      max={120}
+                      inputMode="numeric"
+                      onInvalid={(e) => {
+                        const input = e.target as HTMLInputElement;
+                        input.setCustomValidity(
+                          selectedLanguage === 'ta' 
+                            ? '1 முதல் 120 வரை சரியான வயதை உள்ளிடவும்' 
+                            : 'Enter a valid age between 1 and 120'
+                        );
+                      }}
+                      onChange={(e) => {
+                        (e.target as HTMLInputElement).setCustomValidity('');
+                      }}
+                    />
                   </div>
                   
                   <div>
