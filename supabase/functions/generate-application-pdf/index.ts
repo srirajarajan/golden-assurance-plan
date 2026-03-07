@@ -468,32 +468,48 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const signatureImg = await loadLocalImage("signature.jpeg");
   const sealImg = await loadLocalImage("seal.jpeg");
 
-  // Ensure enough space at bottom
-  const sigBlockH = 60;
-  ensureSpace(sigBlockH);
+  if (!signatureImg) console.error("Signature or Seal image not found");
+  if (!sealImg) console.error("Signature or Seal image not found");
 
-  // Position at bottom-right
-  const sigX = pw - margin - 55;
-  let sigY = Math.max(y + 10, 230); // push towards bottom
+  // Block dimensions (in mm): ~45mm width for images
+  const blockW = 45;
+  const sigImgH = 22;  // signature height
+  const sealImgH = 12; // seal height
+  const gapSigSeal = 9; // ~25px spacing
+  const gapSealText = 4; // ~10-12px spacing
 
+  // Calculate total block height
+  const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + 12;
+  ensureSpace(totalBlockH + 15);
+
+  // Right-align block: rightmost edge at pw - margin
+  const blockX = pw - margin - blockW;
+  let sigY = Math.max(y + 10, 282 - 15 - totalBlockH); // push towards bottom, 15mm from footer
+
+  // Signature image
   if (signatureImg) {
-    try { doc.addImage(signatureImg.base64, signatureImg.type, sigX + 5, sigY, 40, 20); }
+    try { doc.addImage(signatureImg.base64, signatureImg.type, blockX, sigY, blockW, sigImgH); }
     catch (e) { console.error("Signature image error:", e); }
-    sigY += 22;
   }
+  sigY += sigImgH + gapSigSeal;
 
+  // Seal image
   if (sealImg) {
-    try { doc.addImage(sealImg.base64, sealImg.type, sigX + 10, sigY, 30, 20); }
+    try { doc.addImage(sealImg.base64, sealImg.type, blockX, sigY, blockW, sealImgH); }
     catch (e) { console.error("Seal image error:", e); }
-    sigY += 22;
   }
+  sigY += sealImgH + gapSealText;
 
+  // Text: "Managing Director" (bold, larger) then company name (normal, smaller)
+  const textCenterX = blockX + blockW / 2;
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.title, pw - margin, sigY, { align: "right" });
-  sigY += 4;
-  doc.text(labels.managingDirector, pw - margin, sigY, { align: "right" });
+  doc.text(labels.managingDirector, textCenterX, sigY, { align: "center" });
+  sigY += 5;
+  doc.setFont(fontFamily, "normal");
+  doc.setFontSize(8);
+  doc.text(labels.title, textCenterX, sigY, { align: "center" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
