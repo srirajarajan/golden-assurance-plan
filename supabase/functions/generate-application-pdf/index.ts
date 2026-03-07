@@ -467,9 +467,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // ═══════════════════════════════════════════
   // SIGNATURE & SEAL - center-aligned block
   // ═══════════════════════════════════════════
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const signatureImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
-  const sealImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
+  const baseUrl = Deno.env.get("SUPABASE_URL")!;
+  const signatureImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
+  const sealImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
 
   if (!signatureImg) console.error("Signature or Seal image not found");
   if (!sealImg) console.error("Signature or Seal image not found");
