@@ -141,15 +141,17 @@ async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64
   } catch (err) { console.error(`Error fetching image (${path}):`, err); return null; }
 }
 
-async function loadLocalImage(filename: string): Promise<{ base64: string; type: string } | null> {
+async function loadImageFromUrl(url: string): Promise<{ base64: string; type: string } | null> {
   try {
-    const filePath = new URL(`./${filename}`, import.meta.url);
-    const bytes = await Deno.readFile(filePath);
+    const res = await fetch(url);
+    if (!res.ok) { console.error(`Failed to fetch image from ${url}: ${res.statusText}`); return null; }
+    const arrayBuffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
     const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50;
     const type = isPng ? "PNG" : "JPEG";
     return { base64: uint8ArrayToBase64(bytes), type };
   } catch (err) {
-    console.error(`Failed to load local image ${filename}:`, err);
+    console.error(`Failed to load image from URL ${url}:`, err);
     return null;
   }
 }
