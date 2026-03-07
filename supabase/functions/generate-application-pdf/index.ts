@@ -5,7 +5,7 @@ import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/b
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -467,9 +467,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // ═══════════════════════════════════════════
   // SIGNATURE & SEAL - center-aligned block
   // ═══════════════════════════════════════════
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const signatureImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
-  const sealImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
+  const baseUrl = Deno.env.get("SUPABASE_URL")!;
+  const signatureImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
+  const sealImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
 
   if (!signatureImg) console.error("Signature or Seal image not found");
   if (!sealImg) console.error("Signature or Seal image not found");
