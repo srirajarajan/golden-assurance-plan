@@ -465,28 +465,29 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // ═══════════════════════════════════════════
-  // SIGNATURE & SEAL - bottom right of last page
+  // SIGNATURE & SEAL - center-aligned block
   // ═══════════════════════════════════════════
-  const signatureImg = await loadLocalImage("signature.jpeg");
-  const sealImg = await loadLocalImage("seal.jpeg");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const signatureImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
+  const sealImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
 
   if (!signatureImg) console.error("Signature or Seal image not found");
   if (!sealImg) console.error("Signature or Seal image not found");
 
-  // Block dimensions (in mm): ~45mm width for images
-  const blockW = 45;
+  // Block dimensions (in mm): ~42mm ≈ 120px width
+  const blockW = 42;
   const sigImgH = 22;  // signature height
-  const sealImgH = 12; // seal height
-  const gapSigSeal = 9; // ~25px spacing
-  const gapSealText = 4; // ~10-12px spacing
+  const sealImgH = 18; // seal height (wider aspect ratio image)
+  const gapSigSeal = 9; // ~25px
+  const gapSealText = 7; // ~20px
+  const textLineH = 5;
 
-  // Calculate total block height
-  const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + 12;
+  const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + textLineH * 2 + 5;
   ensureSpace(totalBlockH + 15);
 
-  // Right-align block: rightmost edge at pw - margin
-  const blockX = pw - margin - blockW;
-  let sigY = Math.max(y + 10, 282 - 15 - totalBlockH); // push towards bottom, 15mm from footer
+  // Center-align block on page
+  const blockX = (pw - blockW) / 2;
+  let sigY = Math.max(y + 10, 282 - 15 - totalBlockH);
 
   // Signature image
   if (signatureImg) {
@@ -502,16 +503,15 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
   sigY += sealImgH + gapSealText;
 
-  // Text: "Managing Director" (bold, larger) then company name (normal, smaller)
-  const textCenterX = blockX + blockW / 2;
+  // Text centered below images
+  const textCenterX = pw / 2;
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(14 * 0.352778); // 14px ≈ ~5pt... actually 14px = ~10.5pt in PDF terms
+  doc.setFontSize(10);
   doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.managingDirector, textCenterX, sigY, { align: "center" });
-  sigY += 5;
-  doc.setFont(fontFamily, "normal");
-  doc.setFontSize(8);
   doc.text(labels.title, textCenterX, sigY, { align: "center" });
+  sigY += textLineH;
+  doc.text(labels.managingDirector, textCenterX, sigY, { align: "center" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
