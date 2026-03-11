@@ -247,17 +247,21 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // ═══════════════════════════════════════════
   // APPLICANT PHOTO
   // ═══════════════════════════════════════════
+  // Applicant photo - dedicated container, top-right, no overlap
+  const photoW = 32; // ~90px
+  const photoH = 39; // ~110px
+  const photoMarginRight = 11; // ~30px
+  const photoMarginTop = 7; // ~20px
+  const photoX = pw - margin - photoW - photoMarginRight;
+  const photoY = y + photoMarginTop;
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
   if (applicantPhoto) {
-    // Photo on the right side of the header area
     try {
-      const photoW = 30;
-      const photoH = 38;
       // Border around photo
-      doc.setDrawColor(...MID_GREY);
+      doc.setDrawColor(153, 153, 153);
       doc.setLineWidth(0.3);
-      doc.rect(pw - margin - photoW - 1, y - 1, photoW + 2, photoH + 2, "S");
-      doc.addImage(applicantPhoto.base64, applicantPhoto.type, pw - margin - photoW, y, photoW, photoH);
+      doc.rect(photoX - 0.5, photoY - 0.5, photoW + 1, photoH + 1, "S");
+      doc.addImage(applicantPhoto.base64, applicantPhoto.type, photoX, photoY, photoW, photoH);
     } catch (e) { console.error("Photo error:", e); }
   }
 
