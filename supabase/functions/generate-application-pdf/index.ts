@@ -402,56 +402,59 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.nomineeDetails);
 
-  const nomColWidths = [50, 30, 20, 50];
-  const nomHeaders = [labels.nomineeName, labels.nomineeGender, labels.nomineeAge, labels.nomineeRelation];
+  // Clean two-column nominee layout
+  const nomLabelW = 45;
+  const nomValueW = (cw - nomLabelW * 2 - 14) / 2 + nomLabelW; // half-page col width
+  const halfW = (cw - 14) / 2; // column gap ~14mm ≈ 40px
+  const nomRowH = 7;
+  const nomRowGap = 3.5; // ~10px
 
-  const drawNomineeTable = (title: string, name: string, gender: string, age: string, relation: string) => {
-    ensureSpace(25);
-    // Sub-title
-    doc.setFont(fontFamily, "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...GOLD);
-    doc.text(title, margin + 2, y);
-    y += 5;
+  const drawNomineeRow = (label1: string, val1: string, label2: string, val2: string) => {
+    ensureSpace(nomRowH + nomRowGap);
 
-    // Header row
-    let x = margin;
-    doc.setFillColor(...DARK_BROWN);
-    doc.rect(margin, y, cw, 7, "F");
-    doc.setTextColor(...WHITE);
+    // Left column
     doc.setFont(fontFamily, "bold");
     doc.setFontSize(8);
-    nomHeaders.forEach((h, i) => {
-      doc.text(h, x + 3, y + 5);
-      x += nomColWidths[i];
-    });
-    y += 7;
-
-    // Data row
-    x = margin;
-    doc.setFillColor(...WHITE);
-    doc.rect(margin, y, cw, 7, "F");
-    doc.setDrawColor(...MID_GREY);
-    doc.rect(margin, y, cw, 7, "S");
     doc.setTextColor(...TEXT_BLACK);
+    doc.text(label1, margin + 3, y + 5);
     doc.setFont(fontFamily, "normal");
-    [name, gender, age, relation].forEach((val, i) => {
-      doc.text(safeText(val, np), x + 3, y + 5);
-      x += nomColWidths[i];
-    });
+    doc.text(safeText(val1, np), margin + nomLabelW, y + 5);
 
-    // Vertical lines
-    x = margin;
-    nomColWidths.slice(0, -1).forEach((w) => {
-      x += w;
-      doc.line(x, y - 7, x, y + 7);
-    });
+    // Right column
+    doc.setFont(fontFamily, "bold");
+    doc.text(label2, margin + halfW + 14 + 3, y + 5);
+    doc.setFont(fontFamily, "normal");
+    doc.text(safeText(val2, np), margin + halfW + 14 + nomLabelW, y + 5);
 
-    y += 10;
+    // Bottom border across full width
+    doc.setDrawColor(...MID_GREY);
+    doc.setLineWidth(0.15);
+    doc.line(margin, y + nomRowH, pw - margin, y + nomRowH);
+
+    y += nomRowH + nomRowGap;
   };
 
-  drawNomineeTable(labels.nominee1Title, data.nominee1_name, data.nominee1_gender, data.nominee1_age, data.nominee1_relation);
-  drawNomineeTable(labels.nominee2Title, data.nominee2_name, data.nominee2_gender, data.nominee2_age, data.nominee2_relation);
+  // Nominee 1
+  doc.setFont(fontFamily, "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...GOLD);
+  doc.text(labels.nominee1Title, margin + 2, y);
+  y += 5;
+
+  drawNomineeRow(labels.nomineeName, data.nominee1_name, labels.nomineeRelation, data.nominee1_relation);
+  drawNomineeRow(labels.nomineeAge, data.nominee1_age, labels.nomineeGender, data.nominee1_gender);
+
+  y += 3;
+
+  // Nominee 2
+  doc.setFont(fontFamily, "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...GOLD);
+  doc.text(labels.nominee2Title, margin + 2, y);
+  y += 5;
+
+  drawNomineeRow(labels.nomineeName, data.nominee2_name, labels.nomineeRelation, data.nominee2_relation);
+  drawNomineeRow(labels.nomineeAge, data.nominee2_age, labels.nomineeGender, data.nominee2_gender);
 
   // ═══════════════════════════════════════════
   // ADDITIONAL MESSAGE
