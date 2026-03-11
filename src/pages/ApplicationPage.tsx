@@ -155,9 +155,10 @@ const ApplicationPage: React.FC = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const { user, isLoading, userStatus, checkUserStatus } = useAuth();
+  const { language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStep, setSubmitStep] = useState<string>('');
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('ta');
+  const selectedLanguage: Language = language as Language;
   
   const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
