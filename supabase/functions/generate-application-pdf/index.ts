@@ -303,8 +303,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const valueColW = cw - labelColW;
   const rowH = 7;
 
-  // Limit detail rows width so they don't overlap photo
-  const detailsMaxW = applicantPhoto ? cw - 36 : cw;
+  // Limit detail rows width so they don't overlap photo container
+  const detailsMaxW = applicantPhoto ? (photoX - margin - 3) : cw;
 
   detailFields.forEach(([label, value], idx) => {
     ensureSpace(rowH + 2);
