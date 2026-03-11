@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { uploadImageToPrivateStorage, compressImageFile } from '@/lib/uploadToPrivateStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee, Image, Lock } from 'lucide-react';
@@ -154,9 +155,10 @@ const ApplicationPage: React.FC = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const { user, isLoading, userStatus, checkUserStatus } = useAuth();
+  const { language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStep, setSubmitStep] = useState<string>('');
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('ta');
+  const selectedLanguage: Language = language as Language;
   
   const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
@@ -563,33 +565,6 @@ const ApplicationPage: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
-            <div className="flex justify-end mb-4">
-              <div className="inline-flex rounded-lg border border-input bg-background p-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedLanguage('ta')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    selectedLanguage === 'ta' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  தமிழ்
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedLanguage('en')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    selectedLanguage === 'en' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  English
-                </button>
-              </div>
-            </div>
-            
             <CardTitle className="text-2xl md:text-3xl font-bold text-primary">
               {t.title}
             </CardTitle>

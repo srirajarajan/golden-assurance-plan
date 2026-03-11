@@ -248,10 +248,10 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // APPLICANT PHOTO
   // ═══════════════════════════════════════════
   // Applicant photo - dedicated container, top-right, no overlap
-  const photoW = 32; // ~90px
-  const photoH = 39; // ~110px
-  const photoMarginRight = 11; // ~30px
-  const photoMarginTop = 7; // ~20px
+  const photoW = 34; // ~95px
+  const photoH = 42; // ~120px
+  const photoMarginRight = 6; // moved right +15px (less margin = more right)
+  const photoMarginTop = 12; // moved down +15px
   const photoX = pw - margin - photoW - photoMarginRight;
   const photoY = y + photoMarginTop;
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
@@ -382,13 +382,28 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawSectionHeader(labels.pamphletImage);
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
   if (pamphletImage) {
-    ensureSpace(75);
+    // Use natural aspect ratio - fit width to content area, calculate height proportionally
+    const pamphletMaxW = cw - 4;
+    // jsPDF addImage with width=0 or height=0 won't auto-calc, so we embed at full content width
+    // and let the image maintain its aspect ratio by setting height to 0 (auto)
+    const pamphletH = 0; // auto height based on aspect ratio
+    ensureSpace(120);
     doc.setDrawColor(...MID_GREY);
     doc.setLineWidth(0.3);
-    doc.rect(margin, y, cw, 70, "S");
-    try { doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, cw - 4, 66); }
-    catch (e) { console.error("Pamphlet error:", e); }
-    y += 75;
+    try {
+      // addImage with height=0 uses natural aspect ratio in jsPDF
+      const imgProps = doc.getImageProperties(`data:image/${pamphletImage.type.toLowerCase()};base64,${pamphletImage.base64}`);
+      const aspectRatio = imgProps.height / imgProps.width;
+      const calcH = pamphletMaxW * aspectRatio;
+      const finalH = Math.min(calcH, 250); // cap to prevent overflow
+      doc.rect(margin, y, cw, finalH + 4, "S");
+      doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, pamphletMaxW, finalH);
+      y += finalH + 8;
+    } catch (e) {
+      console.error("Pamphlet error:", e);
+      doc.rect(margin, y, cw, 70, "S");
+      y += 75;
+    }
   } else {
     doc.setFontSize(9);
     doc.text("Image not available", margin + 3, y + 5);
@@ -485,7 +500,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const blockW = 42;
   const sigImgH = 22;  // signature height
   const sealImgH = 18; // seal height
-  const gapSigSeal = 3; // ~8px
+  const gapSigSeal = 0.7; // ~2px
   const gapSealText = 3.5; // ~10px
   const textLineH = 5;
 
