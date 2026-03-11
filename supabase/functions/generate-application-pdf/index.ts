@@ -477,9 +477,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // Block dimensions (in mm): ~42mm ≈ 120px width
   const blockW = 42;
   const sigImgH = 22;  // signature height
-  const sealImgH = 18; // seal height (wider aspect ratio image)
-  const gapSigSeal = 9; // ~25px
-  const gapSealText = 7; // ~20px
+  const sealImgH = 18; // seal height
+  const gapSigSeal = 3; // ~8px
+  const gapSealText = 3.5; // ~10px
   const textLineH = 5;
 
   const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + textLineH * 2 + 5;
@@ -503,11 +503,10 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
   sigY += sealImgH + gapSealText;
 
-  // Text centered below images
+  // Text centered below images - 14px bold
   const textCenterX = pw / 2;
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(14 * 0.352778); // 14px ≈ ~5pt... actually 14px = ~10.5pt in PDF terms
-  doc.setFontSize(10);
+  doc.setFontSize(10); // ~14px
   doc.setTextColor(...DARK_BROWN);
   doc.text(labels.title, textCenterX, sigY, { align: "center" });
   sigY += textLineH;
