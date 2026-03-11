@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { uploadImageToPrivateStorage, compressImageFile } from '@/lib/uploadToPrivateStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee, Image, Lock } from 'lucide-react';
