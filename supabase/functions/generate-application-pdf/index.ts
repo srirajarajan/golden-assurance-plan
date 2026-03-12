@@ -324,6 +324,49 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += 5;
 
   // ═══════════════════════════════════════════
+  // NOMINEE DETAILS — on Page 1, right after applicant details
+  // ═══════════════════════════════════════════
+  drawSectionHeader(labels.nomineeDetails);
+
+  const drawNomineeBlock = (title: string, name: string, relation: string, gender: string, age: string) => {
+    ensureSpace(30);
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...GOLD);
+    doc.text(title, margin + 2, y);
+    y += 4;
+
+    const nomFields = [
+      [labels.nomineeName, safeText(name, np)],
+      [labels.nomineeRelation, safeText(relation, np)],
+      [labels.nomineeGender, safeText(gender, np)],
+      [labels.nomineeAge, safeText(age, np)],
+    ];
+
+    nomFields.forEach(([label, value], idx) => {
+      const fillColor = idx % 2 === 0 ? WHITE : LIGHT_GREY_BG;
+      doc.setFillColor(...fillColor);
+      doc.rect(margin, y, cw, rowH, "F");
+      doc.setDrawColor(...MID_GREY);
+      doc.setLineWidth(0.15);
+      doc.line(margin, y + rowH, pw - margin, y + rowH);
+
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...TEXT_BLACK);
+      doc.text(label, margin + 3, y + 4.5);
+
+      doc.setFont(fontFamily, "normal");
+      doc.text(value, margin + labelColW, y + 4.5);
+      y += rowH;
+    });
+    y += 2;
+  };
+
+  drawNomineeBlock(labels.nominee1Title, data.nominee1_name, data.nominee1_relation, data.nominee1_gender, data.nominee1_age);
+  drawNomineeBlock(labels.nominee2Title, data.nominee2_name, data.nominee2_relation, data.nominee2_gender, data.nominee2_age);
+
+  // ═══════════════════════════════════════════
   // AADHAAR IMAGES
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.aadhaarImages);
@@ -360,106 +403,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += imgBoxH + 5;
 
   // ═══════════════════════════════════════════
-  // PAMPHLET IMAGE — natural flow, no forced page break
-  // ═══════════════════════════════════════════
-  drawSectionHeader(labels.pamphletImage);
-  const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
-  if (pamphletImage) {
-    const pamphletMaxW = cw - 4;
-    try {
-      const imgProps = doc.getImageProperties(`data:image/${pamphletImage.type.toLowerCase()};base64,${pamphletImage.base64}`);
-      const aspectRatio = imgProps.height / imgProps.width;
-      const calcH = pamphletMaxW * aspectRatio;
-      const maxPageH = pageBottom - y - 10; // remaining space on current page
-      const finalH = Math.min(calcH, maxPageH, 240);
-      
-      if (finalH < 30) {
-        // Not enough room — move to next page
-        doc.addPage(); y = margin;
-        drawSectionHeader(labels.pamphletImage);
-        const newMaxH = pageBottom - y - 10;
-        const newFinalH = Math.min(calcH, newMaxH, 240);
-        doc.setDrawColor(...MID_GREY);
-        doc.setLineWidth(0.3);
-        doc.rect(margin, y, cw, newFinalH + 4, "S");
-        doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, pamphletMaxW, newFinalH);
-        y += newFinalH + 5;
-      } else {
-        doc.setDrawColor(...MID_GREY);
-        doc.setLineWidth(0.3);
-        doc.rect(margin, y, cw, finalH + 4, "S");
-        doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, pamphletMaxW, finalH);
-        y += finalH + 5;
-      }
-    } catch (e) {
-      console.error("Pamphlet error:", e);
-      doc.rect(margin, y, cw, 60, "S");
-      y += 65;
-    }
-  } else {
-    doc.setFontSize(9);
-    doc.text("Image not available", margin + 3, y + 5);
-    y += 8;
-  }
-
-  y += 3;
-
-  // ═══════════════════════════════════════════
-  // NOMINEE DETAILS
-  // ═══════════════════════════════════════════
-  drawSectionHeader(labels.nomineeDetails);
-
-  const nomLabelW = 42;
-  const halfW = (cw - 10) / 2;
-  const nomRowH = 6.5;
-  const nomRowGap = 2.5;
-
-  const drawNomineeRow = (label1: string, val1: string, label2: string, val2: string) => {
-    ensureSpace(nomRowH + nomRowGap);
-
-    doc.setFont(fontFamily, "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...TEXT_BLACK);
-    doc.text(label1, margin + 3, y + 4.5);
-    doc.setFont(fontFamily, "normal");
-    doc.text(safeText(val1, np), margin + nomLabelW, y + 4.5);
-
-    doc.setFont(fontFamily, "bold");
-    doc.text(label2, margin + halfW + 10 + 3, y + 4.5);
-    doc.setFont(fontFamily, "normal");
-    doc.text(safeText(val2, np), margin + halfW + 10 + nomLabelW, y + 4.5);
-
-    doc.setDrawColor(...MID_GREY);
-    doc.setLineWidth(0.15);
-    doc.line(margin, y + nomRowH, pw - margin, y + nomRowH);
-
-    y += nomRowH + nomRowGap;
-  };
-
-  // Nominee 1
-  doc.setFont(fontFamily, "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GOLD);
-  doc.text(labels.nominee1Title, margin + 2, y);
-  y += 4;
-
-  drawNomineeRow(labels.nomineeName, data.nominee1_name, labels.nomineeRelation, data.nominee1_relation);
-  drawNomineeRow(labels.nomineeAge, data.nominee1_age, labels.nomineeGender, data.nominee1_gender);
-
-  y += 2;
-
-  // Nominee 2
-  doc.setFont(fontFamily, "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GOLD);
-  doc.text(labels.nominee2Title, margin + 2, y);
-  y += 4;
-
-  drawNomineeRow(labels.nomineeName, data.nominee2_name, labels.nomineeRelation, data.nominee2_relation);
-  drawNomineeRow(labels.nomineeAge, data.nominee2_age, labels.nomineeGender, data.nominee2_gender);
-
-  // ═══════════════════════════════════════════
-  // ADDITIONAL MESSAGE
+  // ADDITIONAL MESSAGE (still on page 1 if space)
   // ═══════════════════════════════════════════
   const msg = safeText(data.additional_message, "");
   if (msg.length > 0) {
@@ -474,8 +418,15 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // ═══════════════════════════════════════════
-  // SIGNATURE & SEAL — RIGHT-ALIGNED, bottom of current page
+  // PAGE 2 — Pamphlet + Signature/Seal
   // ═══════════════════════════════════════════
+  doc.addPage();
+  y = margin;
+
+  // Pamphlet image — fills most of page 2
+  const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
+
+  // Signature/Seal setup first to calculate reserved space
   const baseUrl = Deno.env.get("SUPABASE_URL")!;
   const signatureImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
   const sealImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
@@ -483,14 +434,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   if (!signatureImg) console.error("Signature image not found");
   if (!sealImg) console.error("Seal image not found");
 
-  // Image dimensions in mm
   const sigW = 42;   // ~120px
   const sealW = 39;  // ~110px
-  
-  // Calculate heights maintaining aspect ratio
   let sigImgH = 18;
   let sealImgH = 16;
-  
+
   if (signatureImg) {
     try {
       const sigProps = doc.getImageProperties(`data:image/${signatureImg.type.toLowerCase()};base64,${signatureImg.base64}`);
@@ -504,53 +452,55 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     } catch (_) {}
   }
 
-  const gapSigSeal = 0;     // 0px gap — images touch
-  const gapSealText = 2;    // small gap before text
+  const gapSigSeal = 0;
+  const gapSealText = 2;
   const textLineH = 4.5;
-  const bottomMargin = 10.5; // ~30px from page bottom
-
+  const bottomMargin = 12.5; // ~35px from page bottom
   const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + textLineH * 2 + 2;
 
-  // Ensure block stays on current page — never break to new page
-  if (y + totalBlockH + bottomMargin > pageBottom) {
-    // Not enough space — add page only if absolutely necessary
-    if (totalBlockH + bottomMargin + margin > pageBottom) {
-      // Block itself is too tall (shouldn't happen), force it
-      doc.addPage(); y = margin;
-    }
-    // Otherwise it will just fit at the bottom of next page
-    if (y + totalBlockH + bottomMargin > pageBottom) {
-      doc.addPage(); y = margin;
+  // Available space for pamphlet on page 2
+  const sigBlockStartY = 297 - bottomMargin - totalBlockH; // A4 height = 297mm
+  const pamphletAvailH = sigBlockStartY - margin - 5; // leave 5mm gap before sig block
+
+  if (pamphletImage) {
+    const pamphletMaxW = cw;
+    try {
+      const imgProps = doc.getImageProperties(`data:image/${pamphletImage.type.toLowerCase()};base64,${pamphletImage.base64}`);
+      const aspectRatio = imgProps.height / imgProps.width;
+      const calcH = pamphletMaxW * aspectRatio;
+      const finalH = Math.min(calcH, pamphletAvailH);
+      const finalW = finalH < calcH ? finalH / aspectRatio : pamphletMaxW;
+
+      // Center the image horizontally
+      const imgX = margin + (cw - finalW) / 2;
+
+      doc.addImage(pamphletImage.base64, pamphletImage.type, imgX, y, finalW, finalH);
+      y += finalH + 5;
+    } catch (e) {
+      console.error("Pamphlet error:", e);
     }
   }
 
-  // Position block at bottom-right
+  // Signature & Seal — bottom-right of page 2
   const rightMarginPx = 14; // ~40px
   const blockRightX = pw - margin - rightMarginPx;
-  // Anchor to bottom of page
-  let sigY = pageBottom - bottomMargin - totalBlockH;
-  // But don't go above current content
-  if (sigY < y + 3) sigY = y + 3;
+  let sigY = sigBlockStartY;
 
-  // Right-align: images right-edge at blockRightX
   const sigX = blockRightX - sigW;
   const sealX = blockRightX - sealW;
 
-  // Signature image
   if (signatureImg) {
     try { doc.addImage(signatureImg.base64, signatureImg.type, sigX, sigY, sigW, sigImgH); }
     catch (e) { console.error("Signature image error:", e); }
   }
   sigY += sigImgH + gapSigSeal;
 
-  // Seal image — directly touching signature
   if (sealImg) {
     try { doc.addImage(sealImg.base64, sealImg.type, sealX, sigY, sealW, sealImgH); }
     catch (e) { console.error("Seal image error:", e); }
   }
   sigY += sealImgH + gapSealText;
 
-  // Text right-aligned below
   const textRightX = blockRightX;
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(9);
