@@ -250,8 +250,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // Applicant photo - dedicated container, top-right, no overlap
   const photoW = 34; // ~95px
   const photoH = 42; // ~120px
-  const photoMarginRight = 6; // moved right +15px (less margin = more right)
-  const photoMarginTop = 12; // moved down +15px
+  const photoMarginRight = 2; // moved further right (+15px)
+  const photoMarginTop = 17; // moved further down (+15px)
   const photoX = pw - margin - photoW - photoMarginRight;
   const photoY = y + photoMarginTop;
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
