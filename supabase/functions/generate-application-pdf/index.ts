@@ -209,16 +209,17 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
 
-  // Helper: ensure page break
+  const pageBottom = 280; // usable bottom
+  const footerY = 290;
+
+  // Helper: ensure page break — compact threshold
   const ensureSpace = (needed: number) => {
-    if (y + needed > 282) { doc.addPage(); y = margin; }
+    if (y + needed > pageBottom) { doc.addPage(); y = margin; }
   };
 
   // ═══════════════════════════════════════════
   // PAGE 1 - HEADER
   // ═══════════════════════════════════════════
-
-  // Top left: Company name + subtitle
   doc.setFontSize(14);
   doc.setFont(fontFamily, "bold");
   doc.setTextColor(...DARK_BROWN);
@@ -228,36 +229,32 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setTextColor(...GOLD);
   doc.text(labels.subtitle, margin, y + 11);
 
-  // Top right: Application No + Date
   doc.setFontSize(9);
   doc.setTextColor(...TEXT_BLACK);
   doc.setFont(fontFamily, "bold");
   doc.text(`${labels.applicationNo}: ${data.serial_number}`, pw - margin, y + 5, { align: "right" });
   doc.setFont(fontFamily, "normal");
   doc.text(`${labels.date}: ${submissionDate}`, pw - margin, y + 11, { align: "right" });
+  y += 14;
 
-  y += 16;
-
-  // Divider line
+  // Divider
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
   doc.line(margin, y, pw - margin, y);
-  y += 8;
+  y += 6;
 
   // ═══════════════════════════════════════════
-  // APPLICANT PHOTO
+  // APPLICANT PHOTO — top-right container
   // ═══════════════════════════════════════════
-  // Applicant photo - dedicated container, top-right, no overlap
   const photoW = 34; // ~95px
   const photoH = 42; // ~120px
-  const photoMarginRight = 2; // moved further right (+15px)
-  const photoMarginTop = 17; // moved further down (+15px)
+  const photoMarginRight = 2;
+  const photoMarginTop = 15;
   const photoX = pw - margin - photoW - photoMarginRight;
   const photoY = y + photoMarginTop;
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
   if (applicantPhoto) {
     try {
-      // Border around photo
       doc.setDrawColor(153, 153, 153);
       doc.setLineWidth(0.3);
       doc.rect(photoX - 0.5, photoY - 0.5, photoW + 1, photoH + 1, "S");
@@ -266,26 +263,24 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // ═══════════════════════════════════════════
-  // APPLICANT DETAILS SECTION
+  // APPLICANT DETAILS
   // ═══════════════════════════════════════════
-  // Section header
   const drawSectionHeader = (title: string) => {
-    ensureSpace(12);
+    ensureSpace(10);
     doc.setFillColor(...LIGHT_GREY_BG);
     doc.setDrawColor(...MID_GREY);
     doc.setLineWidth(0.3);
-    doc.rect(margin, y, cw, 8, "FD");
+    doc.rect(margin, y, cw, 7, "FD");
     doc.setFont(fontFamily, "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(...DARK_BROWN);
-    doc.text(title, margin + 4, y + 5.5);
+    doc.text(title, margin + 3, y + 5);
     doc.setTextColor(...TEXT_BLACK);
-    y += 12;
+    y += 9;
   };
 
   drawSectionHeader(labels.applicantDetails);
 
-  // Two-column table for details
   const detailFields = [
     [labels.memberName, safeText(data.member_name, np)],
     [labels.age, safeText(data.age, np)],
@@ -299,149 +294,141 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     [labels.address, safeText(data.address, np)],
   ];
 
-  const labelColW = 50;
-  const valueColW = cw - labelColW;
-  const rowH = 7;
-
-  // Limit detail rows width so they don't overlap photo container
+  const labelColW = 48;
+  const rowH = 6.5;
   const detailsMaxW = applicantPhoto ? (photoX - margin - 3) : cw;
 
   detailFields.forEach(([label, value], idx) => {
-    ensureSpace(rowH + 2);
+    ensureSpace(rowH + 1);
     const fillColor = idx % 2 === 0 ? WHITE : LIGHT_GREY_BG;
     doc.setFillColor(...fillColor);
     doc.rect(margin, y, detailsMaxW, rowH, "F");
-    // Bottom border
     doc.setDrawColor(...MID_GREY);
     doc.setLineWidth(0.15);
     doc.line(margin, y + rowH, margin + detailsMaxW, y + rowH);
 
     doc.setFont(fontFamily, "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(...TEXT_BLACK);
-    doc.text(label, margin + 3, y + 5);
+    doc.text(label, margin + 3, y + 4.5);
 
     doc.setFont(fontFamily, "normal");
-    const valMaxW = detailsMaxW - labelColW - 6;
+    const valMaxW = detailsMaxW - labelColW - 4;
     const lines = doc.splitTextToSize(value, valMaxW);
-    doc.text(lines, margin + labelColW, y + 5);
+    doc.text(lines, margin + labelColW, y + 4.5);
 
-    const lineH = Math.max(rowH, lines.length * 5 + 3);
+    const lineH = Math.max(rowH, lines.length * 4.5 + 2);
     y += lineH;
   });
 
-  y += 8;
+  y += 5;
 
   // ═══════════════════════════════════════════
   // AADHAAR IMAGES
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.aadhaarImages);
 
-  const imgBoxW = (cw - 10) / 2;
-  const imgBoxH = 55;
+  const imgBoxW = (cw - 8) / 2;
+  const imgBoxH = 50;
 
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
 
-  ensureSpace(imgBoxH + 12);
+  ensureSpace(imgBoxH + 10);
 
-  // Labels
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(...TEXT_GREY);
   doc.text(labels.aadhaarFront, margin + imgBoxW / 2, y, { align: "center" });
-  doc.text(labels.aadhaarBack, margin + imgBoxW + 10 + imgBoxW / 2, y, { align: "center" });
-  y += 4;
+  doc.text(labels.aadhaarBack, margin + imgBoxW + 8 + imgBoxW / 2, y, { align: "center" });
+  y += 3;
 
-  // Bordered boxes
   doc.setDrawColor(...MID_GREY);
   doc.setLineWidth(0.3);
   doc.rect(margin, y, imgBoxW, imgBoxH, "S");
-  doc.rect(margin + imgBoxW + 10, y, imgBoxW, imgBoxH, "S");
+  doc.rect(margin + imgBoxW + 8, y, imgBoxW, imgBoxH, "S");
 
   if (aadhaarFront) {
     try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y + 2, imgBoxW - 4, imgBoxH - 4); }
     catch (e) { console.error("Aadhaar front error:", e); }
   }
   if (aadhaarBack) {
-    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 12, y + 2, imgBoxW - 4, imgBoxH - 4); }
+    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 10, y + 2, imgBoxW - 4, imgBoxH - 4); }
     catch (e) { console.error("Aadhaar back error:", e); }
   }
 
-  y += imgBoxH + 8;
+  y += imgBoxH + 5;
 
   // ═══════════════════════════════════════════
-  // PAGE 2
-  // ═══════════════════════════════════════════
-  doc.addPage();
-  y = margin;
-
-  // ═══════════════════════════════════════════
-  // PAMPHLET IMAGE
+  // PAMPHLET IMAGE — natural flow, no forced page break
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.pamphletImage);
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
   if (pamphletImage) {
-    // Use natural aspect ratio - fit width to content area, calculate height proportionally
     const pamphletMaxW = cw - 4;
-    // jsPDF addImage with width=0 or height=0 won't auto-calc, so we embed at full content width
-    // and let the image maintain its aspect ratio by setting height to 0 (auto)
-    const pamphletH = 0; // auto height based on aspect ratio
-    ensureSpace(120);
-    doc.setDrawColor(...MID_GREY);
-    doc.setLineWidth(0.3);
     try {
-      // addImage with height=0 uses natural aspect ratio in jsPDF
       const imgProps = doc.getImageProperties(`data:image/${pamphletImage.type.toLowerCase()};base64,${pamphletImage.base64}`);
       const aspectRatio = imgProps.height / imgProps.width;
       const calcH = pamphletMaxW * aspectRatio;
-      const finalH = Math.min(calcH, 250); // cap to prevent overflow
-      doc.rect(margin, y, cw, finalH + 4, "S");
-      doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, pamphletMaxW, finalH);
-      y += finalH + 8;
+      const maxPageH = pageBottom - y - 10; // remaining space on current page
+      const finalH = Math.min(calcH, maxPageH, 240);
+      
+      if (finalH < 30) {
+        // Not enough room — move to next page
+        doc.addPage(); y = margin;
+        drawSectionHeader(labels.pamphletImage);
+        const newMaxH = pageBottom - y - 10;
+        const newFinalH = Math.min(calcH, newMaxH, 240);
+        doc.setDrawColor(...MID_GREY);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, y, cw, newFinalH + 4, "S");
+        doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, pamphletMaxW, newFinalH);
+        y += newFinalH + 5;
+      } else {
+        doc.setDrawColor(...MID_GREY);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, y, cw, finalH + 4, "S");
+        doc.addImage(pamphletImage.base64, pamphletImage.type, margin + 2, y + 2, pamphletMaxW, finalH);
+        y += finalH + 5;
+      }
     } catch (e) {
       console.error("Pamphlet error:", e);
-      doc.rect(margin, y, cw, 70, "S");
-      y += 75;
+      doc.rect(margin, y, cw, 60, "S");
+      y += 65;
     }
   } else {
     doc.setFontSize(9);
     doc.text("Image not available", margin + 3, y + 5);
-    y += 10;
+    y += 8;
   }
 
-  y += 5;
+  y += 3;
 
   // ═══════════════════════════════════════════
   // NOMINEE DETAILS
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.nomineeDetails);
 
-  // Clean two-column nominee layout
-  const nomLabelW = 45;
-  const nomValueW = (cw - nomLabelW * 2 - 14) / 2 + nomLabelW; // half-page col width
-  const halfW = (cw - 14) / 2; // column gap ~14mm ≈ 40px
-  const nomRowH = 7;
-  const nomRowGap = 3.5; // ~10px
+  const nomLabelW = 42;
+  const halfW = (cw - 10) / 2;
+  const nomRowH = 6.5;
+  const nomRowGap = 2.5;
 
   const drawNomineeRow = (label1: string, val1: string, label2: string, val2: string) => {
     ensureSpace(nomRowH + nomRowGap);
 
-    // Left column
     doc.setFont(fontFamily, "bold");
     doc.setFontSize(8);
     doc.setTextColor(...TEXT_BLACK);
-    doc.text(label1, margin + 3, y + 5);
+    doc.text(label1, margin + 3, y + 4.5);
     doc.setFont(fontFamily, "normal");
-    doc.text(safeText(val1, np), margin + nomLabelW, y + 5);
+    doc.text(safeText(val1, np), margin + nomLabelW, y + 4.5);
 
-    // Right column
     doc.setFont(fontFamily, "bold");
-    doc.text(label2, margin + halfW + 14 + 3, y + 5);
+    doc.text(label2, margin + halfW + 10 + 3, y + 4.5);
     doc.setFont(fontFamily, "normal");
-    doc.text(safeText(val2, np), margin + halfW + 14 + nomLabelW, y + 5);
+    doc.text(safeText(val2, np), margin + halfW + 10 + nomLabelW, y + 4.5);
 
-    // Bottom border across full width
     doc.setDrawColor(...MID_GREY);
     doc.setLineWidth(0.15);
     doc.line(margin, y + nomRowH, pw - margin, y + nomRowH);
@@ -451,22 +438,22 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   // Nominee 1
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(...GOLD);
   doc.text(labels.nominee1Title, margin + 2, y);
-  y += 5;
+  y += 4;
 
   drawNomineeRow(labels.nomineeName, data.nominee1_name, labels.nomineeRelation, data.nominee1_relation);
   drawNomineeRow(labels.nomineeAge, data.nominee1_age, labels.nomineeGender, data.nominee1_gender);
 
-  y += 3;
+  y += 2;
 
   // Nominee 2
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(...GOLD);
   doc.text(labels.nominee2Title, margin + 2, y);
-  y += 5;
+  y += 4;
 
   drawNomineeRow(labels.nomineeName, data.nominee2_name, labels.nomineeRelation, data.nominee2_relation);
   drawNomineeRow(labels.nomineeAge, data.nominee2_age, labels.nomineeGender, data.nominee2_gender);
@@ -477,62 +464,100 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const msg = safeText(data.additional_message, "");
   if (msg.length > 0) {
     drawSectionHeader(labels.additionalMessage);
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont(fontFamily, "normal");
     doc.setTextColor(...TEXT_BLACK);
     const msgLines = doc.splitTextToSize(msg, cw - 6);
-    ensureSpace(msgLines.length * 5 + 5);
+    ensureSpace(msgLines.length * 4.5 + 4);
     doc.text(msgLines, margin + 3, y);
-    y += msgLines.length * 5 + 8;
+    y += msgLines.length * 4.5 + 5;
   }
 
   // ═══════════════════════════════════════════
-  // SIGNATURE & SEAL - center-aligned block
+  // SIGNATURE & SEAL — RIGHT-ALIGNED, bottom of current page
   // ═══════════════════════════════════════════
   const baseUrl = Deno.env.get("SUPABASE_URL")!;
   const signatureImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
   const sealImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
 
-  if (!signatureImg) console.error("Signature or Seal image not found");
-  if (!sealImg) console.error("Signature or Seal image not found");
+  if (!signatureImg) console.error("Signature image not found");
+  if (!sealImg) console.error("Seal image not found");
 
-  // Block dimensions (in mm): ~42mm ≈ 120px width
-  const blockW = 42;
-  const sigImgH = 22;  // signature height
-  const sealImgH = 18; // seal height
-  const gapSigSeal = 0.5; // ~2px (tighter)
-  const gapSealText = 3.5; // ~10px
-  const textLineH = 5;
+  // Image dimensions in mm
+  const sigW = 42;   // ~120px
+  const sealW = 39;  // ~110px
+  
+  // Calculate heights maintaining aspect ratio
+  let sigImgH = 18;
+  let sealImgH = 16;
+  
+  if (signatureImg) {
+    try {
+      const sigProps = doc.getImageProperties(`data:image/${signatureImg.type.toLowerCase()};base64,${signatureImg.base64}`);
+      sigImgH = sigW * (sigProps.height / sigProps.width);
+    } catch (_) {}
+  }
+  if (sealImg) {
+    try {
+      const sealProps = doc.getImageProperties(`data:image/${sealImg.type.toLowerCase()};base64,${sealImg.base64}`);
+      sealImgH = sealW * (sealProps.height / sealProps.width);
+    } catch (_) {}
+  }
 
-  const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + textLineH * 2 + 5;
-  ensureSpace(totalBlockH + 15);
+  const gapSigSeal = 0;     // 0px gap — images touch
+  const gapSealText = 2;    // small gap before text
+  const textLineH = 4.5;
+  const bottomMargin = 10.5; // ~30px from page bottom
 
-  // Center-align block on page
-  const blockX = (pw - blockW) / 2;
-  let sigY = Math.max(y + 10, 282 - 15 - totalBlockH);
+  const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + textLineH * 2 + 2;
+
+  // Ensure block stays on current page — never break to new page
+  if (y + totalBlockH + bottomMargin > pageBottom) {
+    // Not enough space — add page only if absolutely necessary
+    if (totalBlockH + bottomMargin + margin > pageBottom) {
+      // Block itself is too tall (shouldn't happen), force it
+      doc.addPage(); y = margin;
+    }
+    // Otherwise it will just fit at the bottom of next page
+    if (y + totalBlockH + bottomMargin > pageBottom) {
+      doc.addPage(); y = margin;
+    }
+  }
+
+  // Position block at bottom-right
+  const rightMarginPx = 14; // ~40px
+  const blockRightX = pw - margin - rightMarginPx;
+  // Anchor to bottom of page
+  let sigY = pageBottom - bottomMargin - totalBlockH;
+  // But don't go above current content
+  if (sigY < y + 3) sigY = y + 3;
+
+  // Right-align: images right-edge at blockRightX
+  const sigX = blockRightX - sigW;
+  const sealX = blockRightX - sealW;
 
   // Signature image
   if (signatureImg) {
-    try { doc.addImage(signatureImg.base64, signatureImg.type, blockX, sigY, blockW, sigImgH); }
+    try { doc.addImage(signatureImg.base64, signatureImg.type, sigX, sigY, sigW, sigImgH); }
     catch (e) { console.error("Signature image error:", e); }
   }
   sigY += sigImgH + gapSigSeal;
 
-  // Seal image
+  // Seal image — directly touching signature
   if (sealImg) {
-    try { doc.addImage(sealImg.base64, sealImg.type, blockX, sigY, blockW, sealImgH); }
+    try { doc.addImage(sealImg.base64, sealImg.type, sealX, sigY, sealW, sealImgH); }
     catch (e) { console.error("Seal image error:", e); }
   }
   sigY += sealImgH + gapSealText;
 
-  // Text centered below images - 14px bold
-  const textCenterX = pw / 2;
+  // Text right-aligned below
+  const textRightX = blockRightX;
   doc.setFont(fontFamily, "bold");
-  doc.setFontSize(10); // ~14px
+  doc.setFontSize(9);
   doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.title, textCenterX, sigY, { align: "center" });
+  doc.text(labels.title, textRightX, sigY, { align: "right" });
   sigY += textLineH;
-  doc.text(labels.managingDirector, textCenterX, sigY, { align: "center" });
+  doc.text(labels.managingDirector, textRightX, sigY, { align: "right" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
@@ -543,11 +568,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.setFont(fontFamily, "normal");
     doc.setFontSize(7);
     doc.setTextColor(...TEXT_GREY);
-    doc.text(labels.footer, pw / 2, 290, { align: "center" });
+    doc.text(labels.footer, pw / 2, footerY, { align: "center" });
   }
 
   const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
-  console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes");
+  console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes, pages:", totalPages);
   return pdfBytes;
 }
 
