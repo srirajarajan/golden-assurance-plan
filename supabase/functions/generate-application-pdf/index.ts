@@ -500,7 +500,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const blockW = 42;
   const sigImgH = 22;  // signature height
   const sealImgH = 18; // seal height
-  const gapSigSeal = 0.7; // ~2px
+  const gapSigSeal = 0.5; // ~2px (tighter)
   const gapSealText = 3.5; // ~10px
   const textLineH = 5;
 
