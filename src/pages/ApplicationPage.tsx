@@ -62,6 +62,10 @@ const formTranslations = {
     nominee2Title: "Nominee 2 (Optional)",
     additionalMessage: "Additional Message (Optional)",
     messagePlaceholder: "Any additional information...",
+    paymentMethod: "Payment Method",
+    cash: "Cash",
+    upi: "UPI",
+    selectPaymentMethod: "Please select a payment method",
     submit: "Submit Application",
     submitting: "Submitting...",
     successTitle: "Thank you!",
@@ -126,6 +130,10 @@ const formTranslations = {
     nominee2Title: "வாரிசு 2 (விருப்பத்திற்குட்பட்டது)",
     additionalMessage: "கூடுதல் செய்தி (விருப்பமானது)",
     messagePlaceholder: "ஏதேனும் கூடுதல் தகவல்...",
+    paymentMethod: "செலுத்தும் முறை",
+    cash: "பணம்",
+    upi: "UPI",
+    selectPaymentMethod: "செலுத்தும் முறையை தேர்வு செய்க",
     submit: "விண்ணப்பத்தை சமர்ப்பிக்க",
     submitting: "சமர்ப்பிக்கிறது...",
     successTitle: "நன்றி!",
@@ -164,6 +172,7 @@ const ApplicationPage: React.FC = () => {
   const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [pamphletImage, setPamphletImage] = useState<ImageState>({ file: null, preview: '', path: '' });
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   
   const { toast } = useToast();
   const t = formTranslations[selectedLanguage];
@@ -324,6 +333,7 @@ const ApplicationPage: React.FC = () => {
         nominee2_age: (formData.get('nominee2_age') as string)?.trim() || '',
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '',
         additional_message: (formData.get('additional_message') as string)?.trim() || '',
+        payment_method: paymentMethod,
         selected_language: selectedLanguage,
         applicant_photo_path: applicantPhotoPath,
         aadhaar_front_path: aadhaarFrontPath,
@@ -834,6 +844,37 @@ const ApplicationPage: React.FC = () => {
                       <option value={t.spouse}>{t.spouse}</option>
                     </select>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  {t.paymentMethod}
+                </h3>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="Cash"
+                      checked={paymentMethod === 'Cash'}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{t.cash}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="UPI"
+                      checked={paymentMethod === 'UPI'}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{t.upi}</span>
+                  </label>
                 </div>
               </div>
 

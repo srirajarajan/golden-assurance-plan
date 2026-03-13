@@ -30,6 +30,7 @@ interface ApplicationData {
   nominee2_age: string;
   nominee2_relation: string;
   additional_message: string;
+  payment_method?: string;
   selected_language?: string;
   language?: "ta" | "en" | string;
   staff_email?: string;
@@ -73,6 +74,9 @@ const tamilLabels = {
   notProvided: "வழங்கப்படவில்லை",
   footer: "இது கணினி மூலம் உருவாக்கப்பட்ட காப்பீட்டு விண்ணப்ப ஆவணம்.",
   managingDirector: "நிர்வாக இயக்குநர்",
+  paymentMethod: "செலுத்தும் முறை",
+  cash: "பணம்",
+  upi: "UPI",
 };
 
 const englishLabels = {
@@ -107,6 +111,9 @@ const englishLabels = {
   notProvided: "Not Provided",
   footer: "This is a system-generated insurance application document.",
   managingDirector: "Managing Director",
+  paymentMethod: "Payment Method",
+  cash: "Cash",
+  upi: "UPI",
 };
 
 function safeText(v: unknown, fallback: string): string {
@@ -365,6 +372,24 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   drawNomineeBlock(labels.nominee1Title, data.nominee1_name, data.nominee1_relation, data.nominee1_gender, data.nominee1_age);
   drawNomineeBlock(labels.nominee2Title, data.nominee2_name, data.nominee2_relation, data.nominee2_gender, data.nominee2_age);
+
+  // ═══════════════════════════════════════════
+  // PAYMENT METHOD
+  // ═══════════════════════════════════════════
+  drawSectionHeader(labels.paymentMethod);
+
+  const paymentVal = (data.payment_method || "").trim().toLowerCase();
+  const isCash = paymentVal === "cash" || paymentVal === "பணம்";
+  const isUpi = paymentVal === "upi";
+
+  const cashCheck = isCash ? "☑" : "☐";
+  const upiCheck = isUpi ? "☑" : "☐";
+
+  doc.setFont(fontFamily, "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_BLACK);
+  doc.text(`${cashCheck} ${labels.cash}     ${upiCheck} ${labels.upi}`, margin + 3, y + 1);
+  y += 8;
 
   // ═══════════════════════════════════════════
   // AADHAAR IMAGES
