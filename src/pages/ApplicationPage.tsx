@@ -333,6 +333,7 @@ const ApplicationPage: React.FC = () => {
         nominee2_age: (formData.get('nominee2_age') as string)?.trim() || '',
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '',
         additional_message: (formData.get('additional_message') as string)?.trim() || '',
+        payment_method: paymentMethod,
         selected_language: selectedLanguage,
         applicant_photo_path: applicantPhotoPath,
         aadhaar_front_path: aadhaarFrontPath,
