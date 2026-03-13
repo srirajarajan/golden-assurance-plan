@@ -111,6 +111,9 @@ const englishLabels = {
   notProvided: "Not Provided",
   footer: "This is a system-generated insurance application document.",
   managingDirector: "Managing Director",
+  paymentMethod: "Payment Method",
+  cash: "Cash",
+  upi: "UPI",
 };
 
 function safeText(v: unknown, fallback: string): string {
