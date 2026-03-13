@@ -74,6 +74,9 @@ const tamilLabels = {
   notProvided: "வழங்கப்படவில்லை",
   footer: "இது கணினி மூலம் உருவாக்கப்பட்ட காப்பீட்டு விண்ணப்ப ஆவணம்.",
   managingDirector: "நிர்வாக இயக்குநர்",
+  paymentMethod: "செலுத்தும் முறை",
+  cash: "பணம்",
+  upi: "UPI",
 };
 
 const englishLabels = {
