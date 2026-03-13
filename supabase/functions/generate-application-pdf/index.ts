@@ -374,6 +374,24 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawNomineeBlock(labels.nominee2Title, data.nominee2_name, data.nominee2_relation, data.nominee2_gender, data.nominee2_age);
 
   // ═══════════════════════════════════════════
+  // PAYMENT METHOD
+  // ═══════════════════════════════════════════
+  drawSectionHeader(labels.paymentMethod);
+
+  const paymentVal = (data.payment_method || "").trim().toLowerCase();
+  const isCash = paymentVal === "cash" || paymentVal === "பணம்";
+  const isUpi = paymentVal === "upi";
+
+  const cashCheck = isCash ? "☑" : "☐";
+  const upiCheck = isUpi ? "☑" : "☐";
+
+  doc.setFont(fontFamily, "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_BLACK);
+  doc.text(`${cashCheck} ${labels.cash}     ${upiCheck} ${labels.upi}`, margin + 3, y + 1);
+  y += 8;
+
+  // ═══════════════════════════════════════════
   // AADHAAR IMAGES
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.aadhaarImages);
