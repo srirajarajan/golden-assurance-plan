@@ -172,6 +172,7 @@ const ApplicationPage: React.FC = () => {
   const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [pamphletImage, setPamphletImage] = useState<ImageState>({ file: null, preview: '', path: '' });
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   
   const { toast } = useToast();
   const t = formTranslations[selectedLanguage];
