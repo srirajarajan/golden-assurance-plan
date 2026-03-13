@@ -30,6 +30,7 @@ interface ApplicationData {
   nominee2_age: string;
   nominee2_relation: string;
   additional_message: string;
+  payment_method?: string;
   selected_language?: string;
   language?: "ta" | "en" | string;
   staff_email?: string;
