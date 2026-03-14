@@ -437,12 +437,17 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.addPage();
   y = margin;
 
-  // ── Pamphlet Heading ──
+  // ── Pamphlet Heading with background bar ──
+  const headingBarH = 9;
+  doc.setFillColor(230, 235, 242); // light blue-grey
+  doc.setDrawColor(...MID_GREY);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(margin, y, cw, headingBarH, 1, 1, "FD");
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(11);
   doc.setTextColor(...DARK_BROWN);
-  doc.text("Policy Information Pamphlet", pw / 2, y + 4, { align: "center" });
-  y += 10;
+  doc.text("Policy Information Pamphlet", pw / 2, y + 6, { align: "center" });
+  y += headingBarH + 3;
 
   // Pamphlet image — fills most of page 2
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
