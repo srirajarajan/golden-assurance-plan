@@ -61,7 +61,7 @@ Message: ${parsed.data.message}`;
   )}`;
 
   return (
-    <main className="min-h-screen py-8 sm:py-12 md:py-20 bg-muted/30">
+    <main className="min-h-screen py-12 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
