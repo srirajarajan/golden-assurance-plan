@@ -31,7 +31,7 @@ const Header = () => {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="William Carey Insurance" className="h-14 w-14 object-contain" />
+            <img src={logo} alt="William Carey Insurance" className="h-10 w-10 sm:h-14 sm:w-14 object-contain" />
             <span className="hidden sm:block font-display text-lg font-semibold text-secondary">
               {language === 'ta' ? 'வில்லியம் கேரி' : 'William Carey'}
             </span>
