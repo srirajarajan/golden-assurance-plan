@@ -28,10 +28,10 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-16 sm:h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="William Carey Insurance" className="h-14 w-14 object-contain" />
+            <img src={logo} alt="William Carey Insurance" className="h-10 w-10 sm:h-14 sm:w-14 object-contain" />
             <span className="hidden sm:block font-display text-lg font-semibold text-secondary">
               {language === 'ta' ? 'வில்லியம் கேரி' : 'William Carey'}
             </span>
@@ -66,10 +66,10 @@ const Header = () => {
           {/* Auth & Language */}
           <div className="flex items-center gap-4">
             {/* Language Switch */}
-            <div className="flex items-center bg-muted rounded-full p-1">
+            <div className="flex items-center bg-muted rounded-full p-0.5 sm:p-1">
               <button
                 onClick={() => setLanguage('ta')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all min-h-[32px] ${
                   language === 'ta'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -79,7 +79,7 @@ const Header = () => {
               </button>
               <button
                 onClick={() => setLanguage('en')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all min-h-[32px] ${
                   language === 'en'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'

@@ -5,7 +5,7 @@ const BenefitsPage = () => {
   const { t, language } = useLanguage();
 
   return (
-    <main className="min-h-screen py-12 md:py-20 bg-muted/30">
+    <main className="min-h-screen py-8 sm:py-12 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
@@ -55,7 +55,7 @@ const BenefitsPage = () => {
               </h2>
             </div>
 
-            <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {t.benefits.documents.map((doc, index) => (
                 <li
                   key={index}
