@@ -55,7 +55,7 @@ const BenefitsPage = () => {
               </h2>
             </div>
 
-            <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {t.benefits.documents.map((doc, index) => (
                 <li
                   key={index}
