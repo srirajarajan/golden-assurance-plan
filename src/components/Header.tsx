@@ -66,10 +66,10 @@ const Header = () => {
           {/* Auth & Language */}
           <div className="flex items-center gap-4">
             {/* Language Switch */}
-            <div className="flex items-center bg-muted rounded-full p-1">
+            <div className="flex items-center bg-muted rounded-full p-0.5 sm:p-1">
               <button
                 onClick={() => setLanguage('ta')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all min-h-[32px] ${
                   language === 'ta'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -79,7 +79,7 @@ const Header = () => {
               </button>
               <button
                 onClick={() => setLanguage('en')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all min-h-[32px] ${
                   language === 'en'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'

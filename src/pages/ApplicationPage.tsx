@@ -583,8 +583,8 @@ const ApplicationPage: React.FC = () => {
             </p>
           </CardHeader>
           
-          <CardContent className="p-6">
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="p-3 sm:p-6">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               
               <ImageUpload
                 label={t.applicantPhoto}

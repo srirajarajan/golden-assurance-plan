@@ -121,7 +121,7 @@ const HomePage = () => {
             <h2 className="font-display text-2xl md:text-3xl font-bold text-secondary mb-4">
               {useLanguage().language === 'ta' ? 'ஒருமுறை பிரீமியம்' : 'One-time Premium'}
             </h2>
-            <div className="text-5xl md:text-6xl font-bold gradient-gold-text mb-4">₹3,000</div>
+            <div className="text-4xl sm:text-5xl md:text-6xl font-bold gradient-gold-text mb-4">₹3,000</div>
             <p className="text-muted-foreground mb-6">
               {useLanguage().language === 'ta'
                 ? 'ஒரு உறுப்பினருக்கு வாழ்நாள் முழுவதும்'
