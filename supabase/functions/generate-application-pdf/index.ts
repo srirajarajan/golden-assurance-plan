@@ -386,7 +386,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawSectionHeader(labels.aadhaarImages);
 
   const imgBoxW = (cw - 6) / 2;
-  const imgBoxH = 45; // reduced to prevent page overflow
+  const imgBoxH = 48; // slightly larger for clarity
 
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
