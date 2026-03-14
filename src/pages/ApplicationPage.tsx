@@ -571,8 +571,8 @@ const ApplicationPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-4 sm:py-8 px-3 sm:px-4">
+      <div className="w-full max-w-2xl mx-auto">
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
             <CardTitle className="text-2xl md:text-3xl font-bold text-primary">
