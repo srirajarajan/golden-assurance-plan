@@ -55,7 +55,7 @@ const HomePage = () => {
 
             {/* Title */}
             <div className="gold-border rounded-2xl p-6 md:p-8 bg-background/50 backdrop-blur-sm mb-8 animate-slide-up">
-              <h1 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-secondary leading-tight">
+              <h1 className="font-display text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-secondary leading-tight">
                 {t.hero.title}
               </h1>
             </div>
