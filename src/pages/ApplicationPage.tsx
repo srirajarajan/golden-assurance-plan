@@ -717,6 +717,37 @@ const ApplicationPage: React.FC = () => {
                       }}
                     />
                   </div>
+
+                  <div>
+                    <Label className="flex items-center gap-1">
+                      <CreditCard className="w-4 h-4" />
+                      {t.paymentMethod}
+                    </Label>
+                    <div className="flex gap-4 mt-2 h-10 items-center">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="payment_method_inline"
+                          value="Cash"
+                          checked={paymentMethod === 'Cash'}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span className="text-sm font-medium">{t.cash}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="payment_method_inline"
+                          value="UPI"
+                          checked={paymentMethod === 'UPI'}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span className="text-sm font-medium">{t.upi}</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 
                 <div>
