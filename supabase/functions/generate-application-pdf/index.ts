@@ -397,7 +397,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawSectionHeader(labels.aadhaarImages);
 
   const imgBoxW = (cw - 8) / 2;
-  const imgBoxH = 50;
+  const imgBoxH = 60;
 
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
@@ -417,11 +417,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.rect(margin + imgBoxW + 8, y, imgBoxW, imgBoxH, "S");
 
   if (aadhaarFront) {
-    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 2, y + 2, imgBoxW - 4, imgBoxH - 4); }
+    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 1, y + 1, imgBoxW - 2, imgBoxH - 2); }
     catch (e) { console.error("Aadhaar front error:", e); }
   }
   if (aadhaarBack) {
-    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 10, y + 2, imgBoxW - 4, imgBoxH - 4); }
+    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 9, y + 1, imgBoxW - 2, imgBoxH - 2); }
     catch (e) { console.error("Aadhaar back error:", e); }
   }
 
