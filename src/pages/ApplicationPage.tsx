@@ -878,36 +878,8 @@ const ApplicationPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  {t.paymentMethod}
-                </h3>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      value="Cash"
-                      checked={paymentMethod === 'Cash'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="h-4 w-4 accent-primary"
-                    />
-                    <span className="text-sm font-medium">{t.cash}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      value="UPI"
-                      checked={paymentMethod === 'UPI'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="h-4 w-4 accent-primary"
-                    />
-                    <span className="text-sm font-medium">{t.upi}</span>
-                  </label>
-                </div>
-              </div>
+
+
 
               <div className="space-y-2">
                 <Label htmlFor="additional_message">{t.additionalMessage}</Label>
