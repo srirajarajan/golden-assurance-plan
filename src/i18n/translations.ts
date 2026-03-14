@@ -82,7 +82,10 @@ export const translations = {
         "Every member joining this scheme will be issued an identity card with official seal under 'William Carey Funeral Insurance Scheme'.",
         "If the policyholder passes away, the insurance amount will be provided in person after the nominee or family member informs. If not informed, heirs can receive the amount after submitting proper documents.",
         "The member identity card must be returned when receiving the insurance amount.",
-        "All members will receive special gifts and sweets during Diwali and Christmas festivals. Additionally, one need-based assistance will be provided to the family through William Carey Trust."
+        "All members will receive special gifts and sweets during Diwali and Christmas festivals. Additionally, one need-based assistance will be provided to the family through William Carey Trust.",
+        "All members who pay the insurance contribution are eligible for a special return benefit which is not available in normal government schemes. This scheme follows the principle that the money contributed by the people should return to the people.",
+        "If a member passes away within 15 days after paying the insurance contribution according to the company rules, the amount paid will be returned.",
+        "If the nominee submits the required documents and valid proof at the office properly, the paid amount will be returned within 40 working days."
       ],
       documentsTitle: "Required Documents",
       documents: [
@@ -196,7 +199,10 @@ export const translations = {
         "இத்திட்டத்தில் இணையும் ஒவ்வொருவருக்கும் \"வில்லியம் கேரி ஈமசடங்கு காப்பீட்டுத் திட்டம்\" என்ற பெயரில் அலுவலர் சீல் உடன் அடையாள அட்டை வழங்கப்படும்.",
         "பாலிசிதாரருக்கு இழப்பு நேரிட்டால், நாமினி அல்லது குடும்ப உறுப்பினர் தகவல் தெரிவித்த பிறகு காப்பீட்டுத் தொகை நேரில் வழங்கப்படும். தகவல் அளிக்கப்படாத பட்சத்தில், வாரிசுதாரர்கள் உரிய சான்றுகள் சமர்ப்பித்த பின் தொகை வழங்கப்படும்.",
         "காப்பீட்டுத் தொகை பெறும் போது கட்டாயமாக உறுப்பினர் அடையாள அட்டை திருப்பி அளிக்க வேண்டும்.",
-        "இத்திட்டத்தில் இணையும் அனைவருக்கும் தீபாவளி மற்றும் கிறிஸ்துமஸ் பண்டிகைகளில் சிறப்பு பரிசுகள் மற்றும் இனிப்புகள் வழங்கப்படும். மேலும், அந்த குடும்பத்திற்கு தேவையான ஒரு உதவி வில்லியம் கேரி அறக்கட்டளை மூலம் வழங்கப்படும்."
+        "இத்திட்டத்தில் இணையும் அனைவருக்கும் தீபாவளி மற்றும் கிறிஸ்துமஸ் பண்டிகைகளில் சிறப்பு பரிசுகள் மற்றும் இனிப்புகள் வழங்கப்படும். மேலும், அந்த குடும்பத்திற்கு தேவையான ஒரு உதவி வில்லியம் கேரி அறக்கட்டளை மூலம் வழங்கப்படும்.",
+        "காப்பீட்டுத் தொகை செலுத்திய அனைத்து உறுப்பினர்களுக்கும் அரசு திட்டங்களில் இல்லாத ஒரு சிறப்பு வசதி வழங்கப்படுகிறது. மக்கள் கட்டிய பணம் மக்களுக்கே திரும்ப கிடைக்க வேண்டும் என்ற கோட்பாட்டை அடிப்படையாக கொண்டு இந்த திட்டம் செயல்படுகிறது.",
+        "ஒருவர் காப்பீட்டுத் தொகை செலுத்திய பின்னர் நிறுவன விதிகளின்படி 15 நாட்களுக்குள் இழப்பு நேர்ந்தால் அவர்கள் கட்டிய பணம் திரும்ப வழங்கப்படும்.",
+        "காப்பீட்டுத் தொகை செலுத்திய உறுப்பினரின் தேவையான சான்றிதழ்களை நாமினி அலுவலகத்தில் சரியான முறையில் சமர்ப்பித்தால், 40 வேலை நாட்களுக்குள் கட்டிய தொகை கட்டாயமாக திருப்பி வழங்கப்படும்."
       ],
       documentsTitle: "தேவையான ஆவணங்கள்",
       documents: [
