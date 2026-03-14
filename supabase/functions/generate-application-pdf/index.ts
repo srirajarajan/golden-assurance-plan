@@ -425,10 +425,10 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.setFontSize(8);
     doc.setFont(fontFamily, "normal");
     doc.setTextColor(...TEXT_BLACK);
-    const msgLines = doc.splitTextToSize(msg, cw - 6);
-    ensureSpace(msgLines.length * 4.5 + 4);
+    const msgLines = doc.splitTextToSize(msg, cw - 6).slice(0, 2); // max 2 lines
+    ensureSpace(msgLines.length * 4.5 + 2);
     doc.text(msgLines, margin + 3, y);
-    y += msgLines.length * 4.5 + 5;
+    y += msgLines.length * 4.5 + 2;
   }
 
   // ═══════════════════════════════════════════
