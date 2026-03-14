@@ -255,9 +255,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // ═══════════════════════════════════════════
   const photoW = 34; // ~95px
   const photoH = 42; // ~120px
-  const photoMarginRight = 2;
-  const photoMarginTop = 15;
-  const photoX = pw - margin - photoW - photoMarginRight;
+  const photoMarginRight = 0;
+  const photoMarginTop = 18; // moved down
+  const photoX = pw - margin - photoW - photoMarginRight + 2; // moved right
   const photoY = y + photoMarginTop;
   const applicantPhoto = await fetchImageAsBase64(supabase, data.applicant_photo_path);
   if (applicantPhoto) {
@@ -288,6 +288,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   drawSectionHeader(labels.applicantDetails);
 
+  // Payment method value for inline display
+  const paymentVal = (data.payment_method || "").trim().toLowerCase();
+  const isCash = paymentVal === "cash" || paymentVal === "பணம்";
+  const paymentDisplay = isCash ? labels.cash : labels.upi;
+
   const detailFields = [
     [labels.memberName, safeText(data.member_name, np)],
     [labels.age, safeText(data.age, np)],
@@ -298,11 +303,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     [labels.annualIncome, safeText(data.annual_income, np)],
     [labels.aadhaarNumber, safeText(data.aadhaar_number, np)],
     [labels.mobileNumber, safeText(data.mobile_number, np)],
+    [labels.paymentMethod, paymentDisplay],
     [labels.address, safeText(data.address, np)],
   ];
 
   const labelColW = 48;
-  const rowH = 6.5;
+  const rowH = 6;
   const detailsMaxW = applicantPhoto ? (photoX - margin - 3) : cw;
 
   detailFields.forEach(([label, value], idx) => {
@@ -317,18 +323,18 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.setFont(fontFamily, "bold");
     doc.setFontSize(8);
     doc.setTextColor(...TEXT_BLACK);
-    doc.text(label, margin + 3, y + 4.5);
+    doc.text(label, margin + 3, y + 4);
 
     doc.setFont(fontFamily, "normal");
     const valMaxW = detailsMaxW - labelColW - 4;
     const lines = doc.splitTextToSize(value, valMaxW);
-    doc.text(lines, margin + labelColW, y + 4.5);
+    doc.text(lines, margin + labelColW, y + 4);
 
-    const lineH = Math.max(rowH, lines.length * 4.5 + 2);
+    const lineH = Math.max(rowH, lines.length * 4 + 2);
     y += lineH;
   });
 
-  y += 5;
+  y += 3;
 
   // ═══════════════════════════════════════════
   // NOMINEE DETAILS — on Page 1, right after applicant details
@@ -336,12 +342,13 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawSectionHeader(labels.nomineeDetails);
 
   const drawNomineeBlock = (title: string, name: string, relation: string, gender: string, age: string) => {
-    ensureSpace(30);
+    ensureSpace(28);
+    // Left-aligned heading with slightly larger font
     doc.setFont(fontFamily, "bold");
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setTextColor(...GOLD);
-    doc.text(title, margin + 2, y);
-    y += 4;
+    doc.text(title, margin + 3, y + 1);
+    y += 5;
 
     const nomFields = [
       [labels.nomineeName, safeText(name, np)],
@@ -361,10 +368,10 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       doc.setFont(fontFamily, "bold");
       doc.setFontSize(8);
       doc.setTextColor(...TEXT_BLACK);
-      doc.text(label, margin + 3, y + 4.5);
+      doc.text(label, margin + 3, y + 4);
 
       doc.setFont(fontFamily, "normal");
-      doc.text(value, margin + labelColW, y + 4.5);
+      doc.text(value, margin + labelColW, y + 4);
       y += rowH;
     });
     y += 2;
@@ -372,24 +379,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   drawNomineeBlock(labels.nominee1Title, data.nominee1_name, data.nominee1_relation, data.nominee1_gender, data.nominee1_age);
   drawNomineeBlock(labels.nominee2Title, data.nominee2_name, data.nominee2_relation, data.nominee2_gender, data.nominee2_age);
-
-  // ═══════════════════════════════════════════
-  // PAYMENT METHOD
-  // ═══════════════════════════════════════════
-  drawSectionHeader(labels.paymentMethod);
-
-  const paymentVal = (data.payment_method || "").trim().toLowerCase();
-  const isCash = paymentVal === "cash" || paymentVal === "பணம்";
-  const isUpi = paymentVal === "upi";
-
-  const cashCheck = isCash ? "☑" : "☐";
-  const upiCheck = isUpi ? "☑" : "☐";
-
-  doc.setFont(fontFamily, "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...TEXT_BLACK);
-  doc.text(`${cashCheck} ${labels.cash}     ${upiCheck} ${labels.upi}`, margin + 3, y + 1);
-  y += 8;
 
   // ═══════════════════════════════════════════
   // AADHAAR IMAGES
