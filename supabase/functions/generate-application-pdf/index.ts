@@ -458,8 +458,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   if (!sealSignImg) console.error("Seal-signature image not found");
 
-  const sealSignW = 60;   // ~170px
-  let sealSignImgH = 50;
+  const sealSignW = 50;   // ~140px
+  let sealSignImgH = 42;
 
   if (sealSignImg) {
     try {
