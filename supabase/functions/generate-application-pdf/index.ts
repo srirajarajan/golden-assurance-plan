@@ -437,6 +437,13 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.addPage();
   y = margin;
 
+  // ── Pamphlet Heading ──
+  doc.setFont(fontFamily, "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...DARK_BROWN);
+  doc.text("Policy Information Pamphlet", pw / 2, y + 4, { align: "center" });
+  y += 10;
+
   // Pamphlet image — fills most of page 2
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
 
@@ -457,11 +464,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   const bottomMargin = 10.5; // ~30px from page bottom
-  const totalBlockH = sealSignImgH + 2;
+  const textBlockH = 10; // space for Managing Director text
+  const totalBlockH = sealSignImgH + textBlockH;
 
   // Available space for pamphlet on page 2
-  const sigBlockStartY = 297 - bottomMargin - totalBlockH; // A4 height = 297mm
-  const pamphletAvailH = sigBlockStartY - margin - 5; // leave 5mm gap before sig block
+  const sigBlockStartY = 297 - bottomMargin - totalBlockH;
+  const pamphletAvailH = sigBlockStartY - y - 5;
 
   if (pamphletImage) {
     const pamphletMaxW = cw;
@@ -472,9 +480,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       const finalH = Math.min(calcH, pamphletAvailH);
       const finalW = finalH < calcH ? finalH / aspectRatio : pamphletMaxW;
 
-      // Center the image horizontally
       const imgX = margin + (cw - finalW) / 2;
-
       doc.addImage(pamphletImage.base64, pamphletImage.type, imgX, y, finalW, finalH);
       y += finalH + 5;
     } catch (e) {
