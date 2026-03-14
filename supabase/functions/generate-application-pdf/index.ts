@@ -489,16 +489,21 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // Seal-Signature — bottom-right of page 2
-  const rightMarginPx = 14; // ~40px
-  const blockRightX = pw - margin - rightMarginPx;
+  const sigX = pw - margin - sealSignW;
   let sigY = sigBlockStartY;
 
-  const imgX = blockRightX - sealSignW;
-
   if (sealSignImg) {
-    try { doc.addImage(sealSignImg.base64, sealSignImg.type, imgX, sigY, sealSignW, sealSignImgH); }
+    try { doc.addImage(sealSignImg.base64, sealSignImg.type, sigX, sigY, sealSignW, sealSignImgH); }
     catch (e) { console.error("Seal-signature image error:", e); }
   }
+
+  // Text below signature image — right aligned
+  const textY = sigY + sealSignImgH + 3;
+  doc.setFont(fontFamily, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_BLACK);
+  doc.text("Managing Director", pw - margin, textY, { align: "right" });
+  doc.text("William Carey Funeral Insurance", pw - margin, textY + 4, { align: "right" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
