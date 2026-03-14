@@ -381,40 +381,40 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawNomineeBlock(labels.nominee2Title, data.nominee2_name, data.nominee2_relation, data.nominee2_gender, data.nominee2_age);
 
   // ═══════════════════════════════════════════
-  // AADHAAR IMAGES
+  // AADHAAR IMAGES — compact to fit page 1
   // ═══════════════════════════════════════════
   drawSectionHeader(labels.aadhaarImages);
 
-  const imgBoxW = (cw - 8) / 2;
-  const imgBoxH = 60;
+  const imgBoxW = (cw - 6) / 2;
+  const imgBoxH = 45; // reduced to prevent page overflow
 
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
 
-  ensureSpace(imgBoxH + 10);
+  ensureSpace(imgBoxH + 8);
 
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(7);
   doc.setTextColor(...TEXT_GREY);
   doc.text(labels.aadhaarFront, margin + imgBoxW / 2, y, { align: "center" });
-  doc.text(labels.aadhaarBack, margin + imgBoxW + 8 + imgBoxW / 2, y, { align: "center" });
+  doc.text(labels.aadhaarBack, margin + imgBoxW + 6 + imgBoxW / 2, y, { align: "center" });
   y += 3;
 
   doc.setDrawColor(...MID_GREY);
   doc.setLineWidth(0.3);
   doc.rect(margin, y, imgBoxW, imgBoxH, "S");
-  doc.rect(margin + imgBoxW + 8, y, imgBoxW, imgBoxH, "S");
+  doc.rect(margin + imgBoxW + 6, y, imgBoxW, imgBoxH, "S");
 
   if (aadhaarFront) {
     try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 1, y + 1, imgBoxW - 2, imgBoxH - 2); }
     catch (e) { console.error("Aadhaar front error:", e); }
   }
   if (aadhaarBack) {
-    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 9, y + 1, imgBoxW - 2, imgBoxH - 2); }
+    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + imgBoxW + 7, y + 1, imgBoxW - 2, imgBoxH - 2); }
     catch (e) { console.error("Aadhaar back error:", e); }
   }
 
-  y += imgBoxH + 5;
+  y += imgBoxH + 3;
 
   // ═══════════════════════════════════════════
   // ADDITIONAL MESSAGE (still on page 1 if space)
