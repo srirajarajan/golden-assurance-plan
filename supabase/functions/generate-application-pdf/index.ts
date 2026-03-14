@@ -443,7 +443,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // ═══════════════════════════════════════════
-  // PAGE 2 — Pamphlet + Signature/Seal
+  // PAGE 2 — Pamphlet + Seal/Signature
   // ═══════════════════════════════════════════
   doc.addPage();
   y = margin;
@@ -451,37 +451,24 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // Pamphlet image — fills most of page 2
   const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
 
-  // Signature/Seal setup first to calculate reserved space
+  // Merged seal-signature image setup
   const baseUrl = Deno.env.get("SUPABASE_URL")!;
-  const signatureImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/signature.jpeg`);
-  const sealImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/seal.jpeg`);
+  const sealSignImg = await loadImageFromUrl(`${baseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
 
-  if (!signatureImg) console.error("Signature image not found");
-  if (!sealImg) console.error("Seal image not found");
+  if (!sealSignImg) console.error("Seal-signature image not found");
 
-  const sigW = 42;   // ~120px
-  const sealW = 39;  // ~110px
-  let sigImgH = 18;
-  let sealImgH = 16;
+  const sealSignW = 60;   // ~170px
+  let sealSignImgH = 50;
 
-  if (signatureImg) {
+  if (sealSignImg) {
     try {
-      const sigProps = doc.getImageProperties(`data:image/${signatureImg.type.toLowerCase()};base64,${signatureImg.base64}`);
-      sigImgH = sigW * (sigProps.height / sigProps.width);
-    } catch (_) {}
-  }
-  if (sealImg) {
-    try {
-      const sealProps = doc.getImageProperties(`data:image/${sealImg.type.toLowerCase()};base64,${sealImg.base64}`);
-      sealImgH = sealW * (sealProps.height / sealProps.width);
+      const props = doc.getImageProperties(`data:image/${sealSignImg.type.toLowerCase()};base64,${sealSignImg.base64}`);
+      sealSignImgH = sealSignW * (props.height / props.width);
     } catch (_) {}
   }
 
-  const gapSigSeal = 0;
-  const gapSealText = 2;
-  const textLineH = 4.5;
-  const bottomMargin = 12.5; // ~35px from page bottom
-  const totalBlockH = sigImgH + gapSigSeal + sealImgH + gapSealText + textLineH * 2 + 2;
+  const bottomMargin = 10.5; // ~30px from page bottom
+  const totalBlockH = sealSignImgH + 2;
 
   // Available space for pamphlet on page 2
   const sigBlockStartY = 297 - bottomMargin - totalBlockH; // A4 height = 297mm
@@ -506,33 +493,17 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     }
   }
 
-  // Signature & Seal — bottom-right of page 2
+  // Seal-Signature — bottom-right of page 2
   const rightMarginPx = 14; // ~40px
   const blockRightX = pw - margin - rightMarginPx;
   let sigY = sigBlockStartY;
 
-  const sigX = blockRightX - sigW;
-  const sealX = blockRightX - sealW;
+  const imgX = blockRightX - sealSignW;
 
-  if (signatureImg) {
-    try { doc.addImage(signatureImg.base64, signatureImg.type, sigX, sigY, sigW, sigImgH); }
-    catch (e) { console.error("Signature image error:", e); }
+  if (sealSignImg) {
+    try { doc.addImage(sealSignImg.base64, sealSignImg.type, imgX, sigY, sealSignW, sealSignImgH); }
+    catch (e) { console.error("Seal-signature image error:", e); }
   }
-  sigY += sigImgH + gapSigSeal;
-
-  if (sealImg) {
-    try { doc.addImage(sealImg.base64, sealImg.type, sealX, sigY, sealW, sealImgH); }
-    catch (e) { console.error("Seal image error:", e); }
-  }
-  sigY += sealImgH + gapSealText;
-
-  const textRightX = blockRightX;
-  doc.setFont(fontFamily, "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.title, textRightX, sigY, { align: "right" });
-  sigY += textLineH;
-  doc.text(labels.managingDirector, textRightX, sigY, { align: "right" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
