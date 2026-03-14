@@ -34,7 +34,7 @@ const HomePage = () => {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="hero-gradient relative overflow-hidden py-16 md:py-24">
+      <section className="hero-gradient relative overflow-hidden py-10 sm:py-16 md:py-24">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
