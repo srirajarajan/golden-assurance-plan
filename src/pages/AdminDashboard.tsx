@@ -505,6 +505,7 @@ const AdminDashboard: React.FC = () => {
         currentEnd={selectedUser?.range_end}
         currentSerial={selectedUser?.current_serial || 0}
         staffName={selectedUser?.full_name || selectedUser?.email}
+        staffUserId={selectedUser?.user_id}
         language={language}
       />
 
