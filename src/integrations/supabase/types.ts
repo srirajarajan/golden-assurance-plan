@@ -83,6 +83,30 @@ export type Database = {
         }
         Relationships: []
       }
+      updates: {
+        Row: {
+          created_at: string
+          id: string
+          pdf_path: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pdf_path: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pdf_path?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

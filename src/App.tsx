@@ -21,6 +21,7 @@ const SignupPage = lazy(() => import("@/pages/SignupPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const UpdatesPage = lazy(() => import("@/pages/UpdatesPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -56,6 +57,7 @@ const App = () => (
                     <Route path="/apply" element={<ApplicationPage />} />
                     <Route path="/benefits" element={<BenefitsPage />} />
                     <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/updates" element={<UpdatesPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
