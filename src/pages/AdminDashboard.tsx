@@ -510,6 +510,9 @@ const AdminDashboard: React.FC = () => {
         language={language}
       />
 
+      {/* Manage Updates */}
+      <ManageUpdates language={language} />
+
       {/* Change Password Section */}
       <ChangePasswordSection language={language} />
     </div>
