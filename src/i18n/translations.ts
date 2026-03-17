@@ -4,7 +4,8 @@ export const translations = {
       home: "Home",
       apply: "Apply Now",
       benefits: "Benefits",
-      contact: "Contact"
+      contact: "Contact",
+      updates: "Updates"
     },
     hero: {
       title: "William Carey Funeral Insurance Policy Scheme – 2026-27",
