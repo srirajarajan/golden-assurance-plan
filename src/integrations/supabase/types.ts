@@ -89,6 +89,8 @@ export type Database = {
           id: string
           pdf_path: string
           title: string
+          title_en: string | null
+          title_ta: string | null
           uploaded_by: string | null
         }
         Insert: {
@@ -96,6 +98,8 @@ export type Database = {
           id?: string
           pdf_path: string
           title: string
+          title_en?: string | null
+          title_ta?: string | null
           uploaded_by?: string | null
         }
         Update: {
@@ -103,6 +107,8 @@ export type Database = {
           id?: string
           pdf_path?: string
           title?: string
+          title_en?: string | null
+          title_ta?: string | null
           uploaded_by?: string | null
         }
         Relationships: []
