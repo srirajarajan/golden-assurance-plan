@@ -122,7 +122,8 @@ export const translations = {
       home: "முகப்பு",
       apply: "விண்ணப்பிக்க",
       benefits: "சலுகைகள்",
-      contact: "தொடர்பு"
+      contact: "தொடர்பு",
+      updates: "புதுப்பிப்புகள்"
     },
     hero: {
       title: "வில்லியம் கேரி ஈமச்சடங்கு காப்பீட்டு திட்டம் 2026-27",
