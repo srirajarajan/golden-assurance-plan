@@ -210,18 +210,21 @@ const AdminDashboard: React.FC = () => {
   const handleSaveRange = async (rangeStart: number, rangeEnd: number) => {
     if (!selectedUser) return;
 
-    // Validate via DB function
-    const { error: valError } = await supabase.rpc('validate_serial_range', {
-      p_user_id: selectedUser.user_id,
-      p_range_start: rangeStart,
-      p_range_end: rangeEnd,
-    });
+    // Auto-sync serial pointer if current_serial is outside new range
+    const currentSerial = selectedUser.current_serial || 0;
+    let newCurrentSerial: number | undefined;
+    if (currentSerial > 0 && (currentSerial < rangeStart || currentSerial > rangeEnd)) {
+      newCurrentSerial = rangeStart;
+    }
 
-    if (valError) throw new Error(valError.message);
+    const updateData: Record<string, number> = { range_start: rangeStart, range_end: rangeEnd };
+    if (newCurrentSerial !== undefined) {
+      updateData.current_serial = newCurrentSerial;
+    }
 
     const { error } = await supabase
       .from('profiles')
-      .update({ range_start: rangeStart, range_end: rangeEnd })
+      .update(updateData)
       .eq('user_id', selectedUser.user_id);
 
     if (error) throw new Error(error.message);
@@ -229,7 +232,7 @@ const AdminDashboard: React.FC = () => {
     setUsers((prev) =>
       prev.map((u) =>
         u.user_id === selectedUser.user_id
-          ? { ...u, range_start: rangeStart, range_end: rangeEnd }
+          ? { ...u, range_start: rangeStart, range_end: rangeEnd, ...(newCurrentSerial !== undefined ? { current_serial: newCurrentSerial } : {}) }
           : u
       )
     );
@@ -502,6 +505,7 @@ const AdminDashboard: React.FC = () => {
         currentEnd={selectedUser?.range_end}
         currentSerial={selectedUser?.current_serial || 0}
         staffName={selectedUser?.full_name || selectedUser?.email}
+        staffUserId={selectedUser?.user_id}
         language={language}
       />
 
