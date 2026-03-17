@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import AdminSummaryCards from '@/components/admin/AdminSummaryCards';
 import SerialRangeDialog from '@/components/admin/SerialRangeDialog';
+import ManageUpdates from '@/components/admin/ManageUpdates';
 import {
   Loader2,
   UserCheck,
