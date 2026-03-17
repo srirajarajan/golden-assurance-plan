@@ -95,22 +95,27 @@ const UpdatesPage: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
-                      <a
-                        href={pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 sm:flex-none"
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
+                        onClick={() => window.open(pdfUrl, '_blank', 'noopener,noreferrer')}
                       >
-                        <Button size="sm" variant="outline" className="w-full sm:w-auto whitespace-nowrap">
-                          {t.view}
-                        </Button>
-                      </a>
-                      <a href={pdfUrl} download className="flex-1 sm:flex-none">
-                        <Button size="sm" className="w-full sm:w-auto whitespace-nowrap">
-                          <Download className="mr-1 h-3 w-3" />
-                          {t.download}
-                        </Button>
-                      </a>
+                        {t.view}
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = pdfUrl;
+                          a.download = '';
+                          a.click();
+                        }}
+                      >
+                        <Download className="mr-1 h-3 w-3" />
+                        {t.download}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
