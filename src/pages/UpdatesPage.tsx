@@ -8,6 +8,8 @@ import { FileText, Download, Calendar, Loader2 } from 'lucide-react';
 interface UpdatePost {
   id: string;
   title: string;
+  title_en: string | null;
+  title_ta: string | null;
   pdf_path: string;
   created_at: string;
 }
@@ -41,7 +43,7 @@ const UpdatesPage: React.FC = () => {
         .from('updates')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!error && data) setPosts(data as UpdatePost[]);
+      if (!error && data) setPosts(data as unknown as UpdatePost[]);
       setLoading(false);
     };
     fetchUpdates();
@@ -50,6 +52,12 @@ const UpdatesPage: React.FC = () => {
   const getPdfUrl = (path: string) => {
     const { data } = supabase.storage.from('updates-pdf').getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  const getTitle = (post: UpdatePost) => {
+    if (language === 'ta' && post.title_ta) return post.title_ta;
+    if (language === 'en' && post.title_en) return post.title_en;
+    return post.title;
   };
 
   return (
@@ -71,35 +79,43 @@ const UpdatesPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-4">
-            {posts.map((post) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex items-center gap-4 p-5">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-destructive/10 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-destructive" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{post.title}</h3>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <a href={getPdfUrl(post.pdf_path)} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="outline">
-                        {t.view}
-                      </Button>
-                    </a>
-                    <a href={getPdfUrl(post.pdf_path)} download>
-                      <Button size="sm">
-                        <Download className="mr-1 h-3 w-3" />
-                        {t.download}
-                      </Button>
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {posts.map((post) => {
+              const pdfUrl = getPdfUrl(post.pdf_path);
+              return (
+                <Card key={post.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-5">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-destructive/10 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground break-words">{getTitle(post)}</h3>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                      <a
+                        href={pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Button size="sm" variant="outline" className="w-full sm:w-auto whitespace-nowrap">
+                          {t.view}
+                        </Button>
+                      </a>
+                      <a href={pdfUrl} download className="flex-1 sm:flex-none">
+                        <Button size="sm" className="w-full sm:w-auto whitespace-nowrap">
+                          <Download className="mr-1 h-3 w-3" />
+                          {t.download}
+                        </Button>
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
