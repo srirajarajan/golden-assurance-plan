@@ -11,6 +11,8 @@ import { FileText, Trash2, Upload, Loader2, Newspaper } from 'lucide-react';
 interface UpdatePost {
   id: string;
   title: string;
+  title_en: string | null;
+  title_ta: string | null;
   pdf_path: string;
   created_at: string;
 }
@@ -18,8 +20,10 @@ interface UpdatePost {
 const manageTranslations = {
   en: {
     title: 'Manage Updates',
-    uploadTitle: 'Title',
-    titlePlaceholder: 'Enter update title',
+    titleEn: 'Title (English)',
+    titleTa: 'Title (Tamil)',
+    titleEnPlaceholder: 'Enter English title',
+    titleTaPlaceholder: 'தமிழ் தலைப்பை உள்ளிடவும்',
     selectPdf: 'Select PDF',
     upload: 'Upload',
     uploading: 'Uploading...',
@@ -30,12 +34,14 @@ const manageTranslations = {
     error: 'Error',
     pdfOnly: 'Only PDF files allowed',
     tooLarge: 'File must be under 5MB',
-    titleRequired: 'Title is required',
+    titleRequired: 'English title is required',
   },
   ta: {
     title: 'புதுப்பிப்புகளை நிர்வகிக்க',
-    uploadTitle: 'தலைப்பு',
-    titlePlaceholder: 'புதுப்பிப்பு தலைப்பை உள்ளிடவும்',
+    titleEn: 'தலைப்பு (ஆங்கிலம்)',
+    titleTa: 'தலைப்பு (தமிழ்)',
+    titleEnPlaceholder: 'Enter English title',
+    titleTaPlaceholder: 'தமிழ் தலைப்பை உள்ளிடவும்',
     selectPdf: 'PDF தேர்வு செய்க',
     upload: 'பதிவேற்றம்',
     uploading: 'பதிவேற்றுகிறது...',
@@ -46,7 +52,7 @@ const manageTranslations = {
     error: 'பிழை',
     pdfOnly: 'PDF கோப்புகள் மட்டுமே அனுமதிக்கப்படும்',
     tooLarge: 'கோப்பு 5MB க்கு கீழ் இருக்க வேண்டும்',
-    titleRequired: 'தலைப்பு தேவை',
+    titleRequired: 'ஆங்கில தலைப்பு தேவை',
   },
 };
 
@@ -54,7 +60,8 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [posts, setPosts] = useState<UpdatePost[]>([]);
-  const [title, setTitle] = useState('');
+  const [titleEn, setTitleEn] = useState('');
+  const [titleTa, setTitleTa] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,7 +72,7 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
       .from('updates')
       .select('*')
       .order('created_at', { ascending: false });
-    if (data) setPosts(data as UpdatePost[]);
+    if (data) setPosts(data as unknown as UpdatePost[]);
     setLoading(false);
   };
 
@@ -86,7 +93,7 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
   };
 
   const handleUpload = async () => {
-    if (!title.trim()) {
+    if (!titleEn.trim()) {
       toast({ title: t.error, description: t.titleRequired, variant: 'destructive' });
       return;
     }
@@ -94,7 +101,8 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
 
     setUploading(true);
     try {
-      const fileName = `${Date.now()}_${file.name}`;
+      // Sanitize filename to avoid ad-blocker triggers
+      const fileName = `update-${Date.now()}.pdf`;
       const { error: uploadError } = await supabase.storage
         .from('updates-pdf')
         .upload(fileName, file, { contentType: 'application/pdf' });
@@ -102,13 +110,19 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
 
       const { error: insertError } = await supabase
         .from('updates')
-        .insert({ title: title.trim(), pdf_path: fileName, uploaded_by: user.id });
+        .insert({
+          title: titleEn.trim(),
+          title_en: titleEn.trim(),
+          title_ta: titleTa.trim() || titleEn.trim(),
+          pdf_path: fileName,
+          uploaded_by: user.id,
+        } as any);
       if (insertError) throw insertError;
 
       toast({ title: t.success });
-      setTitle('');
+      setTitleEn('');
+      setTitleTa('');
       setFile(null);
-      // Reset file input
       const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       fetchPosts();
@@ -130,6 +144,12 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
     }
   };
 
+  const getTitle = (post: UpdatePost) => {
+    if (language === 'ta' && post.title_ta) return post.title_ta;
+    if (language === 'en' && post.title_en) return post.title_en;
+    return post.title;
+  };
+
   return (
     <Card className="max-w-7xl mx-auto mt-6 shadow-xl border-2">
       <CardHeader className="bg-primary/5 border-b">
@@ -140,18 +160,30 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
       </CardHeader>
       <CardContent className="p-6 space-y-6">
         {/* Upload form */}
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <div className="flex-1">
-            <Label htmlFor="update-title">{t.uploadTitle}</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="update-title-en">{t.titleEn}</Label>
             <Input
-              id="update-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t.titlePlaceholder}
+              id="update-title-en"
+              value={titleEn}
+              onChange={(e) => setTitleEn(e.target.value)}
+              placeholder={t.titleEnPlaceholder}
               className="mt-1"
             />
           </div>
-          <div className="flex-1">
+          <div>
+            <Label htmlFor="update-title-ta">{t.titleTa}</Label>
+            <Input
+              id="update-title-ta"
+              value={titleTa}
+              onChange={(e) => setTitleTa(e.target.value)}
+              placeholder={t.titleTaPlaceholder}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1 w-full">
             <Label htmlFor="pdf-upload">{t.selectPdf}</Label>
             <Input
               id="pdf-upload"
@@ -161,7 +193,7 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
               className="mt-1"
             />
           </div>
-          <Button onClick={handleUpload} disabled={uploading || !file || !title.trim()}>
+          <Button onClick={handleUpload} disabled={uploading || !file || !titleEn.trim()} className="w-full sm:w-auto">
             {uploading ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t.uploading}</>
             ) : (
@@ -180,10 +212,10 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
         ) : (
           <div className="space-y-2">
             {posts.map((post) => (
-              <div key={post.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+              <div key={post.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg border bg-muted/30">
                 <FileText className="h-5 w-5 text-destructive flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{post.title}</p>
+                  <p className="font-medium text-sm break-words">{getTitle(post)}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
@@ -191,7 +223,7 @@ const ManageUpdates: React.FC<{ language: 'en' | 'ta' }> = ({ language }) => {
                 <Button
                   size="sm"
                   variant="destructive"
-                  className="h-7 text-xs"
+                  className="h-7 text-xs w-full sm:w-auto"
                   onClick={() => handleDelete(post)}
                 >
                   <Trash2 className="mr-1 h-3 w-3" />
