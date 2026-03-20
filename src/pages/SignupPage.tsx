@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, UserPlus, CheckCircle, Phone, MapPin } from 'lucide-react';
+import { Loader2, Mail, Lock, User, UserPlus, CheckCircle } from 'lucide-react';
 
 const signupTranslations = {
   en: {
@@ -18,10 +17,6 @@ const signupTranslations = {
     fullNamePlaceholder: 'Enter your full name',
     email: 'Email Address',
     emailPlaceholder: 'Enter your email',
-    phoneNumber: 'Phone Number',
-    phoneNumberPlaceholder: 'Enter your phone number',
-    district: 'District',
-    districtPlaceholder: 'Enter your district',
     password: 'Password',
     passwordPlaceholder: 'Create a password (min 6 characters)',
     confirmPassword: 'Confirm Password',
@@ -36,8 +31,6 @@ const signupTranslations = {
     emailExists: 'An account with this email already exists',
     successTitle: 'Account Created!',
     successMessage: 'Your account is pending admin approval. You will be notified when approved.',
-    phoneRequired: 'Phone number is required',
-    districtRequired: 'District is required',
   },
   ta: {
     title: 'கணக்கை உருவாக்கு',
@@ -46,10 +39,6 @@ const signupTranslations = {
     fullNamePlaceholder: 'உங்கள் முழு பெயரை உள்ளிடவும்',
     email: 'மின்னஞ்சல் முகவரி',
     emailPlaceholder: 'உங்கள் மின்னஞ்சலை உள்ளிடவும்',
-    phoneNumber: 'தொலைபேசி எண்',
-    phoneNumberPlaceholder: 'உங்கள் தொலைபேசி எண்ணை உள்ளிடவும்',
-    district: 'மாவட்டம்',
-    districtPlaceholder: 'உங்கள் மாவட்டத்தை உள்ளிடவும்',
     password: 'கடவுச்சொல்',
     passwordPlaceholder: 'கடவுச்சொல்லை உருவாக்கவும் (குறைந்தபட்சம் 6 எழுத்துக்கள்)',
     confirmPassword: 'கடவுச்சொல்லை உறுதிப்படுத்தவும்',
@@ -64,8 +53,6 @@ const signupTranslations = {
     emailExists: 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது',
     successTitle: 'கணக்கு உருவாக்கப்பட்டது!',
     successMessage: 'உங்கள் கணக்கு நிர்வாகி அனுமதிக்காக காத்திருக்கிறது. அனுமதிக்கப்பட்டதும் உங்களுக்கு தெரிவிக்கப்படும்.',
-    phoneRequired: 'தொலைபேசி எண் தேவை',
-    districtRequired: 'மாவட்டம் தேவை',
   },
 };
 
@@ -76,8 +63,6 @@ const SignupPage: React.FC = () => {
   const { toast } = useToast();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [district, setDistrict] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,20 +81,21 @@ const SignupPage: React.FC = () => {
     if (isSubmitting) return;
 
     // Validation
-    if (!phoneNumber.trim() || !/^\d+$/.test(phoneNumber.trim())) {
-      toast({ title: t.errorTitle, description: t.phoneRequired, variant: 'destructive' });
-      return;
-    }
-    if (!district.trim()) {
-      toast({ title: t.errorTitle, description: t.districtRequired, variant: 'destructive' });
-      return;
-    }
     if (password.length < 6) {
-      toast({ title: t.errorTitle, description: t.passwordTooShort, variant: 'destructive' });
+      toast({
+        title: t.errorTitle,
+        description: t.passwordTooShort,
+        variant: 'destructive',
+      });
       return;
     }
+
     if (password !== confirmPassword) {
-      toast({ title: t.errorTitle, description: t.passwordMismatch, variant: 'destructive' });
+      toast({
+        title: t.errorTitle,
+        description: t.passwordMismatch,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -129,15 +115,6 @@ const SignupPage: React.FC = () => {
           variant: 'destructive',
         });
         return;
-      }
-
-      // Update profile with phone_number and district
-      const { data: { user: newUser } } = await supabase.auth.getUser();
-      if (newUser) {
-        await supabase
-          .from('profiles')
-          .update({ phone_number: phoneNumber.trim(), district: district.trim() } as any)
-          .eq('user_id', newUser.id);
       }
 
       setIsSuccess(true);
@@ -219,36 +196,6 @@ const SignupPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t.emailPlaceholder}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="phoneNumber" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                {t.phoneNumber}
-              </Label>
-              <Input
-                id="phoneNumber"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                placeholder={t.phoneNumberPlaceholder}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="district" className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                {t.district}
-              </Label>
-              <Input
-                id="district"
-                type="text"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                placeholder={t.districtPlaceholder}
                 className="mt-1"
                 required
               />

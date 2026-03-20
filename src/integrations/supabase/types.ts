@@ -44,45 +44,13 @@ export type Database = {
         }
         Relationships: []
       }
-      documentations: {
-        Row: {
-          created_at: string
-          id: string
-          pdf_path: string
-          title: string
-          title_en: string | null
-          title_ta: string | null
-          uploaded_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          pdf_path: string
-          title: string
-          title_en?: string | null
-          title_ta?: string | null
-          uploaded_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          pdf_path?: string
-          title?: string
-          title_en?: string | null
-          title_ta?: string | null
-          uploaded_by?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
           current_serial: number | null
-          district: string | null
           email: string
           full_name: string | null
           id: string
-          phone_number: string | null
           range_end: number | null
           range_start: number | null
           status: Database["public"]["Enums"]["user_status"]
@@ -92,11 +60,9 @@ export type Database = {
         Insert: {
           created_at?: string
           current_serial?: number | null
-          district?: string | null
           email: string
           full_name?: string | null
           id?: string
-          phone_number?: string | null
           range_end?: number | null
           range_start?: number | null
           status?: Database["public"]["Enums"]["user_status"]
@@ -106,11 +72,9 @@ export type Database = {
         Update: {
           created_at?: string
           current_serial?: number | null
-          district?: string | null
           email?: string
           full_name?: string | null
           id?: string
-          phone_number?: string | null
           range_end?: number | null
           range_start?: number | null
           status?: Database["public"]["Enums"]["user_status"]
