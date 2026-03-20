@@ -251,6 +251,7 @@ const SignupPage: React.FC = () => {
                 className="mt-1"
                 required
               />
+            </div>
             <div>
               <Label htmlFor="password" className="flex items-center gap-2">
                 <Lock className="h-4 w-4" />
