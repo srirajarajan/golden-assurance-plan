@@ -214,6 +214,35 @@ const SignupPage: React.FC = () => {
               />
             </div>
             <div>
+              <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                {t.phoneNumber}
+              </Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                placeholder={t.phoneNumberPlaceholder}
+                className="mt-1"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="district" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                {t.district}
+              </Label>
+              <Input
+                id="district"
+                type="text"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                placeholder={t.districtPlaceholder}
+                className="mt-1"
+                required
+              />
+            <div>
               <Label htmlFor="password" className="flex items-center gap-2">
                 <Lock className="h-4 w-4" />
                 {t.password}
