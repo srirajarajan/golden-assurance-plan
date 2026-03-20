@@ -107,7 +107,7 @@ const ManageDocumentations: React.FC<{ language: 'en' | 'ta' }> = ({ language })
         .upload(fileName, file, { contentType: 'application/pdf' });
       if (uploadError) throw uploadError;
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from('documentations')
         .insert({
           title: titleEn.trim(),
@@ -115,7 +115,7 @@ const ManageDocumentations: React.FC<{ language: 'en' | 'ta' }> = ({ language })
           title_ta: titleTa.trim() || titleEn.trim(),
           pdf_path: fileName,
           uploaded_by: user.id,
-        } as any);
+        });
       if (insertError) throw insertError;
 
       toast({ title: t.success });
