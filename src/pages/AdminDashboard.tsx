@@ -41,6 +41,8 @@ interface UserProfile {
   range_start: number | null;
   range_end: number | null;
   current_serial: number;
+  phone_number: string | null;
+  district: string | null;
 }
 
 const adminTranslations = {
