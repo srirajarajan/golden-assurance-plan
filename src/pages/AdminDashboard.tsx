@@ -36,6 +36,8 @@ interface UserProfile {
   user_id: string;
   email: string;
   full_name: string | null;
+  phone_number: string | null;
+  district: string | null;
   status: 'pending' | 'active' | 'rejected' | 'terminated';
   created_at: string;
   range_start: number | null;
