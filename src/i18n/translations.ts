@@ -220,7 +220,7 @@ export const translations = {
       email: "மின்னஞ்சல்",
       emailAddress: "williamcareyfuneral99@gmail.com",
       address: "முகவரி",
-      addressText: "190/86A, ஏற்காடு பிரதான சாலை, ஹஸ்தம்பட்டி, சேலம் – 7",
+      addressText: "RR காம்ப்ளக்ஸ், கன்னங்குறிச்சி மெயின் ரோடு, சின்னத்திருப்பதி பஸ் நிலையம், சேலம்-636008. (M5JC+4GM Salem, Tamil Nadu)",
       formTitle: "எங்களுக்கு செய்தி அனுப்புங்கள்",
       name: "உங்கள் பெயர்",
       emailLabel: "மின்னஞ்சல் முகவரி",
