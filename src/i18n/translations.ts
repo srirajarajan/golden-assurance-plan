@@ -102,7 +102,7 @@ export const translations = {
       email: "Email",
       emailAddress: "williamcareyfuneral99@gmail.com",
       address: "Address",
-      addressText: "190/86A, Yercaud Main Road, Hasthampatty, Salem – 7",
+      addressText: "RR Complex, Kannankurichi Main Road, Chinnathirupathi Bus Stand, Salem-636008. (M5JC+4GM Salem, Tamil Nadu)",
       formTitle: "Send us a Message",
       name: "Your Name",
       emailLabel: "Email Address",
