@@ -86,7 +86,7 @@ export const translations = {
         "All members will receive special gifts and sweets during Diwali and Christmas festivals. Additionally, one need-based assistance will be provided to the family through William Carey Trust.",
         "All members who pay the insurance contribution are eligible for a special return benefit which is not available in normal government schemes. This scheme follows the principle that the money contributed by the people should return to the people.",
         "If a member passes away within 15 days after paying the insurance contribution according to the company rules, the amount paid will be returned.",
-        "If the nominee submits the required documents and valid proof at the office properly, the paid amount will be returned within 40 working days."
+        "If the nominee submits the required certificates of the insured member at the office properly, the paid amount will be compulsorily returned within 40 working days."
       ],
       documentsTitle: "Required Documents",
       documents: [
