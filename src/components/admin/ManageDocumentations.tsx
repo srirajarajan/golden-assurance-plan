@@ -68,11 +68,11 @@ const ManageDocumentations: React.FC<{ language: 'en' | 'ta' }> = ({ language })
   const t = manageTranslations[language];
 
   const fetchPosts = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('documentations')
       .select('*')
       .order('created_at', { ascending: false });
-    if (data) setPosts(data as unknown as DocPost[]);
+    if (data) setPosts(data as DocPost[]);
     setLoading(false);
   };
 
