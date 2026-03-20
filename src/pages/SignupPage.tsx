@@ -124,7 +124,7 @@ const SignupPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await signUp(email, password, fullName);
+      const { error } = await signUp(email, password, fullName, phoneNumber, district);
 
       if (error) {
         let errorMessage = error.message;
