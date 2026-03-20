@@ -43,6 +43,10 @@ const signupTranslations = {
     subtitle: 'புதிய கணக்கிற்கு பதிவு செய்யவும்',
     fullName: 'முழு பெயர்',
     fullNamePlaceholder: 'உங்கள் முழு பெயரை உள்ளிடவும்',
+    phone: 'தொலைபேசி எண்',
+    phonePlaceholder: 'தொலைபேசி எண்ணை உள்ளிடவும்',
+    district: 'மாவட்டம்',
+    districtPlaceholder: 'மாவட்டத்தை உள்ளிடவும்',
     email: 'மின்னஞ்சல் முகவரி',
     emailPlaceholder: 'உங்கள் மின்னஞ்சலை உள்ளிடவும்',
     password: 'கடவுச்சொல்',
@@ -59,6 +63,8 @@ const signupTranslations = {
     emailExists: 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது',
     successTitle: 'கணக்கு உருவாக்கப்பட்டது!',
     successMessage: 'உங்கள் கணக்கு நிர்வாகி அனுமதிக்காக காத்திருக்கிறது. அனுமதிக்கப்பட்டதும் உங்களுக்கு தெரிவிக்கப்படும்.',
+    phoneRequired: 'தொலைபேசி எண் தேவை',
+    districtRequired: 'மாவட்டம் தேவை',
   },
 };
 
