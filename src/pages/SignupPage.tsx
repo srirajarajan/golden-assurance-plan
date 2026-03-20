@@ -95,6 +95,14 @@ const SignupPage: React.FC = () => {
     if (isSubmitting) return;
 
     // Validation
+    if (!phoneNumber.trim()) {
+      toast({ title: t.errorTitle, description: t.phoneRequired, variant: 'destructive' });
+      return;
+    }
+    if (!district.trim()) {
+      toast({ title: t.errorTitle, description: t.districtRequired, variant: 'destructive' });
+      return;
+    }
     if (password.length < 6) {
       toast({
         title: t.errorTitle,
