@@ -130,6 +130,15 @@ const SignupPage: React.FC = () => {
         return;
       }
 
+      // Update profile with phone_number and district
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await supabase
+          .from('profiles')
+          .update({ phone_number: phoneNumber.trim(), district: district.trim() } as any)
+          .eq('user_id', newUser.id);
+      }
+
       setIsSuccess(true);
       toast({
         title: t.successTitle,
