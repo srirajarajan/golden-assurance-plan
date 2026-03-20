@@ -37,11 +37,11 @@ const DocumentationsPage: React.FC = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('documentations')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!error && data) setPosts(data as unknown as DocPost[]);
+      if (!error && data) setPosts(data as DocPost[]);
       setLoading(false);
     };
     fetch();

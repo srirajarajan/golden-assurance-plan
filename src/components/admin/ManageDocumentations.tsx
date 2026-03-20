@@ -135,7 +135,7 @@ const ManageDocumentations: React.FC<{ language: 'en' | 'ta' }> = ({ language })
   const handleDelete = async (post: DocPost) => {
     try {
       await supabase.storage.from('updates-pdf').remove([post.pdf_path]);
-      await supabase.from('documentations').delete().eq('id', post.id);
+      await (supabase as any).from('documentations').delete().eq('id', post.id);
       setPosts((prev) => prev.filter((p) => p.id !== post.id));
       toast({ title: t.deleted });
     } catch (err: any) {
