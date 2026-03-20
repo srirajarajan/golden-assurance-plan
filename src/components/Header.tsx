@@ -1,10 +1,16 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogIn, LogOut, Shield, User } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, Shield, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Header = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -13,11 +19,13 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const updatesLabel = language === 'ta' ? 'புதுப்பிப்புகள்' : 'Updates';
+  const docsLabel = language === 'ta' ? 'ஆவணங்கள்' : 'Documentations';
+
   const navItems = [
     { path: '/', label: t.nav.home },
     { path: '/apply', label: t.nav.apply },
     { path: '/benefits', label: t.nav.benefits },
-    { path: '/updates', label: t.nav.updates },
     { path: '/contact', label: t.nav.contact },
   ];
 
@@ -25,6 +33,8 @@ const Header = () => {
     await signOut();
     navigate('/');
   };
+
+  const isUpdatesActive = location.pathname === '/updates' || location.pathname === '/documentations';
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
@@ -51,6 +61,25 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
+
+            {/* Updates Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 outline-none ${
+                isUpdatesActive ? 'text-primary' : 'text-foreground/80'
+              }`}>
+                {updatesLabel}
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => navigate('/updates')}>
+                  {updatesLabel}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/documentations')}>
+                  {docsLabel}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {isAdmin && (
               <Link
                 to="/admin"
@@ -132,6 +161,24 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
+            <Link
+              to="/updates"
+              onClick={() => setIsMenuOpen(false)}
+              className={`block py-3 text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/updates' ? 'text-primary' : 'text-foreground/80'
+              }`}
+            >
+              {updatesLabel}
+            </Link>
+            <Link
+              to="/documentations"
+              onClick={() => setIsMenuOpen(false)}
+              className={`block py-3 text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/documentations' ? 'text-primary' : 'text-foreground/80'
+              }`}
+            >
+              {docsLabel}
+            </Link>
             {isAdmin && (
               <Link
                 to="/admin"

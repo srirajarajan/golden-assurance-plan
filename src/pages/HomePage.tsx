@@ -26,8 +26,8 @@ const HomePage = () => {
       icon: Clock,
       titleEn: 'Quick Settlement',
       titleTa: 'விரைவான தீர்வு',
-      descEn: 'Claims processed within 7 working days',
-      descTa: '7 வேலை நாட்களுக்குள் உரிமை தீர்வு',
+      descEn: 'Claims processed within 15 working days',
+      descTa: '15 வேலை நாட்களுக்குள் உரிய தீர்வு',
     },
   ];
 
