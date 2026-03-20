@@ -74,6 +74,8 @@ const SignupPage: React.FC = () => {
   const { language } = useLanguage();
   const { toast } = useToast();
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [district, setDistrict] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
