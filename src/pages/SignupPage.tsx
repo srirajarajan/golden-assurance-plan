@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, UserPlus, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, User, UserPlus, CheckCircle, Phone, MapPin } from 'lucide-react';
 
 const signupTranslations = {
   en: {
