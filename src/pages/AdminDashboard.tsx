@@ -354,6 +354,8 @@ const AdminDashboard: React.FC = () => {
                     <tr className="border-b bg-muted/30">
                       <th className="text-left py-3 px-3 font-medium">{t.email}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.name}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'தொலைபேசி' : 'Phone'}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'மாவட்டம்' : 'District'}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.status}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.rangeStart}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.rangeEnd}</th>
