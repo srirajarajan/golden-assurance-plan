@@ -19,8 +19,8 @@ const HomePage = () => {
       icon: Users,
       titleEn: 'Family Protection',
       titleTa: 'குடும்ப பாதுகாப்பு',
-      descEn: 'Cover up to 2 family members under one policy',
-      descTa: 'ஒரு பாலிசியில் 2 குடும்ப உறுப்பினர்கள் வரை காப்பீடு',
+      descEn: 'Cover up to 4 family members under one policy',
+      descTa: 'ஒரு பாலிசியில் 4 குடும்ப உறுப்பினர்கள் வரை காப்பீடு',
     },
     {
       icon: Clock,
