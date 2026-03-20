@@ -82,6 +82,8 @@ const adminTranslations = {
     edit: 'Edit',
     rangeUpdated: 'Serial range updated successfully',
     noRange: 'No range',
+    phoneNumber: 'Phone',
+    district: 'District',
   },
   ta: {
     title: 'நிர்வாகி டாஷ்போர்டு',
