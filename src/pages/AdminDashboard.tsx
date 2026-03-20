@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import AdminSummaryCards from '@/components/admin/AdminSummaryCards';
 import SerialRangeDialog from '@/components/admin/SerialRangeDialog';
 import ManageUpdates from '@/components/admin/ManageUpdates';
+import ManageDocumentations from '@/components/admin/ManageDocumentations';
 import {
   Loader2,
   UserCheck,
@@ -35,6 +36,8 @@ interface UserProfile {
   user_id: string;
   email: string;
   full_name: string | null;
+  phone_number: string | null;
+  district: string | null;
   status: 'pending' | 'active' | 'rejected' | 'terminated';
   created_at: string;
   range_start: number | null;
@@ -351,6 +354,8 @@ const AdminDashboard: React.FC = () => {
                     <tr className="border-b bg-muted/30">
                       <th className="text-left py-3 px-3 font-medium">{t.email}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.name}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'தொலைபேசி' : 'Phone'}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'மாவட்டம்' : 'District'}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.status}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.rangeStart}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.rangeEnd}</th>
@@ -368,6 +373,8 @@ const AdminDashboard: React.FC = () => {
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-3 text-xs">{profile.email}</td>
                           <td className="py-3 px-3">{profile.full_name || '—'}</td>
+                          <td className="py-3 px-3 text-xs">{profile.phone_number || '—'}</td>
+                          <td className="py-3 px-3 text-xs">{profile.district || '—'}</td>
                           <td className="py-3 px-3">{getStatusBadge(profile.status)}</td>
                           <td className="py-3 px-3 font-mono text-xs">
                             {profile.range_start?.toString().padStart(5, '0') || '—'}
@@ -512,6 +519,9 @@ const AdminDashboard: React.FC = () => {
 
       {/* Manage Updates */}
       <ManageUpdates language={language} />
+
+      {/* Manage Documentations */}
+      <ManageDocumentations language={language} />
 
       {/* Change Password Section */}
       <ChangePasswordSection language={language} />

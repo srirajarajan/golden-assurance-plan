@@ -86,7 +86,7 @@ export const translations = {
         "All members will receive special gifts and sweets during Diwali and Christmas festivals. Additionally, one need-based assistance will be provided to the family through William Carey Trust.",
         "All members who pay the insurance contribution are eligible for a special return benefit which is not available in normal government schemes. This scheme follows the principle that the money contributed by the people should return to the people.",
         "If a member passes away within 15 days after paying the insurance contribution according to the company rules, the amount paid will be returned.",
-        "If the nominee submits the required documents and valid proof at the office properly, the paid amount will be returned within 40 working days."
+        "If the nominee submits the required certificates of the insured member at the office properly, the paid amount will be compulsorily returned within 40 working days."
       ],
       documentsTitle: "Required Documents",
       documents: [
@@ -102,7 +102,7 @@ export const translations = {
       email: "Email",
       emailAddress: "williamcareyfuneral99@gmail.com",
       address: "Address",
-      addressText: "190/86A, Yercaud Main Road, Hasthampatty, Salem – 7",
+      addressText: "RR Complex, Kannankurichi Main Road, Chinnathirupathi Bus Stand, Salem-636008. (M5JC+4GM Salem, Tamil Nadu)",
       formTitle: "Send us a Message",
       name: "Your Name",
       emailLabel: "Email Address",
@@ -204,7 +204,7 @@ export const translations = {
         "இத்திட்டத்தில் இணையும் அனைவருக்கும் தீபாவளி மற்றும் கிறிஸ்துமஸ் பண்டிகைகளில் சிறப்பு பரிசுகள் மற்றும் இனிப்புகள் வழங்கப்படும். மேலும், அந்த குடும்பத்திற்கு தேவையான ஒரு உதவி வில்லியம் கேரி அறக்கட்டளை மூலம் வழங்கப்படும்.",
         "காப்பீட்டுத் தொகை செலுத்திய அனைத்து உறுப்பினர்களுக்கும் அரசு திட்டங்களில் இல்லாத ஒரு சிறப்பு வசதி வழங்கப்படுகிறது. மக்கள் கட்டிய பணம் மக்களுக்கே திரும்ப கிடைக்க வேண்டும் என்ற கோட்பாட்டை அடிப்படையாக கொண்டு இந்த திட்டம் செயல்படுகிறது.",
         "ஒருவர் காப்பீட்டுத் தொகை செலுத்திய பின்னர் நிறுவன விதிகளின்படி 15 நாட்களுக்குள் இழப்பு நேர்ந்தால் அவர்கள் கட்டிய பணம் திரும்ப வழங்கப்படும்.",
-        "காப்பீட்டுத் தொகை செலுத்திய உறுப்பினரின் தேவையான சான்றிதழ்களை நாமினி அலுவலகத்தில் சரியான முறையில் சமர்ப்பித்தால், 40 வேலை நாட்களுக்குள் கட்டிய தொகை கட்டாயமாக திருப்பி வழங்கப்படும்."
+        "காப்பீட்டுத் தொகை செலுத்திய உறுப்பினரின் தேவையான சான்றிதழ்களை நாமினி மூலம் அலுவலகத்தில் சரியான முறையில் சமர்ப்பித்தால், 40 வேலை நாட்களுக்குள் கட்டிய தொகை கட்டாயமாக திருப்பி வழங்கப்படும்."
       ],
       documentsTitle: "தேவையான ஆவணங்கள்",
       documents: [
@@ -220,7 +220,7 @@ export const translations = {
       email: "மின்னஞ்சல்",
       emailAddress: "williamcareyfuneral99@gmail.com",
       address: "முகவரி",
-      addressText: "190/86A, ஏற்காடு பிரதான சாலை, ஹஸ்தம்பட்டி, சேலம் – 7",
+      addressText: "RR காம்ப்ளக்ஸ், கன்னங்குறிச்சி மெயின் ரோடு, சின்னத்திருப்பதி பஸ் நிலையம், சேலம்-636008. (M5JC+4GM Salem, Tamil Nadu)",
       formTitle: "எங்களுக்கு செய்தி அனுப்புங்கள்",
       name: "உங்கள் பெயர்",
       emailLabel: "மின்னஞ்சல் முகவரி",

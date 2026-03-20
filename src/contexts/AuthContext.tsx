@@ -12,7 +12,7 @@ interface AuthContextType {
   userStatus: UserStatus | null;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phoneNumber?: string, district?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   checkUserStatus: () => Promise<UserStatus | null>;
   checkIsAdmin: () => Promise<boolean>;
@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phoneNumber?: string, district?: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
@@ -171,6 +171,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            phone_number: phoneNumber || '',
+            district: district || '',
           },
         },
       });
