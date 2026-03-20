@@ -121,6 +121,8 @@ const adminTranslations = {
     edit: 'திருத்து',
     rangeUpdated: 'சீரியல் வரம்பு புதுப்பிக்கப்பட்டது',
     noRange: 'வரம்பு இல்லை',
+    phoneNumber: 'தொலைபேசி',
+    district: 'மாவட்டம்',
   },
 };
 
