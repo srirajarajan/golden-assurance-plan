@@ -483,8 +483,8 @@ const AdminDashboard: React.FC = () => {
                                 </>
                               )}
 
-                              {/* Edit range for active/terminated */}
-                              {(profile.status === 'active' || profile.status === 'terminated') && (
+                              {/* Edit range for active */}
+                              {profile.status === 'active' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -513,8 +513,34 @@ const AdminDashboard: React.FC = () => {
                                 </Button>
                               )}
 
-                              {/* Reactivate for terminated/rejected */}
-                              {(profile.status === 'terminated' || profile.status === 'rejected') && (
+                              {/* Reactivate + Remove for terminated */}
+                              {profile.status === 'terminated' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    className="h-7 text-xs"
+                                    onClick={() => updateUserStatus(profile.user_id, 'active')}
+                                    disabled={processingUserId === profile.user_id}
+                                  >
+                                    <RotateCcw className="mr-1 h-3 w-3" />
+                                    {t.reactivate}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="h-7 text-xs"
+                                    onClick={() => removeStaff(profile.user_id)}
+                                    disabled={processingUserId === profile.user_id}
+                                  >
+                                    <UserX className="mr-1 h-3 w-3" />
+                                    {language === 'ta' ? 'நீக்கு' : 'Remove'}
+                                  </Button>
+                                </>
+                              )}
+
+                              {/* Reactivate for rejected */}
+                              {profile.status === 'rejected' && (
                                 <Button
                                   size="sm"
                                   variant="default"
