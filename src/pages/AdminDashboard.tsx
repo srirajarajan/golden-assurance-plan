@@ -380,8 +380,22 @@ const AdminDashboard: React.FC = () => {
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-3 text-xs">{profile.email}</td>
                           <td className="py-3 px-3">{profile.full_name || '—'}</td>
-                          <td className="py-3 px-3 text-xs">{profile.phone_number || '—'}</td>
-                          <td className="py-3 px-3 text-xs">{profile.district || '—'}</td>
+                          <td className="py-3 px-3 text-xs">
+                            <InlineEditCell
+                              value={profile.phone_number}
+                              field="phone_number"
+                              userId={profile.user_id}
+                              onUpdate={handleInlineUpdate}
+                            />
+                          </td>
+                          <td className="py-3 px-3 text-xs">
+                            <InlineEditCell
+                              value={profile.district}
+                              field="district"
+                              userId={profile.user_id}
+                              onUpdate={handleInlineUpdate}
+                            />
+                          </td>
                           <td className="py-3 px-3">{getStatusBadge(profile.status)}</td>
                           <td className="py-3 px-3 font-mono text-xs">
                             {profile.range_start?.toString().padStart(5, '0') || '—'}
