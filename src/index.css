@@ -234,3 +234,21 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Global overflow protection */
+.card-elevated,
+.gold-border {
+  overflow: hidden;
+}
+
+table td, table th {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  table td, table th {
+    max-width: 120px;
+  }
+}
