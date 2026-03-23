@@ -244,6 +244,12 @@ const AdminDashboard: React.FC = () => {
     toast({ title: t.rangeUpdated });
   };
 
+  const handleInlineUpdate = (userId: string, field: string, value: string) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.user_id === userId ? { ...u, [field]: value } : u))
+    );
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
