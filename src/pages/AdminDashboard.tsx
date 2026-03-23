@@ -198,15 +198,32 @@ const AdminDashboard: React.FC = () => {
         prev.map((u) => (u.user_id === userId ? { ...u, status: newStatus } : u))
       );
 
-      const msgMap = {
+      const msgMap: Record<string, string> = {
         active: t.approveSuccess,
         rejected: t.rejectSuccess,
         terminated: t.terminateSuccess,
       };
       toast({ title: msgMap[newStatus] || t.reactivateSuccess });
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      toast({ title: t.errorTitle, description: 'Failed to update', variant: 'destructive' });
+    } catch (error: any) {
+      toast({ title: t.errorTitle, description: error.message || 'Failed to update', variant: 'destructive' });
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const removeStaff = async (userId: string) => {
+    if (!window.confirm(language === 'ta' ? 'இந்த ஊழியரை நிரந்தரமாக நீக்க விரும்புகிறீர்களா?' : 'Permanently remove this staff member? This cannot be undone.')) return;
+    setProcessingUserId(userId);
+    try {
+      // Delete applications, user_roles, then profile
+      await supabase.from('applications').delete().eq('staff_user_id', userId);
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+      if (error) throw error;
+      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+      toast({ title: language === 'ta' ? 'ஊழியர் நீக்கப்பட்டார்' : 'Staff removed successfully' });
+    } catch (error: any) {
+      toast({ title: t.errorTitle, description: error.message || 'Failed to remove', variant: 'destructive' });
     } finally {
       setProcessingUserId(null);
     }
