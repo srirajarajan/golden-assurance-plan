@@ -13,6 +13,7 @@ import AdminSummaryCards from '@/components/admin/AdminSummaryCards';
 import SerialRangeDialog from '@/components/admin/SerialRangeDialog';
 import ManageUpdates from '@/components/admin/ManageUpdates';
 import ManageDocumentations from '@/components/admin/ManageDocumentations';
+import InlineEditCell from '@/components/admin/InlineEditCell';
 import {
   Loader2,
   UserCheck,
@@ -243,6 +244,12 @@ const AdminDashboard: React.FC = () => {
     toast({ title: t.rangeUpdated });
   };
 
+  const handleInlineUpdate = (userId: string, field: string, value: string) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.user_id === userId ? { ...u, [field]: value } : u))
+    );
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
@@ -373,8 +380,22 @@ const AdminDashboard: React.FC = () => {
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-3 text-xs">{profile.email}</td>
                           <td className="py-3 px-3">{profile.full_name || '—'}</td>
-                          <td className="py-3 px-3 text-xs">{profile.phone_number || '—'}</td>
-                          <td className="py-3 px-3 text-xs">{profile.district || '—'}</td>
+                          <td className="py-3 px-3 text-xs">
+                            <InlineEditCell
+                              value={profile.phone_number}
+                              field="phone_number"
+                              userId={profile.user_id}
+                              onUpdate={handleInlineUpdate}
+                            />
+                          </td>
+                          <td className="py-3 px-3 text-xs">
+                            <InlineEditCell
+                              value={profile.district}
+                              field="district"
+                              userId={profile.user_id}
+                              onUpdate={handleInlineUpdate}
+                            />
+                          </td>
                           <td className="py-3 px-3">{getStatusBadge(profile.status)}</td>
                           <td className="py-3 px-3 font-mono text-xs">
                             {profile.range_start?.toString().padStart(5, '0') || '—'}
