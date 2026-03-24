@@ -250,6 +250,25 @@ const AdminDashboard: React.FC = () => {
     );
   };
 
+  const removeStaff = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      // Delete applications first (foreign key safety)
+      await supabase.from('applications').delete().eq('staff_user_id', userId);
+      // Delete user roles
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      // Delete profile
+      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+      if (error) throw error;
+      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+      toast({ title: language === 'ta' ? 'ஊழியர் நீக்கப்பட்டார்' : 'Staff removed successfully' });
+    } catch (error: any) {
+      toast({ title: t.errorTitle, description: error.message, variant: 'destructive' });
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
