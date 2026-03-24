@@ -116,13 +116,6 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
-    overflow-wrap: break-word;
-    word-break: break-word;
-  }
-
-  p, span, td, th, li, a, label {
-    overflow-wrap: break-word;
-    word-break: break-word;
   }
 }
 
@@ -232,23 +225,5 @@
 @media (max-width: 768px) {
   .grid-cols-2 {
     grid-template-columns: 1fr !important;
-  }
-}
-
-/* Global overflow protection */
-.card-elevated,
-.gold-border {
-  overflow: hidden;
-}
-
-table td, table th {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 768px) {
-  table td, table th {
-    max-width: 120px;
   }
 }

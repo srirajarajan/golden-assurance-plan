@@ -198,32 +198,15 @@ const AdminDashboard: React.FC = () => {
         prev.map((u) => (u.user_id === userId ? { ...u, status: newStatus } : u))
       );
 
-      const msgMap: Record<string, string> = {
+      const msgMap = {
         active: t.approveSuccess,
         rejected: t.rejectSuccess,
         terminated: t.terminateSuccess,
       };
       toast({ title: msgMap[newStatus] || t.reactivateSuccess });
-    } catch (error: any) {
-      toast({ title: t.errorTitle, description: error.message || 'Failed to update', variant: 'destructive' });
-    } finally {
-      setProcessingUserId(null);
-    }
-  };
-
-  const removeStaff = async (userId: string) => {
-    if (!window.confirm(language === 'ta' ? 'இந்த ஊழியரை நிரந்தரமாக நீக்க விரும்புகிறீர்களா?' : 'Permanently remove this staff member? This cannot be undone.')) return;
-    setProcessingUserId(userId);
-    try {
-      // Delete applications, user_roles, then profile
-      await supabase.from('applications').delete().eq('staff_user_id', userId);
-      await supabase.from('user_roles').delete().eq('user_id', userId);
-      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
-      if (error) throw error;
-      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
-      toast({ title: language === 'ta' ? 'ஊழியர் நீக்கப்பட்டார்' : 'Staff removed successfully' });
-    } catch (error: any) {
-      toast({ title: t.errorTitle, description: error.message || 'Failed to remove', variant: 'destructive' });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast({ title: t.errorTitle, description: 'Failed to update', variant: 'destructive' });
     } finally {
       setProcessingUserId(null);
     }
@@ -483,8 +466,8 @@ const AdminDashboard: React.FC = () => {
                                 </>
                               )}
 
-                              {/* Edit range for active */}
-                              {profile.status === 'active' && (
+                              {/* Edit range for active/terminated */}
+                              {(profile.status === 'active' || profile.status === 'terminated') && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -513,34 +496,8 @@ const AdminDashboard: React.FC = () => {
                                 </Button>
                               )}
 
-                              {/* Reactivate + Remove for terminated */}
-                              {profile.status === 'terminated' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    className="h-7 text-xs"
-                                    onClick={() => updateUserStatus(profile.user_id, 'active')}
-                                    disabled={processingUserId === profile.user_id}
-                                  >
-                                    <RotateCcw className="mr-1 h-3 w-3" />
-                                    {t.reactivate}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="h-7 text-xs"
-                                    onClick={() => removeStaff(profile.user_id)}
-                                    disabled={processingUserId === profile.user_id}
-                                  >
-                                    <UserX className="mr-1 h-3 w-3" />
-                                    {language === 'ta' ? 'நீக்கு' : 'Remove'}
-                                  </Button>
-                                </>
-                              )}
-
-                              {/* Reactivate for rejected */}
-                              {profile.status === 'rejected' && (
+                              {/* Reactivate for terminated/rejected */}
+                              {(profile.status === 'terminated' || profile.status === 'rejected') && (
                                 <Button
                                   size="sm"
                                   variant="default"
