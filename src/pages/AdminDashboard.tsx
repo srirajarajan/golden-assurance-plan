@@ -528,6 +528,24 @@ const AdminDashboard: React.FC = () => {
                                   {t.reactivate}
                                 </Button>
                               )}
+
+                              {/* Remove for terminated */}
+                              {profile.status === 'terminated' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    if (window.confirm(language === 'ta' ? 'இந்த ஊழியரை நிரந்தரமாக நீக்க விரும்புகிறீர்களா?' : 'Permanently remove this staff and all their data?')) {
+                                      removeStaff(profile.user_id);
+                                    }
+                                  }}
+                                  disabled={processingUserId === profile.user_id}
+                                >
+                                  <UserX className="mr-1 h-3 w-3" />
+                                  {language === 'ta' ? 'நீக்கு' : 'Remove'}
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
