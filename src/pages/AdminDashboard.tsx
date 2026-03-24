@@ -485,8 +485,8 @@ const AdminDashboard: React.FC = () => {
                                 </>
                               )}
 
-                              {/* Edit range for active/terminated */}
-                              {(profile.status === 'active' || profile.status === 'terminated') && (
+                              {/* Edit range for active only */}
+                              {profile.status === 'active' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
