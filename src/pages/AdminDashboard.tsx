@@ -250,6 +250,25 @@ const AdminDashboard: React.FC = () => {
     );
   };
 
+  const removeStaff = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      // Delete applications first (foreign key safety)
+      await supabase.from('applications').delete().eq('staff_user_id', userId);
+      // Delete user roles
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      // Delete profile
+      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+      if (error) throw error;
+      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+      toast({ title: language === 'ta' ? 'ஊழியர் நீக்கப்பட்டார்' : 'Staff removed successfully' });
+    } catch (error: any) {
+      toast({ title: t.errorTitle, description: error.message, variant: 'destructive' });
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
@@ -507,6 +526,24 @@ const AdminDashboard: React.FC = () => {
                                 >
                                   <RotateCcw className="mr-1 h-3 w-3" />
                                   {t.reactivate}
+                                </Button>
+                              )}
+
+                              {/* Remove for terminated */}
+                              {profile.status === 'terminated' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    if (window.confirm(language === 'ta' ? 'இந்த ஊழியரை நிரந்தரமாக நீக்க விரும்புகிறீர்களா?' : 'Permanently remove this staff and all their data?')) {
+                                      removeStaff(profile.user_id);
+                                    }
+                                  }}
+                                  disabled={processingUserId === profile.user_id}
+                                >
+                                  <UserX className="mr-1 h-3 w-3" />
+                                  {language === 'ta' ? 'நீக்கு' : 'Remove'}
                                 </Button>
                               )}
                             </div>
