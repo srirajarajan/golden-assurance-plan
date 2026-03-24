@@ -372,22 +372,22 @@ const AdminDashboard: React.FC = () => {
                 <p>{t.noUsers}</p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.email}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.name}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{language === 'ta' ? 'தொலைபேசி' : 'Phone'}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{language === 'ta' ? 'மாவட்டம்' : 'District'}</th>
-                      <th className="text-center py-3 px-3 font-medium whitespace-nowrap">{t.status}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.rangeStart}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.rangeEnd}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.currentSerial}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.totalApps}/{t.remaining}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.usage}</th>
-                      <th className="text-left py-3 px-3 font-medium whitespace-nowrap">{t.registeredOn}</th>
-                      <th className="text-right py-3 px-3 font-medium whitespace-nowrap">{t.actions}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.email}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.name}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'தொலைபேசி' : 'Phone'}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'மாவட்டம்' : 'District'}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.status}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.rangeStart}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.rangeEnd}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.currentSerial}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.totalApps}/{t.remaining}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.usage}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.registeredOn}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.actions}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -395,11 +395,9 @@ const AdminDashboard: React.FC = () => {
                       const usage = getUsageInfo(profile);
                       return (
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-3 text-xs wrap-cell" style={{ minWidth: 160, wordBreak: 'break-all' }}>
-                            {profile.email}
-                          </td>
-                          <td className="py-3 px-3 whitespace-nowrap">{profile.full_name || '—'}</td>
-                          <td className="py-3 px-3 text-xs whitespace-nowrap">
+                          <td className="py-3 px-3 text-xs">{profile.email}</td>
+                          <td className="py-3 px-3">{profile.full_name || '—'}</td>
+                          <td className="py-3 px-3 text-xs">
                             <InlineEditCell
                               value={profile.phone_number}
                               field="phone_number"
@@ -407,7 +405,7 @@ const AdminDashboard: React.FC = () => {
                               onUpdate={handleInlineUpdate}
                             />
                           </td>
-                          <td className="py-3 px-3 text-xs whitespace-nowrap">
+                          <td className="py-3 px-3 text-xs">
                             <InlineEditCell
                               value={profile.district}
                               field="district"
@@ -415,19 +413,19 @@ const AdminDashboard: React.FC = () => {
                               onUpdate={handleInlineUpdate}
                             />
                           </td>
-                          <td className="py-3 px-3 text-center">{getStatusBadge(profile.status)}</td>
-                          <td className="py-3 px-3 font-mono text-xs whitespace-nowrap">
+                          <td className="py-3 px-3">{getStatusBadge(profile.status)}</td>
+                          <td className="py-3 px-3 font-mono text-xs">
                             {profile.range_start?.toString().padStart(5, '0') || '—'}
                           </td>
-                          <td className="py-3 px-3 font-mono text-xs whitespace-nowrap">
+                          <td className="py-3 px-3 font-mono text-xs">
                             {profile.range_end?.toString().padStart(5, '0') || '—'}
                           </td>
-                          <td className="py-3 px-3 font-mono text-xs whitespace-nowrap">
+                          <td className="py-3 px-3 font-mono text-xs">
                             {profile.current_serial > 0
                               ? profile.current_serial.toString().padStart(5, '0')
                               : '—'}
                           </td>
-                          <td className="py-3 px-3 text-xs whitespace-nowrap">
+                          <td className="py-3 px-3 text-xs">
                             {usage ? (
                               <span>
                                 {usage.used} / {usage.remaining}
@@ -448,17 +446,18 @@ const AdminDashboard: React.FC = () => {
                               '—'
                             )}
                           </td>
-                          <td className="py-3 px-3 text-xs text-muted-foreground whitespace-nowrap">
+                          <td className="py-3 px-3 text-xs text-muted-foreground">
                             {new Date(profile.created_at).toLocaleDateString()}
                           </td>
-                          <td className="py-3 px-3 text-right">
-                            <div className="flex flex-nowrap justify-end gap-1">
+                          <td className="py-3 px-3">
+                            <div className="flex flex-wrap gap-1">
+                              {/* Approve / Reject for pending */}
                               {profile.status === 'pending' && (
                                 <>
                                   <Button
                                     size="sm"
                                     variant="default"
-                                    className="h-7 text-xs whitespace-nowrap"
+                                    className="h-7 text-xs"
                                     onClick={() => updateUserStatus(profile.user_id, 'active')}
                                     disabled={processingUserId === profile.user_id}
                                   >
@@ -474,7 +473,7 @@ const AdminDashboard: React.FC = () => {
                                   <Button
                                     size="sm"
                                     variant="destructive"
-                                    className="h-7 text-xs whitespace-nowrap"
+                                    className="h-7 text-xs"
                                     onClick={() => updateUserStatus(profile.user_id, 'rejected')}
                                     disabled={processingUserId === profile.user_id}
                                   >
@@ -484,11 +483,12 @@ const AdminDashboard: React.FC = () => {
                                 </>
                               )}
 
+                              {/* Edit range for active */}
                               {profile.status === 'active' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 text-xs whitespace-nowrap"
+                                  className="h-7 text-xs"
                                   onClick={() => {
                                     setSelectedUser(profile);
                                     setRangeDialogOpen(true);
@@ -499,11 +499,12 @@ const AdminDashboard: React.FC = () => {
                                 </Button>
                               )}
 
+                              {/* Terminate for active */}
                               {profile.status === 'active' && (
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  className="h-7 text-xs whitespace-nowrap"
+                                  className="h-7 text-xs"
                                   onClick={() => updateUserStatus(profile.user_id, 'terminated')}
                                   disabled={processingUserId === profile.user_id}
                                 >
@@ -512,12 +513,13 @@ const AdminDashboard: React.FC = () => {
                                 </Button>
                               )}
 
+                              {/* Reactivate + Remove for terminated */}
                               {profile.status === 'terminated' && (
                                 <>
                                   <Button
                                     size="sm"
                                     variant="default"
-                                    className="h-7 text-xs whitespace-nowrap"
+                                    className="h-7 text-xs"
                                     onClick={() => updateUserStatus(profile.user_id, 'active')}
                                     disabled={processingUserId === profile.user_id}
                                   >
@@ -527,7 +529,7 @@ const AdminDashboard: React.FC = () => {
                                   <Button
                                     size="sm"
                                     variant="destructive"
-                                    className="h-7 text-xs whitespace-nowrap"
+                                    className="h-7 text-xs"
                                     onClick={() => removeStaff(profile.user_id)}
                                     disabled={processingUserId === profile.user_id}
                                   >
@@ -537,11 +539,12 @@ const AdminDashboard: React.FC = () => {
                                 </>
                               )}
 
+                              {/* Reactivate for rejected */}
                               {profile.status === 'rejected' && (
                                 <Button
                                   size="sm"
                                   variant="default"
-                                  className="h-7 text-xs whitespace-nowrap"
+                                  className="h-7 text-xs"
                                   onClick={() => updateUserStatus(profile.user_id, 'active')}
                                   disabled={processingUserId === profile.user_id}
                                 >
