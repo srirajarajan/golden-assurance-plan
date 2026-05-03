@@ -11,7 +11,15 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Logo & Tagline */}
           <div className="flex flex-col items-center md:items-start gap-4">
-            <img src={logo} alt="William Carey Insurance" className="h-20 w-20 object-contain" />
+            <img src={logo} alt="William Carey Funeral Services Pvt. Ltd." className="h-20 w-20 object-contain" loading="lazy" />
+            <div className="text-center md:text-left">
+              <p className="font-display text-base font-semibold text-gold-light leading-tight">
+                William Carey Funeral Services Pvt. Ltd.
+              </p>
+              <p className="font-display text-sm text-secondary-foreground/80 leading-tight mt-1">
+                வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்
+              </p>
+            </div>
             <p className="text-sm text-secondary-foreground/80 text-center md:text-left">
               {t.footer.tagline}
             </p>
@@ -49,7 +57,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-secondary-foreground/20 flex flex-col md:flex-row items-center justify-center gap-2 text-sm text-secondary-foreground/60">
-          <span>© 2025 William Carey Insurance.</span>
+          <span>© 2025 William Carey Funeral Services Pvt. Ltd.</span>
           <span className="flex items-center gap-1">
             {t.footer.rights} <Heart size={14} className="text-gold-light" />
           </span>

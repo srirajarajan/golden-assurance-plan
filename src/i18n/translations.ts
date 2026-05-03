@@ -8,13 +8,13 @@ export const translations = {
       updates: "Updates"
     },
     hero: {
-      title: "William Carey Funeral Insurance Policy Scheme – 2026-27",
-      subtitle: "A reliable and affordable funeral insurance support plan for families.",
+      title: "William Carey Funeral Services Pvt. Ltd.",
+      subtitle: "Dignified, trusted and affordable funeral service plans for families across Tamil Nadu.",
       applyBtn: "Apply Now",
-      benefitsBtn: "View Benefits"
+      benefitsBtn: "View Plans"
     },
     form: {
-      title: "Funeral Insurance Application",
+      title: "Funeral Service Application",
       subtitle: "Application Form",
       memberName: "Member Name",
       memberNamePlaceholder: "Enter your name",
@@ -51,7 +51,7 @@ export const translations = {
       relation: "Relationship",
       relationPlaceholder: "Enter relationship",
       selectGender: "Select Gender",
-      directorAuth: "Authorized by Director – William Carey Funeral Insurance",
+      directorAuth: "Authorized by Director – William Carey Funeral Services Pvt. Ltd.",
       submit: "Submit Application",
       submitting: "Submitting...",
       required: "*",
@@ -72,8 +72,8 @@ export const translations = {
       secureSubmit: "Your information will be sent securely"
     },
     benefits: {
-      title: "Benefits & Conditions",
-      subtitle: "William Carey Funeral Insurance Scheme introduced by William Carey Trust for the poor and needy people.",
+      title: "Our Service Plans",
+      subtitle: "Choose the package that best supports your family with dignity and care.",
       benefitsList: [
         "Any person listed in a family ration card or an individual can use this funeral insurance scheme.",
         "To join as a member in this scheme, you must be above 40 years of age.",
@@ -113,7 +113,7 @@ export const translations = {
     },
     footer: {
       rights: "All Rights Reserved",
-      tagline: "Providing peace of mind to families since 2020",
+      tagline: "William Carey Funeral Services Pvt. Ltd. — Hope & Dignity since 2020",
       email: "williamcareyfuneral99@gmail.com"
     }
   },
@@ -126,13 +126,13 @@ export const translations = {
       updates: "புதுப்பிப்புகள்"
     },
     hero: {
-      title: "வில்லியம் கேரி ஈமச்சடங்கு காப்பீட்டு திட்டம் 2026-27",
-      subtitle: "எளிய செலவில் உறுதியான குடும்ப பாதுகாப்பு திட்டம்",
+      title: "வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்",
+      subtitle: "கண்ணியமான, நம்பகமான மற்றும் மலிவான ஈமச்சடங்கு சேவை திட்டங்கள் — உங்கள் குடும்பத்திற்கான பாதுகாப்பு.",
       applyBtn: "விண்ணப்பிக்க",
-      benefitsBtn: "சலுகைகள் பார்க்க"
+      benefitsBtn: "சேவை திட்டங்கள்"
     },
     form: {
-      title: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
+      title: "ஈமச்சடங்கு சேவை விண்ணப்பம்",
       subtitle: "உறுப்பினர் விண்ணப்பப் படிவம்",
       memberName: "உறுப்பினர் பெயர்",
       memberNamePlaceholder: "பெயரை உள்ளிடவும்",
@@ -169,7 +169,7 @@ export const translations = {
       relation: "உறவு முறை",
       relationPlaceholder: "உறவு முறையை உள்ளிடவும்",
       selectGender: "பாலினம் தேர்வு செய்க",
-      directorAuth: "இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி ஈமச்சடங்கு காப்பீடு",
+      directorAuth: "இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்",
       submit: "விண்ணப்பத்தை சமர்ப்பிக்க",
       submitting: "சமர்ப்பிக்கிறது...",
       required: "*",
@@ -190,8 +190,8 @@ export const translations = {
       secureSubmit: "உங்கள் தகவல்கள் பாதுகாப்பாக அனுப்பப்படும்"
     },
     benefits: {
-      title: "சலுகைகள் & நிபந்தனைகள்",
-      subtitle: "ஈமசடங்கு காப்பீட்டுத் திட்டம் வில்லியம் கேரி அறக்கட்டளை மூலம் ஏழை, எளிய மக்களுக்கு இழப்பு காப்பீட்டுத் திட்டமாக அறிமுகப்படுத்தப்பட்டுள்ளது.",
+      title: "எங்கள் சேவை திட்டங்கள்",
+      subtitle: "உங்கள் குடும்பத்திற்கு மரியாதையுடனும் கவனிப்புடனும் சிறந்த ஆதரவு அளிக்கும் தொகுப்பை தேர்வு செய்யுங்கள்.",
       benefitsList: [
         "ஈமசடங்கு காப்பீட்டுத் திட்டம் ஒரு குடும்பத்திலுள்ள குடும்ப அட்டையில் உள்ளவரோ அல்லது தனிப்பட்ட நபரோ இத்திட்டத்தை பயன்படுத்திக் கொள்ளலாம்.",
         "இத்திட்டத்தில் உறுப்பினராக இணைய அதிகபட்சம் 40 வயதிற்கு மேற்பட்டவராக இருத்தல் வேண்டும்.",
@@ -231,7 +231,7 @@ export const translations = {
     },
     footer: {
       rights: "அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை",
-      tagline: "2020 முதல் குடும்பங்களுக்கு மன அமைதி அளிக்கிறது",
+      tagline: "வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட் — 2020 முதல் நம்பிக்கையும் கண்ணியமும்",
       email: "williamcareyfuneral99@gmail.com"
     }
   }
