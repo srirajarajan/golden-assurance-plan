@@ -1,33 +1,34 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Users, Clock } from 'lucide-react';
+import { ArrowRight, Shield, HeartHandshake, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
+import PlansSection from '@/components/PlansSection';
 
 const HomePage = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const features = [
     {
       icon: Shield,
-      titleEn: 'Secure Coverage',
-      titleTa: 'பாதுகாப்பான காப்பீடு',
-      descEn: 'Comprehensive funeral expense coverage for your family',
-      descTa: 'உங்கள் குடும்பத்திற்கு முழுமையான இறுதிச்சடங்கு செலவு காப்பீடு',
+      titleEn: 'Trusted Service',
+      titleTa: 'நம்பகமான சேவை',
+      descEn: 'Professional, respectful funeral services handled with utmost dignity',
+      descTa: 'மரியாதையுடன், தொழில் முறையில் கையாளப்படும் ஈமச்சடங்கு சேவைகள்',
     },
     {
-      icon: Users,
-      titleEn: 'Family Protection',
-      titleTa: 'குடும்ப பாதுகாப்பு',
-      descEn: 'Cover up to 4 family members under one policy',
-      descTa: 'ஒரு பாலிசியில் 4 குடும்ப உறுப்பினர்கள் வரை காப்பீடு',
+      icon: HeartHandshake,
+      titleEn: 'Family Support',
+      titleTa: 'குடும்ப ஆதரவு',
+      descEn: 'End-to-end support for families during their most difficult moments',
+      descTa: 'கடினமான தருணங்களில் முழுமையான குடும்ப ஆதரவு',
     },
     {
       icon: Clock,
-      titleEn: 'Quick Settlement',
-      titleTa: 'விரைவான தீர்வு',
-      descEn: 'Claims processed within 15 working days',
-      descTa: '15 வேலை நாட்களுக்குள் உரிய தீர்வு',
+      titleEn: '24/7 Availability',
+      titleTa: '24/7 சேவை',
+      descEn: 'Available round the clock to respond whenever you need us',
+      descTa: 'எப்போது வேண்டுமானாலும் உடனடி உதவிக்கு கிடைக்கிறோம்',
     },
   ];
 
@@ -47,7 +48,7 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150" />
                 <img
                   src={logo}
-                  alt="William Carey Insurance"
+                  alt="William Carey Funeral Services Pvt. Ltd."
                   className="relative h-32 w-32 md:h-40 md:w-40 object-contain gold-glow rounded-full"
                 />
               </div>
@@ -58,6 +59,11 @@ const HomePage = () => {
               <h1 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-secondary leading-tight">
                 {t.hero.title}
               </h1>
+              <p className="font-display text-base md:text-lg text-muted-foreground mt-3">
+                {language === 'ta'
+                  ? 'William Carey Funeral Services Pvt. Ltd.'
+                  : 'வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்'}
+              </p>
             </div>
 
             {/* Subtitle */}
@@ -90,51 +96,29 @@ const HomePage = () => {
       <section className="py-16 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const { t: trans, language } = useLanguage();
-              return (
-                <div
-                  key={index}
-                  className="card-elevated p-8 text-center hover:shadow-glow transition-all duration-300 hover:-translate-y-1"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-6">
-                    <feature.icon size={32} />
-                  </div>
-                  <h3 className="font-display text-xl font-semibold text-secondary mb-3">
-                    {language === 'ta' ? feature.titleTa : feature.titleEn}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {language === 'ta' ? feature.descTa : feature.descEn}
-                  </p>
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className="card-elevated p-8 text-center hover:shadow-glow transition-all duration-300 hover:-translate-y-1"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-6">
+                  <feature.icon size={32} />
                 </div>
-              );
-            })}
+                <h3 className="font-display text-xl font-semibold text-secondary mb-3">
+                  {language === 'ta' ? feature.titleTa : feature.titleEn}
+                </h3>
+                <p className="text-muted-foreground">
+                  {language === 'ta' ? feature.descTa : feature.descEn}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Premium Amount Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="card-elevated max-w-2xl mx-auto p-8 md:p-12 text-center gold-border">
-            <h2 className="font-display text-2xl md:text-3xl font-bold text-secondary mb-4">
-              {useLanguage().language === 'ta' ? 'ஒருமுறை பிரீமியம்' : 'One-time Premium'}
-            </h2>
-            <div className="text-5xl md:text-6xl font-bold gradient-gold-text mb-4">₹3,000</div>
-            <p className="text-muted-foreground mb-6">
-              {useLanguage().language === 'ta'
-                ? 'ஒரு உறுப்பினருக்கு வாழ்நாள் முழுவதும்'
-                : 'Per member for lifetime'}
-            </p>
-            <p className="text-lg font-medium text-secondary">
-              {useLanguage().language === 'ta'
-                ? 'காப்பீட்டு தொகை: ₹10,000 - ₹15,000'
-                : 'Coverage Amount: ₹10,000 - ₹15,000'}
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* Service Plans */}
+      <PlansSection />
     </main>
   );
 };
