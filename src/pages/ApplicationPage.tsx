@@ -16,7 +16,7 @@ type Language = 'en' | 'ta';
 
 const formTranslations = {
   en: {
-    title: "Funeral Insurance Application",
+    title: "Funeral Service Application",
     subtitle: "Application Form",
     languageLabel: "Language",
     applicantPhoto: "Applicant Photo",
@@ -84,7 +84,7 @@ const formTranslations = {
     goToLogin: "Go to Login",
   },
   ta: {
-    title: "இறுதிச்சடங்கு காப்பீடு விண்ணப்பம்",
+    title: "ஈமச்சடங்கு சேவை விண்ணப்பம்",
     subtitle: "உறுப்பினர் விண்ணப்பப் படிவம்",
     languageLabel: "மொழி",
     applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
