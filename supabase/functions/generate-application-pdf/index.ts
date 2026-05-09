@@ -49,7 +49,7 @@ interface ApplicationData {
 }
 
 const tamilLabels = {
-  title: "William Carey Funeral Insurance",
+  title: "William Carey Funeral Services Pvt. Ltd.",
   subtitle: "விண்ணப்பப் படிவம்",
   applicationNo: "விண்ணப்ப எண்",
   date: "தேதி",
@@ -68,7 +68,6 @@ const tamilLabels = {
   aadhaarImages: "ஆதார் அட்டை படங்கள்",
   aadhaarFront: "ஆதார் முன்பக்கம்",
   aadhaarBack: "ஆதார் பின்பக்கம்",
-  pamphletImage: "துண்டுப்பிரசுரம்",
   nomineeDetails: "வாரிசு விவரங்கள்",
   nominee1Title: "வாரிசு 1",
   nominee2Title: "வாரிசு 2",
@@ -78,15 +77,19 @@ const tamilLabels = {
   nomineeRelation: "உறவு முறை",
   additionalMessage: "கூடுதல் செய்தி",
   notProvided: "வழங்கப்படவில்லை",
-  footer: "இது கணினி மூலம் உருவாக்கப்பட்ட காப்பீட்டு விண்ணப்ப ஆவணம்.",
+  footer: "இது கணினி மூலம் உருவாக்கப்பட்ட சேவை விண்ணப்ப ஆவணம்.",
   managingDirector: "நிர்வாக இயக்குநர்",
   paymentMethod: "செலுத்தும் முறை",
   cash: "பணம்",
   upi: "UPI",
+  selectedPlan: "தேர்ந்தெடுக்கப்பட்ட திட்டம்",
+  planBenefits: "திட்ட நன்மைகள்",
+  activation: "சேவை செயல்பாடு",
+  benefitsWorth: "நன்மைகள் மதிப்பு",
 };
 
 const englishLabels = {
-  title: "William Carey Funeral Insurance",
+  title: "William Carey Funeral Services Pvt. Ltd.",
   subtitle: "Application Form",
   applicationNo: "Application No",
   date: "Date",
@@ -105,7 +108,6 @@ const englishLabels = {
   aadhaarImages: "AADHAAR CARD IMAGES",
   aadhaarFront: "Aadhaar Front Side",
   aadhaarBack: "Aadhaar Back Side",
-  pamphletImage: "PAMPHLET IMAGE",
   nomineeDetails: "NOMINEE DETAILS",
   nominee1Title: "Nominee 1",
   nominee2Title: "Nominee 2",
@@ -115,11 +117,15 @@ const englishLabels = {
   nomineeRelation: "Relationship",
   additionalMessage: "ADDITIONAL MESSAGE",
   notProvided: "Not Provided",
-  footer: "This is a system-generated insurance application document.",
+  footer: "This is a system-generated service application document.",
   managingDirector: "Managing Director",
   paymentMethod: "Payment Method",
   cash: "Cash",
   upi: "UPI",
+  selectedPlan: "SELECTED PLAN",
+  planBenefits: "Plan Benefits",
+  activation: "Service Activation",
+  benefitsWorth: "Benefits Worth",
 };
 
 function safeText(v: unknown, fallback: string): string {
