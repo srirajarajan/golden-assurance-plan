@@ -444,12 +444,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // ═══════════════════════════════════════════
-  // PAGE 2 — Pamphlet + Seal/Signature
+  // PAGE 2 — Selected Plan Summary + Seal/Signature
   // ═══════════════════════════════════════════
   doc.addPage();
   y = margin;
 
-  // ── Pamphlet Heading with background bar ──
+  // ── Plan Heading with background bar ──
   const headingBarH = 9;
   doc.setFillColor(230, 235, 242); // light blue-grey
   doc.setDrawColor(...MID_GREY);
@@ -458,11 +458,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(11);
   doc.setTextColor(...DARK_BROWN);
-  doc.text("Policy Information Pamphlet", pw / 2, y + 6, { align: "center" });
+  doc.text(labels.selectedPlan, pw / 2, y + 6, { align: "center" });
   y += headingBarH + 3;
-
-  // Pamphlet image — fills most of page 2
-  const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
 
   // Merged seal-signature image setup
   const baseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -484,25 +481,90 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const textBlockH = 10; // space for Managing Director text
   const totalBlockH = sealSignImgH + textBlockH;
 
-  // Available space for pamphlet on page 2
+  // Available space for plan summary on page 2
   const sigBlockStartY = 297 - bottomMargin - totalBlockH;
-  const pamphletAvailH = sigBlockStartY - y - 5;
 
-  if (pamphletImage) {
-    const pamphletMaxW = cw;
-    try {
-      const imgProps = doc.getImageProperties(`data:image/${pamphletImage.type.toLowerCase()};base64,${pamphletImage.base64}`);
-      const aspectRatio = imgProps.height / imgProps.width;
-      const calcH = pamphletMaxW * aspectRatio;
-      const finalH = Math.min(calcH, pamphletAvailH);
-      const finalW = finalH < calcH ? finalH / aspectRatio : pamphletMaxW;
+  // ── Plan summary card ──
+  const planCode = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
+  const planName = data.plan_name || "";
+  const planAmount = data.plan_amount;
+  const planWorth = data.plan_worth;
+  const planActivation = data.plan_activation || "";
+  const benefits = Array.isArray(data.plan_benefits) ? data.plan_benefits : [];
 
-      const imgX = margin + (cw - finalW) / 2;
-      doc.addImage(pamphletImage.base64, pamphletImage.type, imgX, y, finalW, finalH);
-      y += finalH + 5;
-    } catch (e) {
-      console.error("Pamphlet error:", e);
+  if (planCode || planName || benefits.length) {
+    // Card container
+    const cardX = margin;
+    const cardW = cw;
+    const cardY = y;
+    const padX = 6;
+    let cy = cardY + 8;
+
+    // Title row
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...DARK_BROWN);
+    doc.text(`${planCode} PLAN${planName ? "  —  " + planName : ""}`, cardX + padX, cy);
+    cy += 7;
+
+    // Price row
+    if (typeof planAmount === "number") {
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(...GOLD);
+      doc.text(`Rs. ${planAmount.toLocaleString("en-IN")}`, cardX + padX, cy + 2);
+      if (typeof planWorth === "number") {
+        doc.setFont(fontFamily, "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...TEXT_GREY);
+        doc.text(
+          `${labels.benefitsWorth}: Rs. ${planWorth.toLocaleString("en-IN")}`,
+          cardX + padX,
+          cy + 8,
+        );
+      }
+      cy += 14;
     }
+
+    // Activation
+    if (planActivation) {
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...TEXT_BLACK);
+      doc.text(`${labels.activation}: `, cardX + padX, cy);
+      const activationLabelW = doc.getTextWidth(`${labels.activation}: `);
+      doc.setFont(fontFamily, "normal");
+      doc.text(planActivation, cardX + padX + activationLabelW, cy);
+      cy += 7;
+    }
+
+    // Benefits header
+    if (benefits.length) {
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...DARK_BROWN);
+      doc.text(labels.planBenefits, cardX + padX, cy);
+      cy += 5;
+
+      // Benefits list
+      doc.setFont(fontFamily, "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...TEXT_BLACK);
+      benefits.forEach((b) => {
+        const lines = doc.splitTextToSize(`• ${b}`, cardW - padX * 2 - 4);
+        doc.text(lines, cardX + padX + 2, cy);
+        cy += lines.length * 5;
+      });
+      cy += 2;
+    }
+
+    // Card border
+    const cardH = Math.max(40, cy - cardY + 4);
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(cardX, cardY, cardW, cardH, 2, 2, "S");
+
+    y = cardY + cardH + 5;
   }
 
   // Seal-Signature — bottom-right of page 2, text centered under image
