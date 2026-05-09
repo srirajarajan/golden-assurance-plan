@@ -584,7 +584,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setFontSize(8);
   doc.setTextColor(...TEXT_BLACK);
   doc.text("Managing Director", imgCenterX, textY, { align: "center" });
-  doc.text("William Carey Funeral Insurance", imgCenterX, textY + 4, { align: "center" });
+  doc.text("William Carey Funeral Services Pvt. Ltd.", imgCenterX, textY + 4, { align: "center" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
@@ -612,7 +612,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
 
   const emailPayload = {
-    from: "William Carey Funeral Insurance <onboarding@resend.dev>",
+    from: "William Carey Funeral Services <onboarding@resend.dev>",
     to: ["williamcareyfuneral99@gmail.com"],
     subject: `New Application Received - ${serialNumber}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
@@ -625,7 +625,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
       </table>
       <p>Please see the attached PDF for full details.</p>
       <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
-      <p style="color:#888;font-size:12px">William Carey Funeral Insurance</p>
+      <p style="color:#888;font-size:12px">William Carey Funeral Services Pvt. Ltd.</p>
     </div>`,
     attachments: [{ filename, content: pdfBase64 }],
   };
