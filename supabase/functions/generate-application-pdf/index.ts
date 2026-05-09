@@ -37,9 +37,15 @@ interface ApplicationData {
   applicant_photo_path: string;
   aadhaar_front_path: string;
   aadhaar_back_path: string;
-  pamphlet_image_path: string;
   user_id: string;
   serial_number: string;
+  selected_plan?: string;
+  plan_code?: string;
+  plan_name?: string;
+  plan_amount?: number;
+  plan_worth?: number;
+  plan_activation?: string;
+  plan_benefits?: string[];
 }
 
 const tamilLabels = {
