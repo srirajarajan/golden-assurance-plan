@@ -37,13 +37,19 @@ interface ApplicationData {
   applicant_photo_path: string;
   aadhaar_front_path: string;
   aadhaar_back_path: string;
-  pamphlet_image_path: string;
   user_id: string;
   serial_number: string;
+  selected_plan?: string;
+  plan_code?: string;
+  plan_name?: string;
+  plan_amount?: number;
+  plan_worth?: number;
+  plan_activation?: string;
+  plan_benefits?: string[];
 }
 
 const tamilLabels = {
-  title: "William Carey Funeral Insurance",
+  title: "William Carey Funeral Services Pvt. Ltd.",
   subtitle: "விண்ணப்பப் படிவம்",
   applicationNo: "விண்ணப்ப எண்",
   date: "தேதி",
@@ -62,7 +68,6 @@ const tamilLabels = {
   aadhaarImages: "ஆதார் அட்டை படங்கள்",
   aadhaarFront: "ஆதார் முன்பக்கம்",
   aadhaarBack: "ஆதார் பின்பக்கம்",
-  pamphletImage: "துண்டுப்பிரசுரம்",
   nomineeDetails: "வாரிசு விவரங்கள்",
   nominee1Title: "வாரிசு 1",
   nominee2Title: "வாரிசு 2",
@@ -72,15 +77,19 @@ const tamilLabels = {
   nomineeRelation: "உறவு முறை",
   additionalMessage: "கூடுதல் செய்தி",
   notProvided: "வழங்கப்படவில்லை",
-  footer: "இது கணினி மூலம் உருவாக்கப்பட்ட காப்பீட்டு விண்ணப்ப ஆவணம்.",
+  footer: "இது கணினி மூலம் உருவாக்கப்பட்ட சேவை விண்ணப்ப ஆவணம்.",
   managingDirector: "நிர்வாக இயக்குநர்",
   paymentMethod: "செலுத்தும் முறை",
   cash: "பணம்",
   upi: "UPI",
+  selectedPlan: "தேர்ந்தெடுக்கப்பட்ட திட்டம்",
+  planBenefits: "திட்ட நன்மைகள்",
+  activation: "சேவை செயல்பாடு",
+  benefitsWorth: "நன்மைகள் மதிப்பு",
 };
 
 const englishLabels = {
-  title: "William Carey Funeral Insurance",
+  title: "William Carey Funeral Services Pvt. Ltd.",
   subtitle: "Application Form",
   applicationNo: "Application No",
   date: "Date",
@@ -99,7 +108,6 @@ const englishLabels = {
   aadhaarImages: "AADHAAR CARD IMAGES",
   aadhaarFront: "Aadhaar Front Side",
   aadhaarBack: "Aadhaar Back Side",
-  pamphletImage: "PAMPHLET IMAGE",
   nomineeDetails: "NOMINEE DETAILS",
   nominee1Title: "Nominee 1",
   nominee2Title: "Nominee 2",
@@ -109,11 +117,15 @@ const englishLabels = {
   nomineeRelation: "Relationship",
   additionalMessage: "ADDITIONAL MESSAGE",
   notProvided: "Not Provided",
-  footer: "This is a system-generated insurance application document.",
+  footer: "This is a system-generated service application document.",
   managingDirector: "Managing Director",
   paymentMethod: "Payment Method",
   cash: "Cash",
   upi: "UPI",
+  selectedPlan: "SELECTED PLAN",
+  planBenefits: "Plan Benefits",
+  activation: "Service Activation",
+  benefitsWorth: "Benefits Worth",
 };
 
 function safeText(v: unknown, fallback: string): string {
@@ -432,12 +444,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
 
   // ═══════════════════════════════════════════
-  // PAGE 2 — Pamphlet + Seal/Signature
+  // PAGE 2 — Selected Plan Summary + Seal/Signature
   // ═══════════════════════════════════════════
   doc.addPage();
   y = margin;
 
-  // ── Pamphlet Heading with background bar ──
+  // ── Plan Heading with background bar ──
   const headingBarH = 9;
   doc.setFillColor(230, 235, 242); // light blue-grey
   doc.setDrawColor(...MID_GREY);
@@ -446,11 +458,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(11);
   doc.setTextColor(...DARK_BROWN);
-  doc.text("Policy Information Pamphlet", pw / 2, y + 6, { align: "center" });
+  doc.text(labels.selectedPlan, pw / 2, y + 6, { align: "center" });
   y += headingBarH + 3;
-
-  // Pamphlet image — fills most of page 2
-  const pamphletImage = await fetchImageAsBase64(supabase, data.pamphlet_image_path);
 
   // Merged seal-signature image setup
   const baseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -472,25 +481,90 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const textBlockH = 10; // space for Managing Director text
   const totalBlockH = sealSignImgH + textBlockH;
 
-  // Available space for pamphlet on page 2
+  // Available space for plan summary on page 2
   const sigBlockStartY = 297 - bottomMargin - totalBlockH;
-  const pamphletAvailH = sigBlockStartY - y - 5;
 
-  if (pamphletImage) {
-    const pamphletMaxW = cw;
-    try {
-      const imgProps = doc.getImageProperties(`data:image/${pamphletImage.type.toLowerCase()};base64,${pamphletImage.base64}`);
-      const aspectRatio = imgProps.height / imgProps.width;
-      const calcH = pamphletMaxW * aspectRatio;
-      const finalH = Math.min(calcH, pamphletAvailH);
-      const finalW = finalH < calcH ? finalH / aspectRatio : pamphletMaxW;
+  // ── Plan summary card ──
+  const planCode = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
+  const planName = data.plan_name || "";
+  const planAmount = data.plan_amount;
+  const planWorth = data.plan_worth;
+  const planActivation = data.plan_activation || "";
+  const benefits = Array.isArray(data.plan_benefits) ? data.plan_benefits : [];
 
-      const imgX = margin + (cw - finalW) / 2;
-      doc.addImage(pamphletImage.base64, pamphletImage.type, imgX, y, finalW, finalH);
-      y += finalH + 5;
-    } catch (e) {
-      console.error("Pamphlet error:", e);
+  if (planCode || planName || benefits.length) {
+    // Card container
+    const cardX = margin;
+    const cardW = cw;
+    const cardY = y;
+    const padX = 6;
+    let cy = cardY + 8;
+
+    // Title row
+    doc.setFont(fontFamily, "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...DARK_BROWN);
+    doc.text(`${planCode} PLAN${planName ? "  —  " + planName : ""}`, cardX + padX, cy);
+    cy += 7;
+
+    // Price row
+    if (typeof planAmount === "number") {
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(...GOLD);
+      doc.text(`Rs. ${planAmount.toLocaleString("en-IN")}`, cardX + padX, cy + 2);
+      if (typeof planWorth === "number") {
+        doc.setFont(fontFamily, "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...TEXT_GREY);
+        doc.text(
+          `${labels.benefitsWorth}: Rs. ${planWorth.toLocaleString("en-IN")}`,
+          cardX + padX,
+          cy + 8,
+        );
+      }
+      cy += 14;
     }
+
+    // Activation
+    if (planActivation) {
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...TEXT_BLACK);
+      doc.text(`${labels.activation}: `, cardX + padX, cy);
+      const activationLabelW = doc.getTextWidth(`${labels.activation}: `);
+      doc.setFont(fontFamily, "normal");
+      doc.text(planActivation, cardX + padX + activationLabelW, cy);
+      cy += 7;
+    }
+
+    // Benefits header
+    if (benefits.length) {
+      doc.setFont(fontFamily, "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...DARK_BROWN);
+      doc.text(labels.planBenefits, cardX + padX, cy);
+      cy += 5;
+
+      // Benefits list
+      doc.setFont(fontFamily, "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...TEXT_BLACK);
+      benefits.forEach((b) => {
+        const lines = doc.splitTextToSize(`• ${b}`, cardW - padX * 2 - 4);
+        doc.text(lines, cardX + padX + 2, cy);
+        cy += lines.length * 5;
+      });
+      cy += 2;
+    }
+
+    // Card border
+    const cardH = Math.max(40, cy - cardY + 4);
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(cardX, cardY, cardW, cardH, 2, 2, "S");
+
+    y = cardY + cardH + 5;
   }
 
   // Seal-Signature — bottom-right of page 2, text centered under image
@@ -510,7 +584,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setFontSize(8);
   doc.setTextColor(...TEXT_BLACK);
   doc.text("Managing Director", imgCenterX, textY, { align: "center" });
-  doc.text("William Carey Funeral Insurance", imgCenterX, textY + 4, { align: "center" });
+  doc.text("William Carey Funeral Services Pvt. Ltd.", imgCenterX, textY + 4, { align: "center" });
 
   // ═══════════════════════════════════════════
   // FOOTER on every page
@@ -538,7 +612,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
 
   const emailPayload = {
-    from: "William Carey Funeral Insurance <onboarding@resend.dev>",
+    from: "William Carey Funeral Services <onboarding@resend.dev>",
     to: ["williamcareyfuneral99@gmail.com"],
     subject: `New Application Received - ${serialNumber}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
@@ -551,7 +625,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
       </table>
       <p>Please see the attached PDF for full details.</p>
       <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
-      <p style="color:#888;font-size:12px">William Carey Funeral Insurance</p>
+      <p style="color:#888;font-size:12px">William Carey Funeral Services Pvt. Ltd.</p>
     </div>`,
     attachments: [{ filename, content: pdfBase64 }],
   };

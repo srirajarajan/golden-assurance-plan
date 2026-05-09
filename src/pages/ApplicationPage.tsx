@@ -7,151 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { uploadImageToPrivateStorage, compressImageFile } from '@/lib/uploadToPrivateStorage';
 import { supabase } from '@/integrations/supabase/client';
-import { Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield, Briefcase, CreditCard, IndianRupee, Image, Lock } from 'lucide-react';
-
-type Language = 'en' | 'ta';
-
-const formTranslations = {
-  en: {
-    title: "Funeral Service Application",
-    subtitle: "Application Form",
-    languageLabel: "Language",
-    applicantPhoto: "Applicant Photo",
-    aadhaarFront: "Aadhaar Front Side Photo",
-    aadhaarBack: "Aadhaar Back Side Photo",
-    pamphletImage: "Pamphlet Image Upload",
-    uploadImage: "Tap to Upload / Capture",
-    applicantDetails: "Applicant Details",
-    memberName: "Member Name",
-    memberNamePlaceholder: "Enter your name",
-    guardianName: "Father / Husband Name",
-    guardianNamePlaceholder: "Enter father/husband name",
-    gender: "Gender",
-    selectGender: "Select Gender",
-    male: "Male",
-    female: "Female",
-    other: "Other",
-    occupation: "Occupation",
-    occupationPlaceholder: "Enter occupation",
-    rationCard: "Ration Card Number",
-    rationCardPlaceholder: "Enter ration card number",
-    annualIncome: "Annual Income (Max ₹1.75 Lakhs)",
-    annualIncomePlaceholder: "Enter annual income",
-    aadhaarNumber: "Aadhaar Number (12 digits)",
-    aadhaarPlaceholder: "XXXX XXXX XXXX",
-    mobileNumber: "Mobile Number",
-    mobilePlaceholder: "Enter mobile number",
-    permanentAddress: "Permanent Address",
-    addressPlaceholder: "Enter full address",
-    aadhaarImages: "Aadhaar Card Images",
-    nominee1Title: "Nominee 1 (Required)",
-    nomineeName: "Nominee Name",
-    nomineeNamePlaceholder: "Enter nominee name",
-    nomineeAge: "Age",
-    nomineeAgePlaceholder: "Age",
-    nomineeRelation: "Relationship",
-    selectRelation: "Select Relationship",
-    son: "Son",
-    daughter: "Daughter",
-    wife: "Wife",
-    husband: "Husband",
-    spouse: "Spouse",
-    nominee2Title: "Nominee 2 (Optional)",
-    additionalMessage: "Additional Message (Optional)",
-    messagePlaceholder: "Any additional information...",
-    paymentMethod: "Payment Method",
-    cash: "Cash",
-    upi: "UPI",
-    selectPaymentMethod: "Please select a payment method",
-    submit: "Submit Application",
-    submitting: "Submitting...",
-    successTitle: "Thank you!",
-    successMessage: "Your application has been submitted successfully.",
-    errorTitle: "Error",
-    errorMessage: "Failed to submit. Please try again.",
-    imageTooLarge: "Image too large",
-    imageSizeLimit: "Please use an image less than 5MB",
-    uploadingImages: "Uploading images...",
-    generatingPDF: "Generating PDF...",
-    sendingEmail: "Sending notification...",
-    loginRequired: "Login Required",
-    loginRequiredMessage: "Please login to submit an application",
-    pendingApproval: "Account Pending",
-    pendingApprovalMessage: "Your account is pending admin approval. Please wait for approval to submit applications.",
-    goToLogin: "Go to Login",
-  },
-  ta: {
-    title: "ஈமச்சடங்கு சேவை விண்ணப்பம்",
-    subtitle: "உறுப்பினர் விண்ணப்பப் படிவம்",
-    languageLabel: "மொழி",
-    applicantPhoto: "விண்ணப்பதாரர் புகைப்படம்",
-    aadhaarFront: "ஆதார் முன்பக்க புகைப்படம்",
-    aadhaarBack: "ஆதார் பின்பக்க புகைப்படம்",
-    pamphletImage: "துண்டுப்பிரசுர புகைப்படம்",
-    uploadImage: "பதிவேற்ற தட்டவும்",
-    applicantDetails: "விண்ணப்பதாரர் விவரங்கள்",
-    memberName: "உறுப்பினர் பெயர்",
-    memberNamePlaceholder: "பெயரை உள்ளிடவும்",
-    guardianName: "தகப்பனார் / கணவர் பெயர்",
-    guardianNamePlaceholder: "தகப்பனார் / கணவர் பெயரை உள்ளிடவும்",
-    gender: "பாலினம்",
-    selectGender: "பாலினம் தேர்வு செய்க",
-    male: "ஆண்",
-    female: "பெண்",
-    other: "மற்றவை",
-    occupation: "தொழில்",
-    occupationPlaceholder: "தொழிலை உள்ளிடவும்",
-    rationCard: "குடும்ப அட்டை எண்",
-    rationCardPlaceholder: "குடும்ப அட்டை எண்ணை உள்ளிடவும்",
-    annualIncome: "ஆண்டு வருமானம் (அதிகபட்சம் ₹1.75 லட்சம்)",
-    annualIncomePlaceholder: "ஆண்டு வருமானத்தை உள்ளிடவும்",
-    aadhaarNumber: "ஆதார் எண் (12 இலக்கங்கள்)",
-    aadhaarPlaceholder: "XXXX XXXX XXXX",
-    mobileNumber: "கைபேசி எண்",
-    mobilePlaceholder: "கைபேசி எண்ணை உள்ளிடவும்",
-    permanentAddress: "நிரந்தர முகவரி",
-    addressPlaceholder: "முழு முகவரியை உள்ளிடவும்",
-    aadhaarImages: "ஆதார் அட்டை புகைப்படங்கள்",
-    nominee1Title: "வாரிசு 1 (கட்டாயம்)",
-    nomineeName: "வாரிசு பெயர்",
-    nomineeNamePlaceholder: "வாரிசு பெயரை உள்ளிடவும்",
-    nomineeAge: "வயது",
-    nomineeAgePlaceholder: "வயது",
-    nomineeRelation: "உறவு முறை",
-    selectRelation: "உறவு முறையை தேர்வு செய்க",
-    son: "மகன்",
-    daughter: "மகள்",
-    wife: "மனைவி",
-    husband: "கணவர்",
-    spouse: "துணைவர்",
-    nominee2Title: "வாரிசு 2 (விருப்பத்திற்குட்பட்டது)",
-    additionalMessage: "கூடுதல் செய்தி (விருப்பமானது)",
-    messagePlaceholder: "ஏதேனும் கூடுதல் தகவல்...",
-    paymentMethod: "செலுத்தும் முறை",
-    cash: "பணம்",
-    upi: "UPI",
-    selectPaymentMethod: "செலுத்தும் முறையை தேர்வு செய்க",
-    submit: "விண்ணப்பத்தை சமர்ப்பிக்க",
-    submitting: "சமர்ப்பிக்கிறது...",
-    successTitle: "நன்றி!",
-    successMessage: "உங்கள் விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது.",
-    errorTitle: "பிழை!",
-    errorMessage: "சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-    imageTooLarge: "படம் மிகப் பெரியது",
-    imageSizeLimit: "5MB க்கு குறைவான படத்தை பயன்படுத்தவும்",
-    uploadingImages: "படங்களை பதிவேற்றுகிறது...",
-    generatingPDF: "PDF உருவாக்குகிறது...",
-    sendingEmail: "அறிவிப்பை அனுப்புகிறது...",
-    loginRequired: "உள்நுழைவு தேவை",
-    loginRequiredMessage: "விண்ணப்பத்தை சமர்ப்பிக்க உள்நுழையவும்",
-    pendingApproval: "கணக்கு நிலுவையில்",
-    pendingApprovalMessage: "உங்கள் கணக்கு நிர்வாகி அனுமதிக்காக காத்திருக்கிறது. விண்ணப்பங்களை சமர்ப்பிக்க அனுமதிக்காக காத்திருக்கவும்.",
-    goToLogin: "உள்நுழைய செல்க",
-  }
-};
+import {
+  Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield,
+  Briefcase, CreditCard, IndianRupee, Lock, Star, Sparkles, Crown, Check,
+} from 'lucide-react';
+import { PLANS, type PlanId, getPlanById } from '@/data/plans';
+import SmartAadhaarCapture from '@/components/SmartAadhaarCapture';
 
 interface ImageState {
   file: File | null;
@@ -159,86 +22,66 @@ interface ImageState {
   path: string;
 }
 
+const PLAN_ICONS = { silver: Star, gold: Sparkles, platinum: Crown } as const;
+
 const ApplicationPage: React.FC = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const { user, isLoading, userStatus, checkUserStatus } = useAuth();
-  const { language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStep, setSubmitStep] = useState<string>('');
-  const selectedLanguage: Language = language as Language;
-  
+
   const [applicantPhoto, setApplicantPhoto] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarFront, setAadhaarFront] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', path: '' });
-  const [pamphletImage, setPamphletImage] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [paymentMethod, setPaymentMethod] = useState<string>('');
-  
-  const { toast } = useToast();
-  const t = formTranslations[selectedLanguage];
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>('silver');
 
-  useEffect(() => {
-    if (user) {
-      checkUserStatus();
-    }
-  }, [user]);
+  const { toast } = useToast();
+
+  useEffect(() => { if (user) checkUserStatus(); }, [user]);
 
   useEffect(() => {
     return () => {
-      const previews = [applicantPhoto.preview, aadhaarFront.preview, aadhaarBack.preview, pamphletImage.preview];
-      previews.forEach((p) => {
+      [applicantPhoto.preview, aadhaarFront.preview, aadhaarBack.preview].forEach((p) => {
         if (p?.startsWith('blob:')) URL.revokeObjectURL(p);
       });
     };
   }, []);
 
-  const handleImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setImageState: React.Dispatch<React.SetStateAction<ImageState>>
+  const handleFile = async (
+    file: File,
+    setter: React.Dispatch<React.SetStateAction<ImageState>>
   ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: t.imageTooLarge,
-        description: t.imageSizeLimit,
-        variant: "destructive",
-      });
+      toast({ title: 'Image too large', description: 'Please use an image less than 5MB', variant: 'destructive' });
       return;
     }
-
     try {
-      const compressedFile = await compressImageFile(file, 1200, 0.8);
-      const previewUrl = URL.createObjectURL(compressedFile);
-
-      setImageState((prev) => {
-        if (prev.preview?.startsWith('blob:')) {
-          URL.revokeObjectURL(prev.preview);
-        }
-        return {
-          file: compressedFile,
-          preview: previewUrl,
-          path: '',
-        };
+      const compressed = await compressImageFile(file, 1200, 0.85);
+      const url = URL.createObjectURL(compressed);
+      setter((prev) => {
+        if (prev.preview?.startsWith('blob:')) URL.revokeObjectURL(prev.preview);
+        return { file: compressed, preview: url, path: '' };
       });
-
-      e.target.value = '';
-    } catch (error) {
-      console.error('Image processing error:', error);
-      toast({
-        title: t.errorTitle,
-        description: 'Failed to process image',
-        variant: "destructive",
-      });
+    } catch (err) {
+      console.error('Image processing error:', err);
+      toast({ title: 'Error', description: 'Failed to process image', variant: 'destructive' });
     }
   };
 
-  const removeImage = (setImageState: React.Dispatch<React.SetStateAction<ImageState>>) => {
-    setImageState((prev) => {
-      if (prev.preview?.startsWith('blob:')) {
-        URL.revokeObjectURL(prev.preview);
-      }
+  const handleFileInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<ImageState>>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file, setter);
+    e.target.value = '';
+  };
+
+  const removeImage = (setter: React.Dispatch<React.SetStateAction<ImageState>>) => {
+    setter((prev) => {
+      if (prev.preview?.startsWith('blob:')) URL.revokeObjectURL(prev.preview);
       return { file: null, preview: '', path: '' };
     });
   };
@@ -248,70 +91,50 @@ const ApplicationPage: React.FC = () => {
     if (isSubmitting) return;
 
     if (!user) {
-      toast({
-        title: t.loginRequired,
-        description: t.loginRequiredMessage,
-        variant: "destructive",
-      });
+      toast({ title: 'Login Required', description: 'Please login to submit an application', variant: 'destructive' });
       return;
     }
-
     if (userStatus !== 'active') {
-      toast({
-        title: t.pendingApproval,
-        description: t.pendingApprovalMessage,
-        variant: "destructive",
-      });
+      toast({ title: 'Account Pending', description: 'Your account is pending admin approval.', variant: 'destructive' });
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const form = formRef.current;
       if (!form) throw new Error('Form not found');
-
       const userId = user.id;
       const formData = new FormData(form);
 
-      // Validate mobile number (10 digits, numbers only)
       const mobileNumber = (formData.get('mobile_number') as string)?.replace(/\D/g, '') || '';
       if (mobileNumber.length !== 10) {
-        toast({
-          title: t.errorTitle,
-          description: selectedLanguage === 'ta' 
-            ? 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்' 
-            : 'Enter valid 10-digit mobile number',
-          variant: "destructive",
-        });
+        toast({ title: 'Error', description: 'Enter valid 10-digit mobile number', variant: 'destructive' });
         setIsSubmitting(false);
         return;
       }
-
-      if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file || !pamphletImage.file) {
-        throw new Error('Please upload all required images');
+      if (!paymentMethod) {
+        toast({ title: 'Error', description: 'Please select a payment method', variant: 'destructive' });
+        setIsSubmitting(false);
+        return;
+      }
+      if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file) {
+        throw new Error('Please upload Photo, Aadhaar Front and Aadhaar Back');
       }
 
-      setSubmitStep(t.uploadingImages);
-
+      setSubmitStep('Uploading images...');
       const applicantPhotoPath = await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId);
       if (!applicantPhotoPath) throw new Error('Failed to upload applicant photo');
-
       const aadhaarFrontPath = await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId);
       if (!aadhaarFrontPath) throw new Error('Failed to upload Aadhaar front');
-
       const aadhaarBackPath = await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId);
       if (!aadhaarBackPath) throw new Error('Failed to upload Aadhaar back');
-
-      const pamphletImagePath = await uploadImageToPrivateStorage(pamphletImage.file, 'pamphlet_image', userId);
-      if (!pamphletImagePath) throw new Error('Failed to upload pamphlet image');
-
-      setSubmitStep(t.submitting);
 
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
       const supabaseUrl = (supabase as any).supabaseUrl as string;
       const supabaseKey = (supabase as any).supabaseKey as string;
+
+      const plan = getPlanById(selectedPlan)!;
 
       const payload = {
         member_name: (formData.get('member_name') as string)?.trim() || '',
@@ -334,17 +157,21 @@ const ApplicationPage: React.FC = () => {
         nominee2_relation: (formData.get('nominee2_relation') as string)?.trim() || '',
         additional_message: (formData.get('additional_message') as string)?.trim() || '',
         payment_method: paymentMethod,
-        selected_language: selectedLanguage,
+        selected_language: 'en',
         applicant_photo_path: applicantPhotoPath,
         aadhaar_front_path: aadhaarFrontPath,
         aadhaar_back_path: aadhaarBackPath,
-        pamphlet_image_path: pamphletImagePath,
+        selected_plan: plan.id,
+        plan_code: plan.code,
+        plan_name: plan.name,
+        plan_amount: plan.amount,
+        plan_worth: plan.worth,
+        plan_activation: plan.activation,
+        plan_benefits: plan.benefits,
         user_id: userId,
       };
 
-      // Step 1: Generate serial number FIRST
-      setSubmitStep(selectedLanguage === 'ta' ? 'சீரியல் எண் உருவாக்குகிறது...' : 'Generating serial number...');
-
+      setSubmitStep('Generating serial number...');
       const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
         method: 'POST',
         headers: {
@@ -354,18 +181,11 @@ const ApplicationPage: React.FC = () => {
         },
         body: JSON.stringify({ staff_user_id: userId }),
       });
-
       const serialData = await serialRes.json();
-      if (!serialRes.ok || serialData.error) {
-        throw new Error(serialData.error || 'Failed to generate serial number');
-      }
-
+      if (!serialRes.ok || serialData.error) throw new Error(serialData.error || 'Failed to generate serial number');
       const serialNumber = serialData.serial_number;
-      console.log('Serial number generated:', serialNumber);
 
-      // Step 2: Generate PDF and send email WITH serial number
-      setSubmitStep(t.sendingEmail);
-
+      setSubmitStep('Sending notification...');
       const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
         method: 'POST',
         headers: {
@@ -373,61 +193,34 @@ const ApplicationPage: React.FC = () => {
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           ...(supabaseKey ? { apikey: supabaseKey } : {}),
         },
-        body: JSON.stringify({
-          ...payload,
-          language: selectedLanguage,
-          staff_email: user.email || '',
-          serial_number: serialNumber,
-        }),
+        body: JSON.stringify({ ...payload, language: 'en', staff_email: user.email || '', serial_number: serialNumber }),
       });
 
       let emailSuccess = false;
       try {
         const pdfData = await pdfRes.json();
-        if (pdfData.success) {
-          emailSuccess = true;
-        } else {
-          console.error('Email send failed:', pdfData.error);
-        }
-      } catch {
-        console.error('Failed to parse PDF/email response');
-      }
+        emailSuccess = !!pdfData.success;
+      } catch { /* noop */ }
 
       if (!emailSuccess) {
-        toast({
-          title: t.errorTitle,
-          description: 'PDF/Email failed. Serial was generated but email not sent.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: 'PDF/Email failed. Serial generated but email not sent.', variant: 'destructive' });
         return;
       }
 
-      // Step 3: Send SMS confirmation AFTER serial generated
-      const mobileNum = (formData.get('mobile_number') as string)?.replace(/\D/g, '') || '';
-      if (mobileNum.length === 10) {
+      if (mobileNumber.length === 10) {
         try {
-          console.log('Sending confirmation SMS to:', mobileNum);
-          const smsRes = await fetch(`${supabaseUrl}/functions/v1/send-confirmation-sms`, {
+          await fetch(`${supabaseUrl}/functions/v1/send-confirmation-sms`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
               ...(supabaseKey ? { apikey: supabaseKey } : {}),
             },
-            body: JSON.stringify({ mobile_number: mobileNum, serial_number: serialNumber }),
+            body: JSON.stringify({ mobile_number: mobileNumber, serial_number: serialNumber }),
           });
-          const smsData = await smsRes.json();
-          if (smsData.success) {
-            console.log('SMS sent successfully');
-          } else {
-            console.error('SMS failed:', smsData.error);
-          }
-        } catch (smsErr) {
-          console.error('SMS sending error:', smsErr);
-        }
+        } catch (err) { console.error('SMS error:', err); }
       }
 
-      // Step 4: Record application in DB
       await supabase.from('applications').insert({
         serial_number: serialNumber,
         staff_user_id: userId,
@@ -436,84 +229,23 @@ const ApplicationPage: React.FC = () => {
         pdf_path: `${serialNumber}.pdf`,
       });
 
-      toast({
-        title: t.successTitle,
-        description: `${t.successMessage} (Serial: ${serialNumber})`,
-      });
-      
+      toast({ title: 'Thank you!', description: `Your application has been submitted successfully. (Serial: ${serialNumber})` });
       form.reset();
       removeImage(setApplicantPhoto);
       removeImage(setAadhaarFront);
       removeImage(setAadhaarBack);
-      removeImage(setPamphletImage);
+      setPaymentMethod('');
     } catch (error: any) {
       console.error('Submit Error:', error);
-      toast({
-        title: t.errorTitle,
-        description: error?.message || t.errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: error?.message || 'Failed to submit. Please try again.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
       setSubmitStep('');
     }
   };
 
-  const ImageUpload = ({
-    label,
-    preview,
-    onImageChange,
-    onRemove,
-    icon: Icon = Camera
-  }: {
-    label: string;
-    preview: string;
-    onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onRemove: () => void;
-    icon?: React.ElementType;
-  }) => (
-    <div className="flex flex-col items-center gap-3 p-4 border-2 border-dashed rounded-lg bg-muted/20">
-      <Label className="text-base font-semibold flex items-center gap-2">
-        <Icon className="w-5 h-5" />
-        {label}
-      </Label>
-      {preview ? (
-        <div className="relative">
-          <img 
-            src={preview} 
-            alt="Preview" 
-            className="w-28 h-28 object-cover rounded-lg border-2 shadow-md"
-          />
-          <button
-            type="button"
-            onClick={onRemove}
-            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <label className="cursor-pointer flex flex-col items-center gap-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-          <Icon className="w-8 h-8 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground text-center">{t.uploadImage}</span>
-          <input 
-            type="file" 
-            accept="image/*" 
-            capture="environment"
-            onChange={onImageChange} 
-            className="hidden" 
-          />
-        </label>
-      )}
-    </div>
-  );
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (!user) {
@@ -522,11 +254,9 @@ const ApplicationPage: React.FC = () => {
         <Card className="w-full max-w-md shadow-xl border-2">
           <CardContent className="p-8 text-center">
             <Lock className="h-16 w-16 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-primary mb-2">{t.loginRequired}</h2>
-            <p className="text-muted-foreground mb-6">{t.loginRequiredMessage}</p>
-            <Button onClick={() => navigate('/login')} className="w-full">
-              {t.goToLogin}
-            </Button>
+            <h2 className="text-2xl font-bold text-primary mb-2">Login Required</h2>
+            <p className="text-muted-foreground mb-6">Please login to submit an application</p>
+            <Button onClick={() => navigate('/login')} className="w-full">Go to Login</Button>
           </CardContent>
         </Card>
       </div>
@@ -539,8 +269,8 @@ const ApplicationPage: React.FC = () => {
         <Card className="w-full max-w-md shadow-xl border-2">
           <CardContent className="p-8 text-center">
             <Loader2 className="h-16 w-16 text-primary mx-auto mb-4 animate-spin" />
-            <h2 className="text-2xl font-bold text-primary mb-2">{t.pendingApproval}</h2>
-            <p className="text-muted-foreground">{t.pendingApprovalMessage}</p>
+            <h2 className="text-2xl font-bold text-primary mb-2">Account Pending</h2>
+            <p className="text-muted-foreground">Your account is pending admin approval. Please wait for approval to submit applications.</p>
           </CardContent>
         </Card>
       </div>
@@ -554,358 +284,312 @@ const ApplicationPage: React.FC = () => {
         <Card className="w-full max-w-md shadow-xl border-2">
           <CardContent className="p-8 text-center">
             <X className="h-16 w-16 text-destructive mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-destructive mb-2">
-              {selectedLanguage === 'en' 
-                ? (isTerminated ? 'Account Terminated' : 'Account Rejected')
-                : (isTerminated ? 'கணக்கு நிறுத்தப்பட்டது' : 'கணக்கு நிராகரிக்கப்பட்டது')}
-            </h2>
-            <p className="text-muted-foreground">
-              {selectedLanguage === 'en' 
-                ? (isTerminated ? 'Your account has been terminated. Contact admin.' : 'Your account has been rejected. Please contact support.')
-                : (isTerminated ? 'உங்கள் கணக்கு நிறுத்தப்பட்டது. நிர்வாகியை தொடர்பு கொள்ளவும்.' : 'உங்கள் கணக்கு நிராகரிக்கப்பட்டது. ஆதரவைத் தொடர்பு கொள்ளவும்.')}
-            </p>
+            <h2 className="text-2xl font-bold text-destructive mb-2">{isTerminated ? 'Account Terminated' : 'Account Rejected'}</h2>
+            <p className="text-muted-foreground">{isTerminated ? 'Your account has been terminated. Contact admin.' : 'Your account has been rejected. Please contact support.'}</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // ── Photo upload tile (kept compact) ──
+  const PhotoTile = ({ label, preview, onChange, onRemove, icon: Icon = Camera }: {
+    label: string; preview: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemove: () => void; icon?: React.ElementType;
+  }) => (
+    <div className="flex flex-col items-center gap-3 p-4 border-2 border-dashed rounded-lg bg-muted/20">
+      <Label className="text-base font-semibold flex items-center gap-2">
+        <Icon className="w-5 h-5" /> {label}
+      </Label>
+      {preview ? (
+        <div className="relative">
+          <img src={preview} alt="Preview" className="w-28 h-28 object-cover rounded-lg border-2 shadow-md" loading="lazy" />
+          <button type="button" onClick={onRemove} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <label className="cursor-pointer flex flex-col items-center gap-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+          <Icon className="w-8 h-8 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground text-center">Tap to Upload / Capture</span>
+          <input type="file" accept="image/*" capture="environment" onChange={onChange} className="hidden" />
+        </label>
+      )}
+    </div>
+  );
+
+  // ── Aadhaar capture tile (smart camera + preview) ──
+  const AadhaarTile = ({ label, preview, onCapture, onRemove }: {
+    label: string; preview: string;
+    onCapture: (file: File) => void; onRemove: () => void;
+  }) => (
+    <div className="flex flex-col items-center gap-3 p-4 border-2 border-dashed rounded-lg bg-muted/20">
+      <Label className="text-base font-semibold flex items-center gap-2">
+        <Shield className="w-5 h-5" /> {label}
+      </Label>
+      {preview ? (
+        <div className="relative">
+          <img src={preview} alt="Preview" className="w-44 h-28 object-cover rounded-lg border-2 shadow-md" loading="lazy" />
+          <button type="button" onClick={onRemove} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <SmartAadhaarCapture label={`Scan ${label}`} onCapture={onCapture} />
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-primary">
-              {t.title}
-            </CardTitle>
-            <p className="text-muted-foreground mt-2">
-              {t.subtitle}
-            </p>
+            <CardTitle className="text-2xl md:text-3xl font-bold text-primary">Funeral Service Application</CardTitle>
+            <p className="text-muted-foreground mt-2">Application Form</p>
           </CardHeader>
-          
+
           <CardContent className="p-6">
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-              
-              <ImageUpload
-                label={t.applicantPhoto}
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
+
+              {/* Plan selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" /> Choose Your Service Plan
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {PLANS.map((plan) => {
+                    const Icon = PLAN_ICONS[plan.id];
+                    const active = selectedPlan === plan.id;
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSelectedPlan(plan.id)}
+                        className={[
+                          'text-left p-5 rounded-2xl border-2 transition-all duration-200 relative bg-background',
+                          active
+                            ? 'border-primary shadow-glow -translate-y-0.5'
+                            : 'border-border hover:border-primary/50 hover:-translate-y-0.5',
+                          plan.id === 'platinum' ? 'bg-gradient-to-b from-accent/30 to-background' : '',
+                          plan.id === 'gold' && active ? 'bg-gradient-to-b from-primary/5 to-background' : '',
+                        ].join(' ')}
+                      >
+                        {active && (
+                          <span className="absolute top-3 right-3 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground">
+                            <Check className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                            <Icon size={18} />
+                          </div>
+                          <div>
+                            <div className="font-display font-bold text-secondary tracking-wide">{plan.code}</div>
+                            <div className="text-xs text-muted-foreground">{plan.name}</div>
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold gradient-gold-text">{plan.amountLabel}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Benefits Worth {plan.worthLabel}</div>
+                        <ul className="mt-3 space-y-1.5">
+                          {plan.benefits.map((b, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/85">
+                              <Check className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                              <span>{b}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-3 text-[11px] uppercase tracking-wide text-primary font-semibold">
+                          Activation: {plan.activation}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Photo */}
+              <PhotoTile
+                label="Applicant Photo"
                 preview={applicantPhoto.preview}
-                onImageChange={(e) => handleImageChange(e, setApplicantPhoto)}
+                onChange={(e) => handleFileInput(e, setApplicantPhoto)}
                 onRemove={() => removeImage(setApplicantPhoto)}
                 icon={Camera}
               />
 
+              {/* Applicant details */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  {t.applicantDetails}
+                  <User className="w-5 h-5 text-primary" /> Applicant Details
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="member_name">{t.memberName}</Label>
-                    <Input id="member_name" name="member_name" placeholder={t.memberNamePlaceholder} className="mt-1" />
+                    <Label htmlFor="member_name">Member Name</Label>
+                    <Input id="member_name" name="member_name" placeholder="Enter your name" className="mt-1" />
                   </div>
-
                   <div>
-                    <Label htmlFor="age">
-                      {selectedLanguage === 'ta' ? 'வயது' : 'Age'} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input 
-                      id="age" 
-                      name="age" 
-                      type="number" 
-                      placeholder={selectedLanguage === 'ta' ? 'வயது உள்ளிடவும்' : 'Enter age'} 
-                      className="mt-1" 
-                      required
-                      min={1}
-                      max={120}
-                      inputMode="numeric"
-                      onInvalid={(e) => {
-                        const input = e.target as HTMLInputElement;
-                        input.setCustomValidity(
-                          selectedLanguage === 'ta' 
-                            ? '1 முதல் 120 வரை சரியான வயதை உள்ளிடவும்' 
-                            : 'Enter a valid age between 1 and 120'
-                        );
-                      }}
-                      onChange={(e) => {
-                        (e.target as HTMLInputElement).setCustomValidity('');
-                      }}
-                    />
+                    <Label htmlFor="age">Age <span className="text-destructive">*</span></Label>
+                    <Input id="age" name="age" type="number" min={1} max={120} required inputMode="numeric"
+                      placeholder="Enter age" className="mt-1"
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Enter a valid age between 1 and 120')}
+                      onChange={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="guardian_name">{t.guardianName}</Label>
-                    <Input id="guardian_name" name="guardian_name" placeholder={t.guardianNamePlaceholder} className="mt-1" />
+                    <Label htmlFor="guardian_name">Father / Husband Name</Label>
+                    <Input id="guardian_name" name="guardian_name" placeholder="Enter father/husband name" className="mt-1" />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="gender">{t.gender}</Label>
-                    <select 
-                      id="gender" 
-                      name="gender" 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t.selectGender}</option>
-                      <option value={t.male}>{t.male}</option>
-                      <option value={t.female}>{t.female}</option>
-                      <option value={t.other}>{t.other}</option>
+                    <Label htmlFor="gender">Gender</Label>
+                    <select id="gender" name="gender"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
                     </select>
                   </div>
-                  
                   <div>
-                    <Label htmlFor="occupation" className="flex items-center gap-1">
-                      <Briefcase className="w-4 h-4" />
-                      {t.occupation}
-                    </Label>
-                    <Input id="occupation" name="occupation" placeholder={t.occupationPlaceholder} className="mt-1" />
+                    <Label htmlFor="occupation" className="flex items-center gap-1"><Briefcase className="w-4 h-4" /> Occupation</Label>
+                    <Input id="occupation" name="occupation" placeholder="Enter occupation" className="mt-1" />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="ration_card" className="flex items-center gap-1">
-                      <CreditCard className="w-4 h-4" />
-                      {t.rationCard}
-                    </Label>
-                    <Input id="ration_card" name="ration_card" placeholder={t.rationCardPlaceholder} className="mt-1" />
+                    <Label htmlFor="ration_card" className="flex items-center gap-1"><CreditCard className="w-4 h-4" /> Ration Card Number</Label>
+                    <Input id="ration_card" name="ration_card" placeholder="Enter ration card number" className="mt-1" />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="annual_income" className="flex items-center gap-1">
-                      <IndianRupee className="w-4 h-4" />
-                      {t.annualIncome}
-                    </Label>
-                    <Input id="annual_income" name="annual_income" placeholder={t.annualIncomePlaceholder} className="mt-1" />
+                    <Label htmlFor="annual_income" className="flex items-center gap-1"><IndianRupee className="w-4 h-4" /> Annual Income (Max ₹1.75 Lakhs)</Label>
+                    <Input id="annual_income" name="annual_income" placeholder="Enter annual income" className="mt-1" />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="aadhaar_number" className="flex items-center gap-1">
-                      <Shield className="w-4 h-4" />
-                      {t.aadhaarNumber}
-                    </Label>
-                    <Input id="aadhaar_number" name="aadhaar_number" placeholder={t.aadhaarPlaceholder} maxLength={14} className="mt-1" />
+                    <Label htmlFor="aadhaar_number" className="flex items-center gap-1"><Shield className="w-4 h-4" /> Aadhaar Number (12 digits)</Label>
+                    <Input id="aadhaar_number" name="aadhaar_number" placeholder="XXXX XXXX XXXX" maxLength={14} className="mt-1" />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="mobile_number" className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      {t.mobileNumber} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input 
-                      id="mobile_number" 
-                      name="mobile_number" 
-                      type="tel" 
-                      placeholder={t.mobilePlaceholder} 
-                      className="mt-1" 
-                      required
-                      maxLength={10}
-                      pattern="[0-9]{10}"
-                      inputMode="numeric"
-                      onInput={(e) => {
-                        const input = e.target as HTMLInputElement;
-                        input.value = input.value.replace(/\D/g, '').slice(0, 10);
-                      }}
-                      onInvalid={(e) => {
-                        const input = e.target as HTMLInputElement;
-                        input.setCustomValidity(
-                          selectedLanguage === 'ta' 
-                            ? 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்' 
-                            : 'Enter valid 10-digit mobile number'
-                        );
-                      }}
-                      onChange={(e) => {
-                        (e.target as HTMLInputElement).setCustomValidity('');
-                      }}
-                    />
+                    <Label htmlFor="mobile_number" className="flex items-center gap-1"><Phone className="w-4 h-4" /> Mobile Number <span className="text-destructive">*</span></Label>
+                    <Input id="mobile_number" name="mobile_number" type="tel" required maxLength={10} pattern="[0-9]{10}" inputMode="numeric"
+                      placeholder="Enter mobile number" className="mt-1"
+                      onInput={(e) => { const i = e.target as HTMLInputElement; i.value = i.value.replace(/\D/g, '').slice(0, 10); }}
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Enter valid 10-digit mobile number')}
+                      onChange={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                   </div>
-
                   <div>
-                    <Label className="flex items-center gap-1">
-                      <CreditCard className="w-4 h-4" />
-                      {t.paymentMethod}
-                    </Label>
+                    <Label className="flex items-center gap-1"><CreditCard className="w-4 h-4" /> Payment Method</Label>
                     <div className="flex gap-4 mt-2 h-10 items-center">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="payment_method_inline"
-                          value="Cash"
-                          checked={paymentMethod === 'Cash'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="h-4 w-4 accent-primary"
-                        />
-                        <span className="text-sm font-medium">{t.cash}</span>
+                        <input type="radio" name="payment_method_inline" value="Cash"
+                          checked={paymentMethod === 'Cash'} onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="h-4 w-4 accent-primary" />
+                        <span className="text-sm font-medium">Cash</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="payment_method_inline"
-                          value="UPI"
-                          checked={paymentMethod === 'UPI'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="h-4 w-4 accent-primary"
-                        />
-                        <span className="text-sm font-medium">{t.upi}</span>
+                        <input type="radio" name="payment_method_inline" value="UPI"
+                          checked={paymentMethod === 'UPI'} onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="h-4 w-4 accent-primary" />
+                        <span className="text-sm font-medium">UPI</span>
                       </label>
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
-                  <Label htmlFor="address" className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {t.permanentAddress}
-                  </Label>
-                  <Textarea id="address" name="address" placeholder={t.addressPlaceholder} className="mt-1" rows={3} />
+                  <Label htmlFor="address" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Permanent Address</Label>
+                  <Textarea id="address" name="address" placeholder="Enter full address" className="mt-1" rows={3} />
                 </div>
               </div>
 
+              {/* Aadhaar (smart capture) */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-primary" />
-                  {t.aadhaarImages}
+                  <Shield className="w-5 h-5 text-primary" /> Aadhaar Card Images
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ImageUpload
-                    label={t.aadhaarFront}
+                  <AadhaarTile
+                    label="Aadhaar Front Side"
                     preview={aadhaarFront.preview}
-                    onImageChange={(e) => handleImageChange(e, setAadhaarFront)}
+                    onCapture={(f) => handleFile(f, setAadhaarFront)}
                     onRemove={() => removeImage(setAadhaarFront)}
-                    icon={Shield}
                   />
-                  <ImageUpload
-                    label={t.aadhaarBack}
+                  <AadhaarTile
+                    label="Aadhaar Back Side"
                     preview={aadhaarBack.preview}
-                    onImageChange={(e) => handleImageChange(e, setAadhaarBack)}
+                    onCapture={(f) => handleFile(f, setAadhaarBack)}
                     onRemove={() => removeImage(setAadhaarBack)}
-                    icon={Shield}
                   />
                 </div>
               </div>
 
-              <ImageUpload
-                label={t.pamphletImage}
-                preview={pamphletImage.preview}
-                onImageChange={(e) => handleImageChange(e, setPamphletImage)}
-                onRemove={() => removeImage(setPamphletImage)}
-                icon={Image}
-              />
-
+              {/* Nominee 1 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  {t.nominee1Title}
+                  <Users className="w-5 h-5 text-primary" /> Nominee 1 (Required)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nominee1_name">{t.nomineeName}</Label>
-                    <Input id="nominee1_name" name="nominee1_name" placeholder={t.nomineeNamePlaceholder} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label htmlFor="nominee1_gender">{t.gender}</Label>
-                    <select 
-                      id="nominee1_gender" 
-                      name="nominee1_gender" 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t.selectGender}</option>
-                      <option value={t.male}>{t.male}</option>
-                      <option value={t.female}>{t.female}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="nominee1_age">{t.nomineeAge}</Label>
-                    <Input id="nominee1_age" name="nominee1_age" type="number" placeholder={t.nomineeAgePlaceholder} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label htmlFor="nominee1_relation">{t.nomineeRelation}</Label>
-                    <select 
-                      id="nominee1_relation" 
-                      name="nominee1_relation" 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t.selectRelation}</option>
-                      <option value={t.son}>{t.son}</option>
-                      <option value={t.daughter}>{t.daughter}</option>
-                      <option value={t.wife}>{t.wife}</option>
-                      <option value={t.husband}>{t.husband}</option>
-                      <option value={t.spouse}>{t.spouse}</option>
-                    </select>
-                  </div>
+                  <div><Label htmlFor="nominee1_name">Nominee Name</Label>
+                    <Input id="nominee1_name" name="nominee1_name" placeholder="Enter nominee name" className="mt-1" /></div>
+                  <div><Label htmlFor="nominee1_gender">Gender</Label>
+                    <select id="nominee1_gender" name="nominee1_gender"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select></div>
+                  <div><Label htmlFor="nominee1_age">Age</Label>
+                    <Input id="nominee1_age" name="nominee1_age" type="number" placeholder="Age" className="mt-1" /></div>
+                  <div><Label htmlFor="nominee1_relation">Relationship</Label>
+                    <select id="nominee1_relation" name="nominee1_relation"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">Select Relationship</option>
+                      <option value="Son">Son</option>
+                      <option value="Daughter">Daughter</option>
+                      <option value="Wife">Wife</option>
+                      <option value="Husband">Husband</option>
+                      <option value="Spouse">Spouse</option>
+                    </select></div>
                 </div>
               </div>
 
+              {/* Nominee 2 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  {t.nominee2Title}
+                  <Users className="w-5 h-5 text-primary" /> Nominee 2 (Optional)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nominee2_name">{t.nomineeName}</Label>
-                    <Input id="nominee2_name" name="nominee2_name" placeholder={t.nomineeNamePlaceholder} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label htmlFor="nominee2_gender">{t.gender}</Label>
-                    <select 
-                      id="nominee2_gender" 
-                      name="nominee2_gender" 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t.selectGender}</option>
-                      <option value={t.male}>{t.male}</option>
-                      <option value={t.female}>{t.female}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="nominee2_age">{t.nomineeAge}</Label>
-                    <Input id="nominee2_age" name="nominee2_age" type="number" placeholder={t.nomineeAgePlaceholder} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label htmlFor="nominee2_relation">{t.nomineeRelation}</Label>
-                    <select 
-                      id="nominee2_relation" 
-                      name="nominee2_relation" 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t.selectRelation}</option>
-                      <option value={t.son}>{t.son}</option>
-                      <option value={t.daughter}>{t.daughter}</option>
-                      <option value={t.wife}>{t.wife}</option>
-                      <option value={t.husband}>{t.husband}</option>
-                      <option value={t.spouse}>{t.spouse}</option>
-                    </select>
-                  </div>
+                  <div><Label htmlFor="nominee2_name">Nominee Name</Label>
+                    <Input id="nominee2_name" name="nominee2_name" placeholder="Enter nominee name" className="mt-1" /></div>
+                  <div><Label htmlFor="nominee2_gender">Gender</Label>
+                    <select id="nominee2_gender" name="nominee2_gender"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select></div>
+                  <div><Label htmlFor="nominee2_age">Age</Label>
+                    <Input id="nominee2_age" name="nominee2_age" type="number" placeholder="Age" className="mt-1" /></div>
+                  <div><Label htmlFor="nominee2_relation">Relationship</Label>
+                    <select id="nominee2_relation" name="nominee2_relation"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">Select Relationship</option>
+                      <option value="Son">Son</option>
+                      <option value="Daughter">Daughter</option>
+                      <option value="Wife">Wife</option>
+                      <option value="Husband">Husband</option>
+                      <option value="Spouse">Spouse</option>
+                    </select></div>
                 </div>
               </div>
-
-
-
 
               <div className="space-y-2">
-                <Label htmlFor="additional_message">{t.additionalMessage}</Label>
-                <Textarea 
-                  id="additional_message" 
-                  name="additional_message" 
-                  placeholder={t.messagePlaceholder} 
-                  rows={3} 
-                />
+                <Label htmlFor="additional_message">Additional Message (Optional)</Label>
+                <Textarea id="additional_message" name="additional_message" placeholder="Any additional information..." rows={3} />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full text-lg py-6"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {submitStep || t.submitting}
-                  </>
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{submitStep || 'Submitting...'}</>
                 ) : (
-                  <>
-                    <Send className="mr-2 h-5 w-5" />
-                    {t.submit}
-                  </>
+                  <><Send className="mr-2 h-5 w-5" />Submit Application</>
                 )}
               </Button>
             </form>
