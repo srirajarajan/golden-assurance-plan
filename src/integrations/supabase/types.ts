@@ -74,6 +74,63 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          address: string | null
+          amount: number
+          city: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          id: string
+          invoice_date: string
+          invoice_number: string
+          mobile: string
+          pincode: string | null
+          plan_type: string
+          service_date: string | null
+          state: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          amount?: number
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          mobile: string
+          pincode?: string | null
+          plan_type: string
+          service_date?: string | null
+          state?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          amount?: number
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          mobile?: string
+          pincode?: string | null
+          plan_type?: string
+          service_date?: string | null
+          state?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -175,6 +232,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invoice_number: { Args: never; Returns: string }
       generate_next_serial: {
         Args: { p_staff_user_id: string }
         Returns: string
