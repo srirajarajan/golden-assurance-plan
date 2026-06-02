@@ -30,6 +30,7 @@ import {
   Hash,
   Lock,
   KeyRound,
+  FileText,
 } from 'lucide-react';
 
 interface UserProfile {
@@ -339,10 +340,16 @@ const AdminDashboard: React.FC = () => {
                 <Shield className="h-6 w-6" />
                 {t.title}
               </CardTitle>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                {t.logout}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="default" onClick={() => navigate('/admin/invoices')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  {language === 'ta' ? 'விலைப்பட்டியல் உருவாக்கி' : 'Invoice Generator'}
+                </Button>
+                <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t.logout}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-6">
