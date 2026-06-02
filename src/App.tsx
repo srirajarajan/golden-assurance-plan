@@ -21,6 +21,7 @@ const SignupPage = lazy(() => import("@/pages/SignupPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const InvoiceGeneratorPage = lazy(() => import("@/pages/InvoiceGeneratorPage"));
 const UpdatesPage = lazy(() => import("@/pages/UpdatesPage"));
 const DocumentationsPage = lazy(() => import("@/pages/DocumentationsPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -65,6 +66,7 @@ const App = () => (
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/invoices" element={<InvoiceGeneratorPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
