@@ -38,12 +38,23 @@ interface InvoiceRow {
 
 const COMPANY = {
   name: 'William Carey Funeral Services Pvt. Ltd.',
-  tamil: 'வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்',
-  website: 'https://williamcarey.in',
-  email: 'info@williamcarey.in',
-  phone: '+91 XXXXX XXXXX',
+  tamil: 'வில்லியம் கேரி சமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்',
+  website: 'www.williamcareyfuneralservices.com',
+  email: 'williamcareyfuneral99@gmail.com',
+  phone: '9600350889',
   address: 'Salem, Tamil Nadu, India',
 };
+
+const BANK = {
+  name: 'HDFC Bank',
+  branch: 'C/O Rajaji Road, Salem',
+  account: '50200116002261',
+  ifsc: 'HDFC0004649',
+};
+
+const DOCUMENTATION_FEE = 1000;
+const GST_PAID_BY_COMPANY = 180;
+const getServiceCharge = (total: number) => total - DOCUMENTATION_FEE;
 
 type Mode = 'list' | 'create' | 'view';
 
@@ -424,6 +435,11 @@ const InvoiceGeneratorPage: React.FC = () => {
           body { background: #fff !important; }
           header, footer, nav, .no-print { display: none !important; }
           .min-h-screen { min-height: auto !important; padding: 0 !important; background: #fff !important; }
+          *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>
