@@ -42,15 +42,27 @@ const COMPANY = {
   website: 'www.williamcareyfuneralservices.com',
   email: 'williamcareyfuneral99@gmail.com',
   phone: '9600350889',
-  address: 'Salem, Tamil Nadu, India',
+  addressLines: [
+    'RR Complex, Kannankurichi Main Road',
+    'Chinnathirupathi Bus Stand',
+    'Salem – 636008',
+  ],
 };
 
-const BANK = {
+const BANK_HDFC = {
   name: 'HDFC Bank',
   branch: 'C/O Rajaji Road, Salem',
   account: '50200116002261',
   ifsc: 'HDFC0004649',
 };
+const BANK_EQUITAS = {
+  name: 'Equitas Small Finance Bank',
+  branch: 'Ramakrishna Road, Salem',
+  account: '209600350699',
+  ifsc: 'ESFB0001091',
+};
+const getBankForPlan = (planId?: string) =>
+  planId === 'platinum' ? BANK_EQUITAS : BANK_HDFC;
 
 const DOCUMENTATION_FEE = 1000;
 const GST_PAID_BY_COMPANY = 180;
