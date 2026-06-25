@@ -183,7 +183,13 @@ const InvoiceGeneratorPage: React.FC = () => {
   const handleDownloadPdf = async () => {
     if (!printRef.current || !viewing) return;
     try {
-      const canvas = await html2canvas(printRef.current, { scale: 2, backgroundColor: '#fff', useCORS: true });
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
       const img = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
       const pageW = pdf.internal.pageSize.getWidth();
@@ -192,7 +198,7 @@ const InvoiceGeneratorPage: React.FC = () => {
       const imgH = (canvas.height * imgW) / canvas.width;
       const h = imgH > pageH ? pageH : imgH;
       pdf.addImage(img, 'PNG', 0, 0, imgW, h);
-      pdf.save(`WC-INVOICE-${viewing.invoice_number.split('-').pop()}.pdf`);
+      pdf.save(`${viewing.invoice_number}.pdf`);
     } catch (e: any) {
       toast({ title: 'PDF Error', description: e.message, variant: 'destructive' });
     }
