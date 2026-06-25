@@ -42,15 +42,27 @@ const COMPANY = {
   website: 'www.williamcareyfuneralservices.com',
   email: 'williamcareyfuneral99@gmail.com',
   phone: '9600350889',
-  address: 'Salem, Tamil Nadu, India',
+  addressLines: [
+    'RR Complex, Kannankurichi Main Road',
+    'Chinnathirupathi Bus Stand',
+    'Salem – 636008',
+  ],
 };
 
-const BANK = {
+const BANK_HDFC = {
   name: 'HDFC Bank',
   branch: 'C/O Rajaji Road, Salem',
   account: '50200116002261',
   ifsc: 'HDFC0004649',
 };
+const BANK_EQUITAS = {
+  name: 'Equitas Small Finance Bank',
+  branch: 'Ramakrishna Road, Salem',
+  account: '209600350699',
+  ifsc: 'ESFB0001091',
+};
+const getBankForPlan = (planId?: string) =>
+  planId === 'platinum' ? BANK_EQUITAS : BANK_HDFC;
 
 const DOCUMENTATION_FEE = 1000;
 const GST_PAID_BY_COMPANY = 180;
@@ -459,23 +471,53 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
   const serviceName = plan ? `${plan.code.charAt(0)}${plan.code.slice(1).toLowerCase()} Funeral Service Plan` : invoice.plan_type;
   const amount = Number(invoice.total_amount);
   const words = numberToIndianWords(amount);
+  const BANK = getBankForPlan(invoice.plan_type);
 
   return (
     <div className="text-[#222] font-sans" style={{ padding: '14mm 12mm', minHeight: '270mm' }}>
       {/* Header */}
-      <div className="flex items-start justify-between border-b-2 border-primary pb-4">
-        <div className="flex items-start gap-3">
-          <img src={logo} alt="William Carey" className="w-16 h-16 object-contain" />
-          <div>
-            <h1 className="font-display text-2xl font-bold text-primary leading-tight">{COMPANY.name}</h1>
-            <p className="text-sm text-muted-foreground font-tamil">{COMPANY.tamil}</p>
-            <p className="text-xs text-muted-foreground mt-1">{COMPANY.address}</p>
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b-2 border-primary pb-4">
+        {/* Left: Logo */}
+        <div className="flex items-center justify-start">
+          <img src={logo} alt="William Carey" className="w-20 h-20 object-contain" />
+        </div>
+        {/* Center: Company details */}
+        <div className="text-center px-2">
+          <h1 className="font-display text-xl md:text-2xl font-bold text-primary leading-tight">
+            {COMPANY.name}
+          </h1>
+          <p className="text-[13px] text-muted-foreground font-tamil leading-snug mt-0.5">
+            {COMPANY.tamil}
+          </p>
+          <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+            {COMPANY.addressLines.map((l) => (
+              <div key={l}>{l}</div>
+            ))}
           </div>
         </div>
-        <div className="text-right text-xs">
-          <p><span className="font-semibold">Tel:</span> {COMPANY.phone}</p>
-          <p><span className="font-semibold">Web:</span> {COMPANY.website}</p>
-          <p><span className="font-semibold">Email:</span> {COMPANY.email}</p>
+        {/* Right: Contact */}
+        <div className="text-right text-[11px] leading-relaxed whitespace-nowrap">
+          <div className="flex items-center justify-end gap-1.5">
+            <span aria-hidden>📞</span>
+            <a href={`tel:${COMPANY.phone}`} className="text-foreground no-underline">{COMPANY.phone}</a>
+          </div>
+          <div className="flex items-center justify-end gap-1.5">
+            <span aria-hidden>🌐</span>
+            <a
+              href={`https://${COMPANY.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline"
+            >
+              {COMPANY.website}
+            </a>
+          </div>
+          <div className="flex items-center justify-end gap-1.5">
+            <span aria-hidden>✉</span>
+            <a href={`mailto:${COMPANY.email}`} className="text-primary underline">
+              {COMPANY.email}
+            </a>
+          </div>
         </div>
       </div>
 
