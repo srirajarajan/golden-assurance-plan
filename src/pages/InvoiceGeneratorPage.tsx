@@ -526,32 +526,40 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
         </thead>
         <tbody>
           <tr className="border-b border-gray-300">
-            <td className="px-3 py-2">1</td>
-            <td className="px-3 py-2 font-semibold">{serviceName}</td>
-            <td className="px-3 py-2 text-center">1</td>
-            <td className="px-3 py-2 text-right font-mono">₹{amount.toLocaleString('en-IN')}.00</td>
-            <td className="px-3 py-2 text-right font-mono">₹{amount.toLocaleString('en-IN')}.00</td>
+            <td className="px-3 py-2 align-top">1</td>
+            <td className="px-3 py-2 font-semibold align-top">Service Plan Charge<div className="text-xs font-normal text-muted-foreground">{serviceName}</div></td>
+            <td className="px-3 py-2 text-center align-top">1</td>
+            <td className="px-3 py-2 text-right font-mono align-top">₹{getServiceCharge(amount).toLocaleString('en-IN')}.00</td>
+            <td className="px-3 py-2 text-right font-mono align-top">₹{getServiceCharge(amount).toLocaleString('en-IN')}.00</td>
           </tr>
-          {/* spacing rows for visual balance */}
-          {Array.from({ length: 4 }).map((_, i) => (
+          <tr className="border-b border-gray-300">
+            <td className="px-3 py-2 align-top">2</td>
+            <td className="px-3 py-2 font-semibold align-top">Documentation Charge</td>
+            <td className="px-3 py-2 text-center align-top">1</td>
+            <td className="px-3 py-2 text-right font-mono align-top">₹{DOCUMENTATION_FEE.toLocaleString('en-IN')}.00</td>
+            <td className="px-3 py-2 text-right font-mono align-top">₹{DOCUMENTATION_FEE.toLocaleString('en-IN')}.00</td>
+          </tr>
+          <tr className="border-b border-gray-300">
+            <td className="px-3 py-2 align-top">3</td>
+            <td className="px-3 py-2 font-semibold align-top text-green-700">GST Paid by Company</td>
+            <td className="px-3 py-2 text-center align-top">1</td>
+            <td className="px-3 py-2 text-right font-mono align-top text-green-700">-₹{GST_PAID_BY_COMPANY.toLocaleString('en-IN')}.00</td>
+            <td className="px-3 py-2 text-right font-mono align-top text-green-700">-₹{GST_PAID_BY_COMPANY.toLocaleString('en-IN')}.00</td>
+          </tr>
+          {Array.from({ length: 2 }).map((_, i) => (
             <tr key={i} className="border-b border-gray-200"><td colSpan={5} className="px-3 py-3">&nbsp;</td></tr>
           ))}
-          <tr className="bg-primary/5 font-semibold">
-            <td colSpan={2} className="px-3 py-2 text-right">Subtotal</td>
-            <td className="px-3 py-2 text-center">1</td>
-            <td></td>
-            <td className="px-3 py-2 text-right font-mono">₹{amount.toLocaleString('en-IN')}.00</td>
-          </tr>
-          <tr>
-            <td colSpan={4} className="px-3 py-2 text-right text-xs text-muted-foreground">GST (Exempt)</td>
-            <td className="px-3 py-2 text-right font-mono">₹0.00</td>
-          </tr>
           <tr className="bg-primary text-primary-foreground font-bold text-base">
             <td colSpan={4} className="px-3 py-2 text-right">Grand Total</td>
             <td className="px-3 py-2 text-right font-mono">₹{amount.toLocaleString('en-IN')}.00</td>
           </tr>
         </tbody>
       </table>
+
+      {/* GST note */}
+      <div className="border border-t-0 border-gray-300 p-2 text-[11px] italic text-muted-foreground bg-green-50">
+        GST on documentation charges has been paid by William Carey Funeral Services Pvt. Ltd. and is not charged to the customer.
+      </div>
 
       {/* Total in words */}
       <div className="border border-t-0 border-gray-300 p-3 text-sm">
@@ -565,14 +573,12 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
           <div className="font-semibold text-primary mb-2 border-b pb-1">Bank Details</div>
           <table className="w-full text-xs">
             <tbody>
-              <tr><td className="font-semibold pr-2 py-0.5 w-28">Bank Name</td><td>—</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">Branch</td><td>—</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">A/C Number</td><td>—</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">IFSC</td><td>—</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">UPI ID</td><td>—</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5 w-28">Bank Name</td><td>{BANK.name}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">Branch</td><td>{BANK.branch}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">A/C Number</td><td className="font-mono">{BANK.account}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">IFSC</td><td className="font-mono">{BANK.ifsc}</td></tr>
             </tbody>
           </table>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">Bank details to be configured in Admin Settings.</p>
         </div>
         <div className="p-3 flex flex-col justify-between">
           <div className="text-xs text-right text-muted-foreground italic">
@@ -586,14 +592,8 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
         </div>
       </div>
 
-      {/* Signature row */}
-      <div className="grid grid-cols-2 mt-4 text-xs">
-        <div className="pt-8">
-          <div className="border-t border-gray-400 inline-block px-8 pt-1">Customer Signature</div>
-        </div>
-        <div className="text-right text-muted-foreground italic">
-          This is a computer-generated invoice and does not require a physical signature.
-        </div>
+      <div className="mt-4 text-right text-[10px] text-muted-foreground italic">
+        This is a computer-generated invoice and does not require a physical signature.
       </div>
 
       <div className="text-center text-[10px] text-muted-foreground mt-6 border-t pt-2">
