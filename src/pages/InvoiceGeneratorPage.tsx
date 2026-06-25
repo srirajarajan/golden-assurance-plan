@@ -228,7 +228,7 @@ const InvoiceGeneratorPage: React.FC = () => {
     if (mode !== 'create' || !selectedPlan) return null;
     return {
       id: 'preview',
-      invoice_number: nextNumber || 'WC-XXXX-XXXX',
+      invoice_number: nextNumber || 'WC-XXXX',
       customer_name: customerName || '—',
       mobile: mobile || '—',
       address, city, state, pincode,
