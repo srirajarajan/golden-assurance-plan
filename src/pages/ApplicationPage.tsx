@@ -487,6 +487,27 @@ const ApplicationPage: React.FC = () => {
                       onChange={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                   </div>
                   <div>
+                    <Label htmlFor="dob" className="flex items-center gap-1"><Calendar className="w-4 h-4" /> Date of Birth</Label>
+                    <Input id="dob" name="dob" type="date" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="area" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Area</Label>
+                    <Input id="area" name="area" placeholder="Enter area" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="district" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> District</Label>
+                    <Input id="district" name="district" placeholder="Enter district" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="pincode" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Pincode</Label>
+                    <Input id="pincode" name="pincode" maxLength={6} inputMode="numeric" placeholder="6-digit pincode" className="mt-1"
+                      onInput={(e) => { const i = e.target as HTMLInputElement; i.value = i.value.replace(/\D/g, '').slice(0, 6); }} />
+                  </div>
+                  <div>
+                    <Label htmlFor="allocated_officer" className="flex items-center gap-1"><User className="w-4 h-4" /> Allocated Officer</Label>
+                    <Input id="allocated_officer" name="allocated_officer" placeholder="Officer name" className="mt-1" />
+                  </div>
+                  <div>
                     <Label htmlFor="guardian_name">Father / Husband Name</Label>
                     <Input id="guardian_name" name="guardian_name" placeholder="Enter father/husband name" className="mt-1" />
                   </div>
