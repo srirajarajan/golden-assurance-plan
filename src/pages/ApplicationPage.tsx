@@ -385,6 +385,24 @@ const ApplicationPage: React.FC = () => {
           <CardContent className="p-6">
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
 
+              {/* Application Number — prominent at top */}
+              <div className="p-4 rounded-lg border-2 border-primary/40 bg-primary/5">
+                <Label htmlFor="application_number" className="flex items-center gap-2 text-base font-semibold text-primary">
+                  <Hash className="w-5 h-5" /> Application Number <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="application_number"
+                  name="application_number"
+                  value={applicationNumber}
+                  onChange={(e) => setApplicationNumber(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                  placeholder="WCF0001"
+                  className="mt-2 font-mono text-lg tracking-wider"
+                  required
+                  pattern="^WCF\d{4,}$"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Format: WCF followed by 4+ digits (e.g. WCF0001, WCF0010). Must be unique.</p>
+              </div>
+
               {/* Plan selection */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
