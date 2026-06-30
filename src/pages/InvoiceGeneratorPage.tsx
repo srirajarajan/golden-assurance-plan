@@ -38,15 +38,10 @@ interface InvoiceRow {
 
 const COMPANY = {
   name: 'William Carey Funeral Services Pvt. Ltd.',
-  tamil: 'வில்லியம் கேரி சமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்',
   website: 'www.williamcareyfuneralservices.com',
   email: 'williamcareyfuneral99@gmail.com',
   phone: '9600350889',
-  addressLines: [
-    'RR Complex, Kannankurichi Main Road',
-    'Chinnathirupathi Bus Stand',
-    'Salem – 636008',
-  ],
+  address: 'RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008',
 };
 
 const BANK_HDFC = {
@@ -450,14 +445,20 @@ const InvoiceGeneratorPage: React.FC = () => {
       <style>{`
         @media print {
           @page { size: A4; margin: 10mm; }
-          body { background: #fff !important; }
+          html, body { background: #ffffff !important; }
           header, footer, nav, .no-print { display: none !important; }
-          .min-h-screen { min-height: auto !important; padding: 0 !important; background: #fff !important; }
+          .min-h-screen { min-height: auto !important; padding: 0 !important; background: #ffffff !important; }
+          .invoice-container { box-shadow: none !important; width: 100% !important; margin: 0 !important; }
           *, *::before, *::after {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
+        }
+        .invoice-container, .invoice-container * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
         }
       `}</style>
     </div>
@@ -474,7 +475,7 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
   const BANK = getBankForPlan(invoice.plan_type);
 
   return (
-    <div className="text-[#222] font-sans" style={{ padding: '14mm 12mm', minHeight: '270mm' }}>
+    <div className="invoice-container text-[#222] font-sans bg-white" style={{ padding: '14mm 12mm', minHeight: '270mm' }}>
       {/* Header */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b-2 border-primary pb-4">
         {/* Left: Logo */}
@@ -486,14 +487,9 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
           <h1 className="font-display text-xl md:text-2xl font-bold text-primary leading-tight">
             {COMPANY.name}
           </h1>
-          <p className="text-[13px] text-muted-foreground font-tamil leading-snug mt-0.5">
-            {COMPANY.tamil}
+          <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+            {COMPANY.address}
           </p>
-          <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
-            {COMPANY.addressLines.map((l) => (
-              <div key={l}>{l}</div>
-            ))}
-          </div>
         </div>
         {/* Right: Contact */}
         <div className="text-right text-[11px] leading-relaxed whitespace-nowrap">
@@ -632,10 +628,6 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             <div className="border-t border-gray-400 inline-block px-8 pt-1 text-xs">Authorized Signatory</div>
           </div>
         </div>
-      </div>
-
-      <div className="mt-4 text-right text-[10px] text-muted-foreground italic">
-        This is a computer-generated invoice and does not require a physical signature.
       </div>
 
       <div className="text-center text-[10px] text-muted-foreground mt-6 border-t pt-2">

@@ -11,6 +11,12 @@ const corsHeaders = {
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 interface ApplicationData {
+  application_number?: string;
+  dob?: string;
+  area?: string;
+  district?: string;
+  pincode?: string;
+  allocated_officer?: string;
   member_name: string;
   age: string;
   guardian_name: string;
@@ -660,7 +666,8 @@ serve(async (req: Request) => {
     }
 
     const pdfBuffer = await buildPdfBuffer(data);
-    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, data.serial_number);
+    const fileLabel = (data.application_number && data.application_number.trim()) || data.serial_number;
+    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, fileLabel);
 
     if (!emailResult.ok) {
       console.error("Email failed:", emailResult.error);

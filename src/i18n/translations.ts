@@ -7,6 +7,34 @@ export const translations = {
       contact: "Contact",
       updates: "Updates"
     },
+    benefitsPage: {
+      title: "William Carey Future Funeral Service Scheme",
+      introHtml: '"William Carey Future Funeral Service Scheme" has been introduced as a dignified and safe funeral service plan for poor, middle-class, and upper-class families.',
+      bullets: [
+        "This scheme can be used by a family member or an individual.",
+        "To join this scheme, a member must be 40 years of age or above.",
+        "A nominee will be registered through the family card, and the service will be confirmed to the concerned person at the appropriate time.",
+        "Every member joining this scheme will receive an official William Carey Funeral Service Scheme Membership Card sealed by the authorized officer."
+      ],
+      guaranteeTitle: "Additional Features – Our Service Guarantee",
+      guarantees: [
+        { title: "24x7 Emergency Assistance", desc: "We will arrive at your home with a single phone call, even at midnight or on holidays." },
+        { title: "Complete Service – A to Z", desc: "We manage everything from death certificate arrangements to the final funeral ceremony." },
+        { title: "No Last-Minute Bargaining", desc: "Families will not face embarrassing price negotiations during emotional moments. Everything is pre-planned." },
+        { title: "Religious & Family Ritual Support", desc: "All required ritual items for Hindu, Christian, and Islamic traditions, including family customs, are available in one place." },
+        { title: "No Financial Burden on Children", desc: "Children and family members will not need to borrow money during emergencies." }
+      ],
+      noteCardOne: "When receiving services through this scheme, showing the official Service Card is mandatory.",
+      noteCardTwo: "Every beneficiary joining this scheme will receive sweets and savory snacks during the Diwali festival through William Carey Funeral Services Pvt. Ltd.",
+      docsTitle: "Required Documents",
+      docs: [
+        { label: "Family Card Xerox", qty: "2 Copies" },
+        { label: "Passport Size Photo", qty: "2 Nos." },
+        { label: "Aadhaar Card Xerox", qty: "2 Copies" }
+      ],
+      adminTitle: "Administration",
+      adminLine: "For more details, please contact us"
+    },
     hero: {
       title: "William Carey Funeral Services Pvt. Ltd.",
       subtitle: "Dignified, trusted and affordable funeral service plans for families across Tamil Nadu.",
@@ -123,6 +151,34 @@ export const translations = {
       benefits: "சலுகைகள்",
       contact: "தொடர்பு",
       updates: "புதுப்பிப்புகள்"
+    },
+    benefitsPage: {
+      title: "வில்லியம் கேரி எதிர்கால ஈமச்சடங்கு சேவை திட்டம்",
+      introHtml: '"வில்லியம் கேரி எதிர்கால ஈமச்சடங்கு சேவை திட்டம்" ஏழை, நடுத்தர மற்றும் உயர் வர்க்கக் குடும்பங்களுக்கு கண்ணியமான மற்றும் பாதுகாப்பான ஈமச்சடங்கு சேவை திட்டமாக அறிமுகப்படுத்தப்பட்டுள்ளது.',
+      bullets: [
+        "இத்திட்டத்தை ஒரு குடும்ப உறுப்பினர் அல்லது தனிநபர் பயன்படுத்தலாம்.",
+        "இத்திட்டத்தில் இணைய உறுப்பினர் 40 வயது அல்லது அதற்கு மேற்பட்டவராக இருக்க வேண்டும்.",
+        "குடும்ப அட்டை மூலம் நாமினி பதிவு செய்யப்படும், உரிய நேரத்தில் சம்பந்தப்பட்ட நபருக்கு சேவை உறுதி செய்யப்படும்.",
+        "இத்திட்டத்தில் இணையும் ஒவ்வொரு உறுப்பினருக்கும் அதிகாரபூர்வ வில்லியம் கேரி ஈமச்சடங்கு சேவை திட்ட உறுப்பினர் அட்டை அலுவலர் முத்திரையுடன் வழங்கப்படும்."
+      ],
+      guaranteeTitle: "கூடுதல் வசதிகள் – எங்களின் சேவை உத்தரவாதம்",
+      guarantees: [
+        { title: "24x7 அவசர உதவி", desc: "ஒரே ஒரு தொலைபேசி அழைப்பில், நள்ளிரவு அல்லது விடுமுறை நாட்களிலும் உங்கள் இல்லத்திற்கு வருவோம்." },
+        { title: "முழுமையான சேவை – A முதல் Z வரை", desc: "மரண சான்றிதழ் ஏற்பாடுகள் முதல் இறுதிச் சடங்கு வரை அனைத்தையும் நாங்கள் கையாள்வோம்." },
+        { title: "கடைசி நேர பேரம் பேசல் இல்லை", desc: "உணர்ச்சிமயமான தருணங்களில் குடும்பங்கள் சங்கடமான விலை பேச்சுவார்த்தைகளை எதிர்கொள்ள மாட்டார்கள். அனைத்தும் முன்கூட்டியே திட்டமிடப்படுகின்றன." },
+        { title: "மத & குடும்ப சடங்கு ஆதரவு", desc: "இந்து, கிறிஸ்தவ மற்றும் இஸ்லாமிய மரபுகளுக்கான தேவையான சடங்கு பொருட்கள், குடும்ப பழக்க வழக்கங்கள் உட்பட, ஒரே இடத்தில் கிடைக்கும்." },
+        { title: "குழந்தைகள் மீது நிதி சுமை இல்லை", desc: "அவசர காலங்களில் குழந்தைகளும் குடும்ப உறுப்பினர்களும் கடன் வாங்க வேண்டியதில்லை." }
+      ],
+      noteCardOne: "இத்திட்டத்தின் மூலம் சேவை பெறும் போது, அதிகாரபூர்வ சேவை அட்டையை காட்டுவது கட்டாயமாகும்.",
+      noteCardTwo: "இத்திட்டத்தில் இணையும் ஒவ்வொரு பயனாளிக்கும் தீபாவளி பண்டிகையின் போது வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட் மூலம் இனிப்புகள் மற்றும் காரசேவ் வழங்கப்படும்.",
+      docsTitle: "தேவையான ஆவணங்கள்",
+      docs: [
+        { label: "குடும்ப அட்டை நகல்", qty: "2 பிரதிகள்" },
+        { label: "பாஸ்போர்ட் அளவு புகைப்படம்", qty: "2 எண்." },
+        { label: "ஆதார் அட்டை நகல்", qty: "2 பிரதிகள்" }
+      ],
+      adminTitle: "நிர்வாகம்",
+      adminLine: "மேலதிக விவரங்களுக்கு, எங்களை தொடர்பு கொள்ளவும்"
     },
     hero: {
       title: "வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்",
