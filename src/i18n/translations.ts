@@ -7,6 +7,34 @@ export const translations = {
       contact: "Contact",
       updates: "Updates"
     },
+    benefitsPage: {
+      title: "William Carey Future Funeral Service Scheme",
+      introHtml: '"William Carey Future Funeral Service Scheme" has been introduced as a dignified and safe funeral service plan for poor, middle-class, and upper-class families.',
+      bullets: [
+        "This scheme can be used by a family member or an individual.",
+        "To join this scheme, a member must be 40 years of age or above.",
+        "A nominee will be registered through the family card, and the service will be confirmed to the concerned person at the appropriate time.",
+        "Every member joining this scheme will receive an official William Carey Funeral Service Scheme Membership Card sealed by the authorized officer."
+      ],
+      guaranteeTitle: "Additional Features – Our Service Guarantee",
+      guarantees: [
+        { title: "24x7 Emergency Assistance", desc: "We will arrive at your home with a single phone call, even at midnight or on holidays." },
+        { title: "Complete Service – A to Z", desc: "We manage everything from death certificate arrangements to the final funeral ceremony." },
+        { title: "No Last-Minute Bargaining", desc: "Families will not face embarrassing price negotiations during emotional moments. Everything is pre-planned." },
+        { title: "Religious & Family Ritual Support", desc: "All required ritual items for Hindu, Christian, and Islamic traditions, including family customs, are available in one place." },
+        { title: "No Financial Burden on Children", desc: "Children and family members will not need to borrow money during emergencies." }
+      ],
+      noteCardOne: "When receiving services through this scheme, showing the official Service Card is mandatory.",
+      noteCardTwo: "Every beneficiary joining this scheme will receive sweets and savory snacks during the Diwali festival through William Carey Funeral Services Pvt. Ltd.",
+      docsTitle: "Required Documents",
+      docs: [
+        { label: "Family Card Xerox", qty: "2 Copies" },
+        { label: "Passport Size Photo", qty: "2 Nos." },
+        { label: "Aadhaar Card Xerox", qty: "2 Copies" }
+      ],
+      adminTitle: "Administration",
+      adminLine: "For more details, please contact us"
+    },
     hero: {
       title: "William Carey Funeral Services Pvt. Ltd.",
       subtitle: "Dignified, trusted and affordable funeral service plans for families across Tamil Nadu.",
