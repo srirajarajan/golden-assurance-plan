@@ -445,14 +445,20 @@ const InvoiceGeneratorPage: React.FC = () => {
       <style>{`
         @media print {
           @page { size: A4; margin: 10mm; }
-          body { background: #fff !important; }
+          html, body { background: #ffffff !important; }
           header, footer, nav, .no-print { display: none !important; }
-          .min-h-screen { min-height: auto !important; padding: 0 !important; background: #fff !important; }
+          .min-h-screen { min-height: auto !important; padding: 0 !important; background: #ffffff !important; }
+          .invoice-container { box-shadow: none !important; width: 100% !important; margin: 0 !important; }
           *, *::before, *::after {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
+        }
+        .invoice-container, .invoice-container * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
         }
       `}</style>
     </div>
