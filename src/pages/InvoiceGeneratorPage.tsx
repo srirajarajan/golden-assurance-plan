@@ -475,7 +475,7 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
   const BANK = getBankForPlan(invoice.plan_type);
 
   return (
-    <div className="text-[#222] font-sans" style={{ padding: '14mm 12mm', minHeight: '270mm' }}>
+    <div className="invoice-container text-[#222] font-sans bg-white" style={{ padding: '14mm 12mm', minHeight: '270mm' }}>
       {/* Header */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b-2 border-primary pb-4">
         {/* Left: Logo */}
