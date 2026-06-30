@@ -38,15 +38,10 @@ interface InvoiceRow {
 
 const COMPANY = {
   name: 'William Carey Funeral Services Pvt. Ltd.',
-  tamil: 'வில்லியம் கேரி சமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்',
   website: 'www.williamcareyfuneralservices.com',
   email: 'williamcareyfuneral99@gmail.com',
   phone: '9600350889',
-  addressLines: [
-    'RR Complex, Kannankurichi Main Road',
-    'Chinnathirupathi Bus Stand',
-    'Salem – 636008',
-  ],
+  address: 'RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008',
 };
 
 const BANK_HDFC = {
