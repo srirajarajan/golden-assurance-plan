@@ -1,67 +1,82 @@
-## Scope
+# Final Corrections & Enhancements Plan
 
-This is a large change set touching ~15 files plus the PDF edge function. Before I start, I need a few decisions because some items conflict with hard memory rules and existing infra.
+This is a large multi-part change. I'll group it into 6 phases. Before I start, I need one asset and a couple of decisions confirmed.
 
-## Conflicts that need your call
+---
 
-**1. "Application form ONLY IN ENGLISH"** — directly conflicts with the locked memory rule "Strict Tamil/English bilingual via global toggle" and the entire `i18n/translations.ts` system. Options:
-   - **A. Honor the new request**: Strip Tamil from the application form only (labels, placeholders, validation messages all English regardless of global toggle). Other pages stay bilingual.
-   - **B. Keep bilingual**: Skip item 6, keep the existing Tamil/English toggle on the form.
-   - **C. Make the whole site English-only**: Remove the toggle entirely (large blast radius — Header, Footer, every page, PDF generator).
+## Blockers I need from you
 
-**2. "Smart Aadhaar camera with TensorFlow.js / OpenCV.js"** — Adding TF.js (~1MB+) directly conflicts with the recent performance work (load < 3s, code splitting, esbuild minify). Options:
-   - **A. Lightweight version**: HTML5 `getUserMedia` + rectangular overlay guide + a simple Laplacian-variance blur check in plain canvas (no TF.js). Retake button if blur score too low. ~5KB of code, no heavy deps.
-   - **B. Full TF.js / OpenCV.js**: Real edge detection + ML blur check. Adds ~2MB to bundle, slower load.
-   - **C. Skip for now**: Keep current upload-with-`capture=environment`.
+1. **Uploaded seal & signature image (Item 10):** I don't see any new file attached to this message. Please upload the official seal/signature image (PNG with transparent background preferred). Without it I cannot replace the existing one.
+2. **Application number uniqueness:** Should `WCF0001` be globally unique across all staff? I'll enforce a UNIQUE constraint and reject duplicates at submit time (recommended). Confirm if you want different behavior.
+3. **DOB / Area / District / Pincode / Allocated Officer (Item 5):** These will be stored as new columns on the `applications` table and shown in the PDF + admin. Confirm OK.
 
-**3. PDF pamphlet removal** — The edge function `generate-application-pdf` currently renders a pamphlet image on page 2, and the "PDF Pamphlet Resolution" memory rule pins specific aspect-ratio handling. Removing it is straightforward; I'll also drop the upload field, storage handling, and the memory rule. Confirming this is intended.
+I'll proceed with the rest below assuming "yes" on (2) and (3); the seal swap will wait for the upload.
 
-**4. Plan amounts inconsistency** — Item 2 says Silver=₹3,000 / Gold=₹6,000 / Platinum=₹10,000 (the application-form cards). Item 5's fee table totals are ₹3,540 / ₹7,080 / ₹11,800 (with GST). The homepage (item 4) shows the base ₹3,000 / ₹6,000 / ₹10,000. I'll display base on cards and the full GST breakdown only in the Benefits-page fee table, matching what you wrote. Confirming.
+---
 
-## Implementation plan (assuming A/A on Q1/Q2, yes on Q3/Q4)
+## Phase 1 — Invoice (Items 1, 2, print colors)
 
-### Phase A — Pamphlet removal
-- `ApplicationPage.tsx`: remove pamphlet upload field, preview, sequential-upload logic step, validation.
-- `supabase/functions/generate-application-pdf/index.ts`: remove pamphlet section, tighten page-2 layout so it stays clean and 2-page.
-- `supabase/functions/send-application/index.ts` & `send-membership-application/index.ts`: drop pamphlet from payload + email.
-- Admin views: remove any pamphlet thumbnail/link.
-- Update memory: remove `mem://features/pdf-pamphlet-resolution` and `mem://features/sequential-image-upload-logic` references that mention pamphlet (rewrite to 3 images: Photo, Aadhaar Front, Aadhaar Back).
+`src/pages/InvoiceGeneratorPage.tsx`:
+- Remove Tamil company name from header.
+- Single-line address: `RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008`.
+- Keep 3-column header (Logo | Name+Address centered | Contact right) with 📞 🌐 ✉.
+- Remove the "computer-generated invoice…" footer line.
+- Inject a strong `@media print` block (with `* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important }`, white body bg, container reset). Apply same colors via `html2canvas` (already `backgroundColor: '#fff'`, `scale: 2`).
+- Verify Chrome/Edge/Firefox print preview match on-screen.
 
-### Phase B — Plan restructure
-- New constant file `src/data/plans.ts` with the 3 plans (Silver/Gold/Platinum, ₹3k/₹6k/₹10k, benefit lists, activation period, worth).
-- `PlansSection.tsx` (homepage): show only name + price + "Worth ₹X services" + "Apply Now" CTA. No feature list.
-- New `PlanCardsDetailed.tsx` (used in ApplicationPage + Admin preview + PDF context): full feature list, activation, worth, premium gold/silver/platinum styling, hover effects.
-- `ApplicationPage.tsx`: insert detailed cards above the form; existing `selected_plan` field stays wired.
+## Phase 2 — Benefits page (Items 3, 4)
 
-### Phase C — Benefits page rewrite
-- `BenefitsPage.tsx`: replace content entirely with the new long-form copy (intro, eligibility, 5 service-guarantee points with icons, required documents, administration note).
-- Append a premium responsive fee table (Scheme / Doc Fee / Service Fee / GST / Total / Activation / Benefits) with Platinum highlighted.
-- Add "Plan Effective from Date of Registration" note.
-- Bilingual via translations (existing pattern).
+`src/pages/BenefitsPage.tsx` + `src/i18n/translations.ts`:
+- Add a `benefits` translation block (EN + TA) covering: title, intro paragraph, 4 bullet items, 5 guarantee cards (title + desc), notes card, "Required Documents" heading + 3 doc labels/qty, Administration block.
+- Drive every visible string through `useLanguage()` / `t.benefits.*`.
+- **Remove** the entire "Service Scheme Fee Details" section (heading, intro line, the `<Card>` with the table, and the "Plan Effective from…" caption).
 
-### Phase D — Homepage plan section
-- `HomePage.tsx`: keep `<PlansSection />` (now slim) — no breakdown.
+## Phase 3 — Application form (Items 5, 6, 8)
 
-### Phase E — English-only application form (if Q1=A)
-- `ApplicationPage.tsx`: hardcode all labels/placeholders/errors in English; ignore `language` for this page only.
+DB migration on `applications`:
+- Add columns: `application_number text UNIQUE NOT NULL`, `dob date`, `area text`, `district text`, `pincode text`, `allocated_officer text`.
+- Index on `application_number` and on `created_by` (for staff tracking).
 
-### Phase F — Smart Aadhaar capture (if Q2=A)
-- New `src/components/SmartAadhaarCapture.tsx`: opens `<video>` via `getUserMedia({video:{facingMode:'environment'}})`, overlays a rectangular guide (CR80 aspect 1.586:1), capture button → draws to canvas → runs Laplacian-variance blur check → if score < threshold show "Image not clear. Please retake." with Retake button → on accept, returns a `File` to parent.
-- Wire into `ApplicationPage.tsx` for Aadhaar Front + Back. Fallback to file input if camera blocked.
-- Mobile-first styling, scanning animation (tailwind animate).
+`src/pages/ApplicationPage.tsx`:
+- New prominent "Application Number" field at top, required, pattern `^WCF\d{4,}$`, manual entry, with duplicate check on submit.
+- New rows: (Name | Mobile), (DOB | Area), (District | Pincode), (Allocated Officer).
+- Keep all existing fields/behavior below.
 
-### Phase G — Cleanup
-- Update memory index: drop pamphlet rules, update sequential-upload rule (3 images), add "Application form English-only" rule, add smart-capture rule.
+PDF email/download (`supabase/functions/generate-application-pdf` + `send-application`):
+- Filename = `${application_number}.pdf` everywhere (download, email attachment, response headers).
+- Include DOB/Area/District/Pincode/Allocated Officer in the rendered PDF.
 
-## Out of scope
-- No DB schema changes (current `applications` table is sufficient).
-- No changes to auth, admin staff management, serial system.
+## Phase 4 — Staff tracking (Item 7)
 
-## Please answer
+`src/pages/AdminDashboard.tsx`:
+- New "Completed Applications by Staff" section.
+- Group applications by `created_by` → list each staff with count + clickable app numbers.
+- Click a staff → drawer/dialog with table: Application No, Applicant Name, Mobile, Date, Status, "View Application" (opens existing PDF/signed URL flow).
 
-1. Q1 — application-form language: **A**, **B**, or **C**?
-2. Q2 — smart Aadhaar capture: **A** (lightweight, recommended), **B** (TF.js), or **C** (skip)?
-3. Q3 — confirm full pamphlet removal across form + PDF + emails + memory: **yes / no**.
-4. Q4 — confirm plan amounts: cards show ₹3k/₹6k/₹10k base, fee table shows full GST totals: **yes / no**.
+## Phase 5 — PDF polish + seal (Items 9, 10)
 
-Once you reply I'll execute everything in one pass.
+- Tighten margins/spacing/font sizes in `generate-application-pdf` for clean A4, equal column widths in tables, consistent header.
+- Once you upload the seal/signature, I'll: upload it to the existing public `pdf-assets` bucket (replacing the current one), keep aspect ratio, place in Authorized Signatory slot — same image used for download, email, print.
+- Ensure email attachment and download stream identical bytes (same generation path).
+
+## Phase 6 — Performance & security (Items 11, 12)
+
+Most of this is already in place (lazy routes, Terser, manual chunks, React Query cache, RLS, server-side PDF, signed URLs, validated inputs). I will:
+- Add `loading="lazy"` + `decoding="async"` to non-critical `<img>` tags.
+- Add `<link rel="preconnect">` for Supabase origin in `index.html`.
+- Zod-validate the new application fields server-side in the edge function.
+- Audit RLS on new columns (no change needed — same row policies apply).
+- Re-run `bun run build` and check for warnings.
+
+No DB roles/policies change beyond the column additions.
+
+---
+
+## Deliverable order
+
+1. You upload the seal image + confirm (2)/(3) above.
+2. I run the SQL migration (applications columns).
+3. I ship Phases 1, 2, 4, 6 immediately (no blockers).
+4. I ship Phases 3 & 5 (need migration applied + seal uploaded).
+
+Reply with the seal image and a 👍 on the two questions and I'll start.
