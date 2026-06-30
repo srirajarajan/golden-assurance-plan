@@ -11,7 +11,7 @@ import { uploadImageToPrivateStorage, compressImageFile } from '@/lib/uploadToPr
 import { supabase } from '@/integrations/supabase/client';
 import {
   Camera, X, Send, Loader2, User, Phone, MapPin, Users, Shield,
-  Briefcase, CreditCard, IndianRupee, Lock, Star, Sparkles, Crown, Check,
+  Briefcase, CreditCard, IndianRupee, Lock, Star, Sparkles, Crown, Check, Hash, Calendar,
 } from 'lucide-react';
 import { PLANS, type PlanId, getPlanById } from '@/data/plans';
 import SmartAadhaarCapture from '@/components/SmartAadhaarCapture';
@@ -36,6 +36,7 @@ const ApplicationPage: React.FC = () => {
   const [aadhaarBack, setAadhaarBack] = useState<ImageState>({ file: null, preview: '', path: '' });
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('silver');
+  const [applicationNumber, setApplicationNumber] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -112,6 +113,23 @@ const ApplicationPage: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
+      const appNum = applicationNumber.trim().toUpperCase();
+      if (!/^WCF\d{4,}$/.test(appNum)) {
+        toast({ title: 'Error', description: 'Application Number must be in the format WCF0001 (WCF followed by at least 4 digits)', variant: 'destructive' });
+        setIsSubmitting(false);
+        return;
+      }
+      // Duplicate check
+      const { data: existing } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('application_number', appNum)
+        .maybeSingle();
+      if (existing) {
+        toast({ title: 'Duplicate', description: `Application Number ${appNum} already exists.`, variant: 'destructive' });
+        setIsSubmitting(false);
+        return;
+      }
       if (!paymentMethod) {
         toast({ title: 'Error', description: 'Please select a payment method', variant: 'destructive' });
         setIsSubmitting(false);
@@ -137,6 +155,12 @@ const ApplicationPage: React.FC = () => {
       const plan = getPlanById(selectedPlan)!;
 
       const payload = {
+        application_number: appNum,
+        dob: (formData.get('dob') as string)?.trim() || '',
+        area: (formData.get('area') as string)?.trim() || '',
+        district: (formData.get('district') as string)?.trim() || '',
+        pincode: (formData.get('pincode') as string)?.trim() || '',
+        allocated_officer: (formData.get('allocated_officer') as string)?.trim() || '',
         member_name: (formData.get('member_name') as string)?.trim() || '',
         age: (formData.get('age') as string)?.trim() || '',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || '',
@@ -193,7 +217,7 @@ const ApplicationPage: React.FC = () => {
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           ...(supabaseKey ? { apikey: supabaseKey } : {}),
         },
-        body: JSON.stringify({ ...payload, language: 'en', staff_email: user.email || '', serial_number: serialNumber }),
+        body: JSON.stringify({ ...payload, language: 'en', staff_email: user.email || '', serial_number: serialNumber, application_number: appNum }),
       });
 
       let emailSuccess = false;
@@ -223,14 +247,22 @@ const ApplicationPage: React.FC = () => {
 
       await supabase.from('applications').insert({
         serial_number: serialNumber,
+        application_number: appNum,
         staff_user_id: userId,
         staff_email: user.email || '',
         member_name: payload.member_name,
-        pdf_path: `${serialNumber}.pdf`,
+        mobile_number: mobileNumber,
+        dob: payload.dob || null,
+        area: payload.area || null,
+        district: payload.district || null,
+        pincode: payload.pincode || null,
+        allocated_officer: payload.allocated_officer || null,
+        pdf_path: `${appNum}.pdf`,
       });
 
-      toast({ title: 'Thank you!', description: `Your application has been submitted successfully. (Serial: ${serialNumber})` });
+      toast({ title: 'Thank you!', description: `Application ${appNum} submitted successfully. (Serial: ${serialNumber})` });
       form.reset();
+      setApplicationNumber('');
       removeImage(setApplicantPhoto);
       removeImage(setAadhaarFront);
       removeImage(setAadhaarBack);
