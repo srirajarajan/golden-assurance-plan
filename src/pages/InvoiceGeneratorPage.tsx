@@ -481,14 +481,9 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
           <h1 className="font-display text-xl md:text-2xl font-bold text-primary leading-tight">
             {COMPANY.name}
           </h1>
-          <p className="text-[13px] text-muted-foreground font-tamil leading-snug mt-0.5">
-            {COMPANY.tamil}
+          <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+            {COMPANY.address}
           </p>
-          <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
-            {COMPANY.addressLines.map((l) => (
-              <div key={l}>{l}</div>
-            ))}
-          </div>
         </div>
         {/* Right: Contact */}
         <div className="text-right text-[11px] leading-relaxed whitespace-nowrap">
@@ -627,10 +622,6 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             <div className="border-t border-gray-400 inline-block px-8 pt-1 text-xs">Authorized Signatory</div>
           </div>
         </div>
-      </div>
-
-      <div className="mt-4 text-right text-[10px] text-muted-foreground italic">
-        This is a computer-generated invoice and does not require a physical signature.
       </div>
 
       <div className="text-center text-[10px] text-muted-foreground mt-6 border-t pt-2">
