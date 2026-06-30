@@ -16,27 +16,48 @@ export type Database = {
     Tables: {
       applications: {
         Row: {
+          allocated_officer: string | null
+          application_number: string | null
+          area: string | null
+          district: string | null
+          dob: string | null
           id: string
           member_name: string | null
+          mobile_number: string | null
           pdf_path: string | null
+          pincode: string | null
           serial_number: string
           staff_email: string
           staff_user_id: string
           submitted_at: string
         }
         Insert: {
+          allocated_officer?: string | null
+          application_number?: string | null
+          area?: string | null
+          district?: string | null
+          dob?: string | null
           id?: string
           member_name?: string | null
+          mobile_number?: string | null
           pdf_path?: string | null
+          pincode?: string | null
           serial_number: string
           staff_email: string
           staff_user_id: string
           submitted_at?: string
         }
         Update: {
+          allocated_officer?: string | null
+          application_number?: string | null
+          area?: string | null
+          district?: string | null
+          dob?: string | null
           id?: string
           member_name?: string | null
+          mobile_number?: string | null
           pdf_path?: string | null
+          pincode?: string | null
           serial_number?: string
           staff_email?: string
           staff_user_id?: string
