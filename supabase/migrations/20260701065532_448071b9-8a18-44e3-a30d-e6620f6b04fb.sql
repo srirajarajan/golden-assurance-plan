@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS applications_application_number_unique ON public.applications (application_number) WHERE application_number IS NOT NULL;
