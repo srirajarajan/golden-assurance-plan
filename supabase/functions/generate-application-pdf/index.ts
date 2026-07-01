@@ -257,7 +257,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setFontSize(9);
   doc.setTextColor(...TEXT_BLACK);
   doc.setFont(fontFamily, "bold");
-  doc.text(`${labels.applicationNo}: ${data.serial_number}`, pw - margin, y + 5, { align: "right" });
+  const displayAppNo = (data.application_number && data.application_number.trim()) || data.serial_number;
+  doc.text(`${labels.applicationNo}: ${displayAppNo}`, pw - margin, y + 5, { align: "right" });
   doc.setFont(fontFamily, "normal");
   doc.text(`${labels.date}: ${submissionDate}`, pw - margin, y + 11, { align: "right" });
   y += 14;
@@ -322,6 +323,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     [labels.aadhaarNumber, safeText(data.aadhaar_number, np)],
     [labels.mobileNumber, safeText(data.mobile_number, np)],
     [labels.paymentMethod, paymentDisplay],
+    ["Date of Birth", safeText(data.dob, np)],
+    ["Area", safeText(data.area, np)],
+    ["District", safeText(data.district, np)],
+    ["Pincode", safeText(data.pincode, np)],
+    ["Allocated Officer", safeText(data.allocated_officer, np)],
     [labels.address, safeText(data.address, np)],
   ];
 
