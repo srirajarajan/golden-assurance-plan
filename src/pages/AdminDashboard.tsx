@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import AdminSummaryCards from '@/components/admin/AdminSummaryCards';
-import SerialRangeDialog from '@/components/admin/SerialRangeDialog';
 import ManageUpdates from '@/components/admin/ManageUpdates';
 import ManageDocumentations from '@/components/admin/ManageDocumentations';
 import InlineEditCell from '@/components/admin/InlineEditCell';
+import StaffPerformanceSection from '@/components/admin/StaffPerformanceSection';
 import {
   Loader2,
   UserCheck,
@@ -24,10 +24,9 @@ import {
   LogOut,
   Shield,
   Users,
-  Edit,
+  Search,
   Ban,
   RotateCcw,
-  Hash,
   Lock,
   KeyRound,
   FileText,
@@ -134,8 +133,7 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'pending' | 'all'>('pending');
   const [processingUserId, setProcessingUserId] = useState<string | null>(null);
   const [totalApplications, setTotalApplications] = useState(0);
-  const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [staffSearch, setStaffSearch] = useState('');
 
   const t = adminTranslations[language];
 
@@ -213,38 +211,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleSaveRange = async (rangeStart: number, rangeEnd: number) => {
-    if (!selectedUser) return;
-
-    // Auto-sync serial pointer if current_serial is outside new range
-    const currentSerial = selectedUser.current_serial || 0;
-    let newCurrentSerial: number | undefined;
-    if (currentSerial > 0 && (currentSerial < rangeStart || currentSerial > rangeEnd)) {
-      newCurrentSerial = rangeStart;
-    }
-
-    const updateData: Record<string, number> = { range_start: rangeStart, range_end: rangeEnd };
-    if (newCurrentSerial !== undefined) {
-      updateData.current_serial = newCurrentSerial;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('user_id', selectedUser.user_id);
-
-    if (error) throw new Error(error.message);
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.user_id === selectedUser.user_id
-          ? { ...u, range_start: rangeStart, range_end: rangeEnd, ...(newCurrentSerial !== undefined ? { current_serial: newCurrentSerial } : {}) }
-          : u
-      )
-    );
-    toast({ title: t.rangeUpdated });
-  };
-
   const handleInlineUpdate = (userId: string, field: string, value: string) => {
     setUsers((prev) =>
       prev.map((u) => (u.user_id === userId ? { ...u, [field]: value } : u))
@@ -275,29 +241,19 @@ const AdminDashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const filteredUsers =
-    activeTab === 'pending' ? users.filter((u) => u.status === 'pending') : users;
+  const baseUsers = activeTab === 'pending' ? users.filter((u) => u.status === 'pending') : users;
+  const q = staffSearch.trim().toLowerCase();
+  const filteredUsers = q
+    ? baseUsers.filter((u) =>
+        [u.email, u.full_name, u.phone_number, u.district]
+          .filter(Boolean)
+          .some((v) => (v as string).toLowerCase().includes(q))
+      )
+    : baseUsers;
 
   // Summary calculations
-  const activeStaff = users.filter((u) => u.status === 'active').length;
-  const terminatedStaff = users.filter((u) => u.status === 'terminated').length;
-  const totalSerialsUsed = users.reduce((sum, u) => {
-    if (u.range_start && u.current_serial >= u.range_start) {
-      return sum + (u.current_serial - u.range_start + 1);
-    }
-    return sum;
-  }, 0);
-
-  const getUsageInfo = (profile: UserProfile) => {
-    if (!profile.range_start || !profile.range_end) return null;
-    const totalRange = profile.range_end - profile.range_start + 1;
-    const used = profile.current_serial >= profile.range_start
-      ? profile.current_serial - profile.range_start + 1
-      : 0;
-    const remaining = totalRange - used;
-    const percentage = totalRange > 0 ? (used / totalRange) * 100 : 0;
-    return { totalRange, used, remaining, percentage };
-  };
+  const pendingStaffCount = users.filter((u) => u.status === 'pending').length;
+  const totalStaff = users.filter((u) => u.status !== 'pending').length;
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; icon: React.ReactNode; label: string }> = {
@@ -329,9 +285,17 @@ const AdminDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Summary Cards */}
         <AdminSummaryCards
-          data={{ totalApplications, activeStaff, terminatedStaff, totalSerialsUsed }}
+          data={{
+            totalApplications,
+            completedApplications: totalApplications,
+            pendingApplications: pendingStaffCount,
+            totalStaff,
+          }}
           language={language}
         />
+
+        {/* Staff Performance */}
+        <StaffPerformanceSection language={language} />
 
         <Card className="shadow-xl border-2">
           <CardHeader className="bg-primary/5 border-b">
@@ -371,6 +335,16 @@ const AdminDashboard: React.FC = () => {
               </Button>
             </div>
 
+            <div className="relative mb-4 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={language === 'ta' ? 'தேடு...' : 'Search staff by name, email, phone or district...'}
+                className="pl-9"
+                value={staffSearch}
+                onChange={(e) => setStaffSearch(e.target.value)}
+              />
+            </div>
+
             {loadingUsers ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -390,18 +364,12 @@ const AdminDashboard: React.FC = () => {
                       <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'தொலைபேசி' : 'Phone'}</th>
                       <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'மாவட்டம்' : 'District'}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.status}</th>
-                      <th className="text-left py-3 px-3 font-medium">{t.rangeStart}</th>
-                      <th className="text-left py-3 px-3 font-medium">{t.rangeEnd}</th>
-                      <th className="text-left py-3 px-3 font-medium">{t.currentSerial}</th>
-                      <th className="text-left py-3 px-3 font-medium">{t.totalApps}/{t.remaining}</th>
-                      <th className="text-left py-3 px-3 font-medium">{t.usage}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.registeredOn}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.actions}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUsers.map((profile) => {
-                      const usage = getUsageInfo(profile);
                       return (
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-3 text-xs">{profile.email}</td>
@@ -423,38 +391,6 @@ const AdminDashboard: React.FC = () => {
                             />
                           </td>
                           <td className="py-3 px-3">{getStatusBadge(profile.status)}</td>
-                          <td className="py-3 px-3 font-mono text-xs">
-                            {profile.range_start?.toString().padStart(5, '0') || '—'}
-                          </td>
-                          <td className="py-3 px-3 font-mono text-xs">
-                            {profile.range_end?.toString().padStart(5, '0') || '—'}
-                          </td>
-                          <td className="py-3 px-3 font-mono text-xs">
-                            {profile.current_serial > 0
-                              ? profile.current_serial.toString().padStart(5, '0')
-                              : '—'}
-                          </td>
-                          <td className="py-3 px-3 text-xs">
-                            {usage ? (
-                              <span>
-                                {usage.used} / {usage.remaining}
-                              </span>
-                            ) : (
-                              t.noRange
-                            )}
-                          </td>
-                          <td className="py-3 px-3 w-24">
-                            {usage ? (
-                              <div className="space-y-1">
-                                <Progress value={usage.percentage} className="h-2" />
-                                <span className="text-xs text-muted-foreground">
-                                  {usage.percentage.toFixed(1)}%
-                                </span>
-                              </div>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
                           <td className="py-3 px-3 text-xs text-muted-foreground">
                             {new Date(profile.created_at).toLocaleDateString()}
                           </td>
@@ -490,22 +426,6 @@ const AdminDashboard: React.FC = () => {
                                     {t.reject}
                                   </Button>
                                 </>
-                              )}
-
-                              {/* Edit range for active only */}
-                              {profile.status === 'active' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                  onClick={() => {
-                                    setSelectedUser(profile);
-                                    setRangeDialogOpen(true);
-                                  }}
-                                >
-                                  <Hash className="mr-1 h-3 w-3" />
-                                  {profile.range_start ? t.editRange : t.assignRange}
-                                </Button>
                               )}
 
                               {/* Terminate for active */}
@@ -565,22 +485,6 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Serial Range Dialog */}
-      <SerialRangeDialog
-        open={rangeDialogOpen}
-        onClose={() => {
-          setRangeDialogOpen(false);
-          setSelectedUser(null);
-        }}
-        onSave={handleSaveRange}
-        currentStart={selectedUser?.range_start}
-        currentEnd={selectedUser?.range_end}
-        currentSerial={selectedUser?.current_serial || 0}
-        staffName={selectedUser?.full_name || selectedUser?.email}
-        staffUserId={selectedUser?.user_id}
-        language={language}
-      />
 
       {/* Manage Updates */}
       <ManageUpdates language={language} />
