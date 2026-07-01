@@ -1,12 +1,12 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, UserX, Hash } from 'lucide-react';
+import { Users, UserCheck, Clock, Hash } from 'lucide-react';
 
 interface SummaryData {
   totalApplications: number;
-  activeStaff: number;
-  terminatedStaff: number;
-  totalSerialsUsed: number;
+  completedApplications: number;
+  pendingApplications: number;
+  totalStaff: number;
 }
 
 interface AdminSummaryCardsProps {
@@ -17,15 +17,15 @@ interface AdminSummaryCardsProps {
 const labels = {
   en: {
     totalApps: 'Total Applications',
-    activeStaff: 'Active Staff',
-    terminatedStaff: 'Terminated Staff',
-    serialsUsed: 'Total Serials Used',
+    completedApps: 'Completed Applications',
+    pendingApps: 'Pending Applications',
+    totalStaff: 'Total Staff Members',
   },
   ta: {
     totalApps: 'மொத்த விண்ணப்பங்கள்',
-    activeStaff: 'செயலில் உள்ள ஊழியர்கள்',
-    terminatedStaff: 'நிறுத்தப்பட்ட ஊழியர்கள்',
-    serialsUsed: 'பயன்படுத்திய சீரியல் எண்கள்',
+    completedApps: 'நிறைவு பெற்ற விண்ணப்பங்கள்',
+    pendingApps: 'நிலுவை விண்ணப்பங்கள்',
+    totalStaff: 'மொத்த ஊழியர்கள்',
   },
 };
 
@@ -34,9 +34,9 @@ const AdminSummaryCards: React.FC<AdminSummaryCardsProps> = ({ data, language })
 
   const cards = [
     { label: t.totalApps, value: data.totalApplications, icon: Hash, color: 'text-blue-600 bg-blue-100' },
-    { label: t.activeStaff, value: data.activeStaff, icon: UserCheck, color: 'text-green-600 bg-green-100' },
-    { label: t.terminatedStaff, value: data.terminatedStaff, icon: UserX, color: 'text-red-600 bg-red-100' },
-    { label: t.serialsUsed, value: data.totalSerialsUsed, icon: Users, color: 'text-purple-600 bg-purple-100' },
+    { label: t.completedApps, value: data.completedApplications, icon: UserCheck, color: 'text-green-600 bg-green-100' },
+    { label: t.pendingApps, value: data.pendingApplications, icon: Clock, color: 'text-amber-600 bg-amber-100' },
+    { label: t.totalStaff, value: data.totalStaff, icon: Users, color: 'text-purple-600 bg-purple-100' },
   ];
 
   return (
