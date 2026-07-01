@@ -1,82 +1,130 @@
-# Final Corrections & Enhancements Plan
+# Admin Dashboard, Staff Performance & PDF Professional Enhancement
 
-This is a large multi-part change. I'll group it into 6 phases. Before I start, I need one asset and a couple of decisions confirmed.
-
----
-
-## Blockers I need from you
-
-1. **Uploaded seal & signature image (Item 10):** I don't see any new file attached to this message. Please upload the official seal/signature image (PNG with transparent background preferred). Without it I cannot replace the existing one.
-2. **Application number uniqueness:** Should `WCF0001` be globally unique across all staff? I'll enforce a UNIQUE constraint and reject duplicates at submit time (recommended). Confirm if you want different behavior.
-3. **DOB / Area / District / Pincode / Allocated Officer (Item 5):** These will be stored as new columns on the `applications` table and shown in the PDF + admin. Confirm OK.
-
-I'll proceed with the rest below assuming "yes" on (2) and (3); the seal swap will wait for the upload.
+Big scope — breaking into 4 focused phases. Nothing existing gets removed except the Range Setup section, per your request. All application submission, auth, email, SMS, invoice, updates, and docs flows stay untouched.
 
 ---
 
-## Phase 1 — Invoice (Items 1, 2, print colors)
+## Phase 1 — Application Number: Single Source of Truth
 
-`src/pages/InvoiceGeneratorPage.tsx`:
-- Remove Tamil company name from header.
-- Single-line address: `RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008`.
-- Keep 3-column header (Logo | Name+Address centered | Contact right) with 📞 🌐 ✉.
-- Remove the "computer-generated invoice…" footer line.
-- Inject a strong `@media print` block (with `* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important }`, white body bg, container reset). Apply same colors via `html2canvas` (already `backgroundColor: '#fff'`, `scale: 2`).
-- Verify Chrome/Edge/Firefox print preview match on-screen.
+**Goal:** the manually entered `application_number` (e.g. `WCF0001`) is used everywhere — form, PDF header, PDF filename, email attachment, admin table, search.
 
-## Phase 2 — Benefits page (Items 3, 4)
-
-`src/pages/BenefitsPage.tsx` + `src/i18n/translations.ts`:
-- Add a `benefits` translation block (EN + TA) covering: title, intro paragraph, 4 bullet items, 5 guarantee cards (title + desc), notes card, "Required Documents" heading + 3 doc labels/qty, Administration block.
-- Drive every visible string through `useLanguage()` / `t.benefits.*`.
-- **Remove** the entire "Service Scheme Fee Details" section (heading, intro line, the `<Card>` with the table, and the "Plan Effective from…" caption).
-
-## Phase 3 — Application form (Items 5, 6, 8)
-
-DB migration on `applications`:
-- Add columns: `application_number text UNIQUE NOT NULL`, `dob date`, `area text`, `district text`, `pincode text`, `allocated_officer text`.
-- Index on `application_number` and on `created_by` (for staff tracking).
-
-`src/pages/ApplicationPage.tsx`:
-- New prominent "Application Number" field at top, required, pattern `^WCF\d{4,}$`, manual entry, with duplicate check on submit.
-- New rows: (Name | Mobile), (DOB | Area), (District | Pincode), (Allocated Officer).
-- Keep all existing fields/behavior below.
-
-PDF email/download (`supabase/functions/generate-application-pdf` + `send-application`):
-- Filename = `${application_number}.pdf` everywhere (download, email attachment, response headers).
-- Include DOB/Area/District/Pincode/Allocated Officer in the rendered PDF.
-
-## Phase 4 — Staff tracking (Item 7)
-
-`src/pages/AdminDashboard.tsx`:
-- New "Completed Applications by Staff" section.
-- Group applications by `created_by` → list each staff with count + clickable app numbers.
-- Click a staff → drawer/dialog with table: Application No, Applicant Name, Mobile, Date, Status, "View Application" (opens existing PDF/signed URL flow).
-
-## Phase 5 — PDF polish + seal (Items 9, 10)
-
-- Tighten margins/spacing/font sizes in `generate-application-pdf` for clean A4, equal column widths in tables, consistent header.
-- Once you upload the seal/signature, I'll: upload it to the existing public `pdf-assets` bucket (replacing the current one), keep aspect ratio, place in Authorized Signatory slot — same image used for download, email, print.
-- Ensure email attachment and download stream identical bytes (same generation path).
-
-## Phase 6 — Performance & security (Items 11, 12)
-
-Most of this is already in place (lazy routes, Terser, manual chunks, React Query cache, RLS, server-side PDF, signed URLs, validated inputs). I will:
-- Add `loading="lazy"` + `decoding="async"` to non-critical `<img>` tags.
-- Add `<link rel="preconnect">` for Supabase origin in `index.html`.
-- Zod-validate the new application fields server-side in the edge function.
-- Audit RLS on new columns (no change needed — same row policies apply).
-- Re-run `bun run build` and check for warnings.
-
-No DB roles/policies change beyond the column additions.
+Changes:
+- `ApplicationPage.tsx`: pass `application_number` explicitly to the PDF edge function payload (currently the edge function may still fall back to serial). Make the field required + uppercase + pattern `WCF\d{4,}`.
+- `supabase/functions/generate-application-pdf/index.ts`: accept `application_number` in the request body, render it as **"Application No: WCF0001"** in the PDF header, and use it as the storage filename `WCF0001.pdf`.
+- `supabase/functions/send-application/index.ts` (and `send-membership-application`): use `application_number` as the email attachment filename.
+- Prevent duplicates: add UNIQUE index migration on `applications.application_number`.
 
 ---
 
-## Deliverable order
+## Phase 2 — Admin Dashboard Redesign
 
-1. You upload the seal image + confirm (2)/(3) above.
-2. I run the SQL migration (applications columns).
-3. I ship Phases 1, 2, 4, 6 immediately (no blockers).
-4. I ship Phases 3 & 5 (need migration applied + seal uploaded).
+**Remove:** the Range Setup section entirely (button, dialog trigger, and column). Keep the underlying `range_start/range_end/current_serial` DB fields untouched so serial generation keeps working — just hide the UI.
 
-Reply with the seal image and a 👍 on the two questions and I'll start.
+**New top summary cards** (replace/extend `AdminSummaryCards`):
+- Total Applications
+- Completed Applications (all submitted apps count as completed)
+- Pending Applications (staff profiles with `status='pending'` — clarify if you want a different definition)
+- Total Staff Members
+
+**New "Staff Performance" table** below the cards:
+
+```text
+Staff Name | Completed Apps | Pending Apps | Actions
+Raja       | 35             | 2            | [View]
+Kumar      | 22             | 1            | [View]
+```
+
+Counts come from grouping `applications` by `staff_user_id`.
+
+Search + sort on the existing All Applications table:
+- Search: application no, applicant name, mobile, staff name, plan, date
+- Sort: newest, oldest, plan, staff, status
+
+Add loading skeletons, hover states, pagination (25/page), and keep the current color tokens.
+
+---
+
+## Phase 3 — Staff Detail Page
+
+New route `/admin/staff/:staffUserId` (guarded by admin role):
+- Header: staff name, email, phone, district, completed count
+- Filters: search by app number / applicant name / mobile
+- Table columns: App No, Applicant Name, Mobile, Plan, Date, Status, [View PDF] [Download PDF]
+- Toolbar buttons: **Export Excel** (xlsx via SheetJS), **Export PDF** (jsPDF autotable), **Print Report** (window.print with print CSS)
+
+---
+
+## Phase 4 — Application PDF Redesign (2-page premium layout)
+
+Rewrite the layout inside `generate-application-pdf/index.ts` using jsPDF. Keep image handling, seal fetch, Tamil font embedding, and the 2-page constraint.
+
+**Page 1**
+```text
+┌──────────────────────────────────────────────┐
+│ [LOGO]  William Carey Funeral Services Pvt.  │
+│         Address • Phone • Email • Website    │
+├──────────────────────────────────────────────┤
+│ Application No: WCF0001         Date: ...    │
+├──────────────────────────────────────────────┤
+│ APPLICANT DETAILS                            │
+│ Member Name         │ Aadhaar Number         │
+│ Father/Husband      │ Mobile Number          │
+│ Gender              │ Payment Method         │
+│ Age                 │ Area                   │
+│ Occupation          │ District               │
+│ Annual Income       │ Pincode                │
+├──────────────────────────────────────────────┤
+│ PERMANENT ADDRESS (full width, wraps)        │
+├──────────────────────────────────────────────┤
+│ NOMINEE 1        │ NOMINEE 2                 │
+│ Name/Rel/Gen/Age │ Name/Rel/Gen/Age          │
+├──────────────────────────────────────────────┤
+│ [Aadhaar Front]   [Aadhaar Back]  (bordered) │
+├──────────────────────────────────────────────┤
+│ Additional Message (bordered box)            │
+└──────────────────────────────────────────────┘
+```
+
+**Page 2**
+```text
+┌──────────────────────────────────────────────┐
+│ PLAN DETAILS (card)                          │
+│ Plan • Amount • Benefits Worth • Activation  │
+├──────────────────────────────────────────────┤
+│ BENEFITS                                     │
+│ ✓ Heaven Vehicle    ✓ Ice Box                │
+│ ✓ Pandal + Chairs   ✓ Ritual Items           │
+│ ✓ Food Arrangement                           │
+├──────────────────────────────────────────────┤
+│                                              │
+│              [Seal + Signature]              │
+│              Managing Director               │
+│    William Carey Funeral Services Pvt. Ltd.  │
+└──────────────────────────────────────────────┘
+```
+
+Uniform 15mm margins, section headers in brand brown on light gold band, consistent font sizes (title 14, section 11, body 10), 4mm row padding. Downloaded PDF and emailed PDF share the same edge function output — automatically identical.
+
+---
+
+## Technical Details
+
+**New/updated files**
+- Migration: `ALTER TABLE applications ADD CONSTRAINT applications_app_number_unique UNIQUE (application_number);`
+- `src/pages/AdminDashboard.tsx` — remove Range Setup UI, add Staff Performance table, integrate search/sort/pagination
+- `src/components/admin/AdminSummaryCards.tsx` — extend with new metrics
+- `src/components/admin/StaffPerformanceTable.tsx` — new
+- `src/pages/StaffDetailPage.tsx` — new
+- `src/App.tsx` — add `/admin/staff/:id` route
+- `supabase/functions/generate-application-pdf/index.ts` — full layout rewrite, accept `application_number`
+- `supabase/functions/send-application/index.ts` — filename uses `application_number`
+- `src/pages/ApplicationPage.tsx` — send `application_number` through the pipeline
+
+**Left alone**
+- Auth, signup, invoice generator, updates/docs pages, benefits page, plans page, WhatsApp button, header/footer, i18n dictionary structure, submission edge function orchestration, serial generation function (still used internally for `serial_number`).
+
+**Packages to add**
+- `xlsx` for Excel export
+- `jspdf-autotable` for the PDF export in the staff detail page (jspdf already installed)
+
+Approve and I'll ship Phase 1 first (application-number consistency + PDF filename), then Phase 2/3 (dashboard + staff detail), then Phase 4 (PDF redesign) — each phase in a single batch of parallel edits.
