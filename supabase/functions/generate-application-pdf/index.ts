@@ -358,7 +358,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   ];
 
   const labelColW = 48;
-  const rowH = 6;
+  const rowH = 5.2;
   const detailsMaxW = applicantPhoto ? (photoX - margin - 3) : cw;
 
   detailFields.forEach(([label, value], idx) => {
@@ -436,7 +436,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   drawSectionHeader(labels.aadhaarImages);
 
   const imgBoxW = (cw - 6) / 2;
-  const imgBoxH = 48; // slightly larger for clarity
+  const imgBoxH = 40;
 
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
