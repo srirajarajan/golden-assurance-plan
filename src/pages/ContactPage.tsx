@@ -112,10 +112,10 @@ Message: ${parsed.data.message}`;
                 </h3>
               </div>
               <a
-                href="mailto:williamcareyfuneral99@gmail.com"
+                href="mailto:wcfheadofficeslm2016@gmail.com"
                 className="block text-lg text-foreground hover:text-primary transition-colors"
               >
-                📧 williamcareyfuneral99@gmail.com
+                📧 wcfheadofficeslm2016@gmail.com
               </a>
             </div>
 
