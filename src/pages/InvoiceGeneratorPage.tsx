@@ -382,7 +382,7 @@ const InvoiceGeneratorPage: React.FC = () => {
                     <Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
                   </div>
                   <div>
-                    <Label>Date of Service</Label>
+                    <Label>Service Start Date</Label>
                     <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
                   </div>
                   <div className="col-span-2">
@@ -544,7 +544,7 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             <tbody>
               <tr><td className="font-semibold pr-2 py-0.5 w-32">Invoice No.</td><td className="font-mono">{invoice.invoice_number}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Invoice Date</td><td>{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">Date of Service</td><td>{invoice.service_date ? new Date(invoice.service_date).toLocaleDateString('en-IN') : '—'}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">Service Start Date</td><td>{invoice.service_date ? new Date(invoice.service_date).toLocaleDateString('en-IN') : '—'}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Plan Type</td><td className="capitalize">{invoice.plan_type}</td></tr>
             </tbody>
           </table>
