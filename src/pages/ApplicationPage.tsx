@@ -703,7 +703,7 @@ const ApplicationPage: React.FC = () => {
                       <option value="Daughter">Daughter</option>
                       <option value="Wife">Wife</option>
                       <option value="Husband">Husband</option>
-                      <option value="Spouse">Spouse</option>
+                      <option value="Guardian">Guardian</option>
                     </select></div>
                 </div>
               </div>
@@ -733,7 +733,7 @@ const ApplicationPage: React.FC = () => {
                       <option value="Daughter">Daughter</option>
                       <option value="Wife">Wife</option>
                       <option value="Husband">Husband</option>
-                      <option value="Spouse">Spouse</option>
+                      <option value="Guardian">Guardian</option>
                     </select></div>
                 </div>
               </div>
