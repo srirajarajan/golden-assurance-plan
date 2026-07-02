@@ -195,13 +195,17 @@ async function loadTamilFont(): Promise<string | null> {
 }
 
 // ─── Colors ───
-const DARK_BROWN = [62, 39, 22] as const;   // #3E2716
-const GOLD = [164, 127, 55] as const;       // #A47F37
-const LIGHT_GREY_BG = [245, 245, 245] as const;
+// Official William Carey Golden Theme (no brown)
+const GOLD = [164, 127, 55] as const;        // #A47F37 primary gold
+const GOLD_DARK = [122, 92, 32] as const;    // deep gold for headings/text
+const GOLD_SOFT = [252, 246, 232] as const;  // light gold tint for backgrounds
+const GOLD_BAND = [212, 175, 90] as const;   // section bar
 const MID_GREY = [200, 200, 200] as const;
+const LINE_GREY = [225, 220, 210] as const;
 const TEXT_BLACK = [33, 33, 33] as const;
-const TEXT_GREY = [130, 130, 130] as const;
+const TEXT_GREY = [120, 120, 120] as const;
 const WHITE = [255, 255, 255] as const;
+const CHECK_GREEN = [34, 139, 78] as const;
 
 async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   console.log("PDF GENERATION START");
@@ -216,9 +220,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pw = 210;
-  const margin = 15;
-  const cw = pw - 2 * margin;
-  let y = margin;
+  const ph = 297;
+  const marginX = 14;     // ~40px
+  const marginTop = 12;   // ~35px
+  const marginBottom = 12;
+  const cw = pw - 2 * marginX;
+  let y = marginTop;
 
   // Font setup
   let fontFamily = "helvetica";
@@ -259,100 +266,108 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.line(x + w, cy - h / 2, x + w / 2, cy + h / 2 - 0.4);
   };
   const iconCheck = (x: number, cy: number, s = 3) => {
-    doc.setDrawColor(34, 139, 78); doc.setLineWidth(0.6);
+    doc.setDrawColor(...CHECK_GREEN); doc.setLineWidth(0.6);
     doc.line(x, cy + 0.2, x + s * 0.35, cy + s * 0.55);
     doc.line(x + s * 0.35, cy + s * 0.55, x + s, cy - s * 0.45);
   };
 
-  // ═════════════════════════ Header (invoice-style) ═════════════════════════
+  // ═════════════════════════ Premium 3-column Header ═════════════════════════
   const logoImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/logo.png`);
   const drawHeader = () => {
-    const top = margin;
-    const logoSize = 20;
+    const top = marginTop;
+    const logoSize = 22;
+    const headerH = logoSize; // shared vertical band
+    const cyBand = top + headerH / 2;
+
+    // Left: logo vertically centered in band
     if (logoImg) {
-      try { doc.addImage(logoImg.base64, logoImg.type, margin, top, logoSize, logoSize); }
+      try { doc.addImage(logoImg.base64, logoImg.type, marginX, top, logoSize, logoSize); }
       catch (e) { console.error("Logo error:", e); }
     }
-    // Center: name + address
+
+    // Center: name + address, vertically centered around cyBand
     doc.setFont(fontFamily, "bold");
     doc.setFontSize(13);
-    doc.setTextColor(...DARK_BROWN);
-    doc.text("William Carey Funeral Services Pvt. Ltd.", pw / 2, top + 7, { align: "center" });
+    doc.setTextColor(...GOLD_DARK);
+    doc.text("William Carey Funeral Services Pvt. Ltd.", pw / 2, cyBand - 1, { align: "center" });
     doc.setFont(fontFamily, "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(7.8);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008",
-      pw / 2, top + 12, { align: "center" });
+    doc.text("RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem – 636008",
+      pw / 2, cyBand + 4, { align: "center" });
 
-    // Right: contact with icons (icons at fixed x, text right-aligned)
-    const rx = pw - margin;
+    // Right: contact – 3 evenly spaced lines, aligned so block matches band
+    const rx = pw - marginX;
     doc.setFont(fontFamily, "normal");
     doc.setFontSize(8);
-    doc.setTextColor(...TEXT_BLACK);
+    const lineGap = 5.2;
+    const startY = cyBand - lineGap; // top line
+    const lines = [
+      { icon: iconPhone, text: "9600350889", color: TEXT_BLACK },
+      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com", color: TEXT_BLACK },
+      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com", color: GOLD_DARK },
+    ];
+    lines.forEach((ln, i) => {
+      const ly = startY + i * lineGap;
+      doc.setTextColor(...ln.color);
+      const tw = doc.getTextWidth(ln.text);
+      doc.text(ln.text, rx, ly);
+      ln.icon(rx - tw - 4.5, ly - 1.2, 3);
+    });
 
-    const phoneTxt = "9600350889";
-    const webTxt = "www.williamcareyfuneralservices.com";
-    const mailTxt = "williamcareyfuneral99@gmail.com";
-
-    const line1Y = top + 4.5;
-    const line2Y = top + 10;
-    const line3Y = top + 15.5;
-
-    // Draw text right-aligned, then icon just to the left of text
-    const gap = 1.8;
-    const drawContact = (icon: (x: number, cy: number) => void, text: string, ly: number) => {
-      const tw = doc.getTextWidth(text);
-      doc.text(text, rx, ly);
-      icon(rx - tw - gap - 3.2, ly - 1.2);
-    };
-    drawContact((x, cy) => iconPhone(x, cy), phoneTxt, line1Y);
-    doc.setTextColor(...GOLD);
-    drawContact((x, cy) => iconGlobe(x, cy), webTxt, line2Y);
-    doc.setTextColor(...TEXT_BLACK);
-    drawContact((x, cy) => iconMail(x, cy), mailTxt, line3Y);
-
-    // Divider
+    // Golden divider
+    const divY = top + headerH + 3;
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.7);
-    doc.line(margin, top + logoSize + 2, pw - margin, top + logoSize + 2);
-    doc.setDrawColor(...MID_GREY);
-    doc.setLineWidth(0.2);
-    doc.line(margin, top + logoSize + 3, pw - margin, top + logoSize + 3);
+    doc.line(marginX, divY, pw - marginX, divY);
+    doc.setDrawColor(...GOLD_BAND);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, divY + 1.1, pw - marginX, divY + 1.1);
 
-    return top + logoSize + 6; // return Y after header
+    return divY + 4;
   };
 
-  // ═════════════════════════ Section title bar ═════════════════════════
+  // ═════════════════════════ Section title bar (Golden) ═════════════════════════
   const drawSectionBar = (title: string, top: number) => {
-    doc.setFillColor(...DARK_BROWN);
-    doc.rect(margin, top, cw, 6.5, "F");
+    doc.setFillColor(...GOLD_BAND);
+    doc.rect(marginX, top, cw, 6.2, "F");
+    // subtle inner gold line
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, top + 6.2, marginX + cw, top + 6.2);
     doc.setFont(fontFamily, "bold");
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.text(title, margin + 3, top + 4.6);
+    doc.text(title, marginX + 3.5, top + 4.4);
     doc.setTextColor(...TEXT_BLACK);
-    return top + 6.5;
+    return top + 6.2;
   };
 
   // ═════════════════════════ PAGE 1 ═════════════════════════
   y = drawHeader();
 
-  // App No + Date row (chips)
+  // App No + Date — twin equal chips
   const displayAppNo = (data.application_number && data.application_number.trim()) || data.serial_number;
-  doc.setFillColor(245, 240, 230);
+  const chipGap = 4;
+  const chipW = (cw - chipGap) / 2;
+  const chipH = 9;
+  const chipCY = y + chipH / 2 + 1.2;
+  doc.setFillColor(...GOLD_SOFT);
   doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y, (cw - 4) / 2, 8, 1.5, 1.5, "FD");
-  doc.roundedRect(margin + (cw - 4) / 2 + 4, y, (cw - 4) / 2, 8, 1.5, 1.5, "FD");
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...DARK_BROWN);
-  doc.text(`${labels.applicationNo}:`, margin + 3, y + 5.3);
-  doc.text(`${labels.date}:`, margin + (cw - 4) / 2 + 7, y + 5.3);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(marginX, y, chipW, chipH, 1.6, 1.6, "FD");
+  doc.roundedRect(marginX + chipW + chipGap, y, chipW, chipH, 1.6, 1.6, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text(`${labels.applicationNo}:`, marginX + 3.5, chipCY);
+  doc.text(`${labels.date}:`, marginX + chipW + chipGap + 3.5, chipCY);
   doc.setFont(fontFamily, "normal"); doc.setTextColor(...TEXT_BLACK);
-  doc.text(displayAppNo, margin + 33, y + 5.3);
-  doc.text(submissionDate, margin + (cw - 4) / 2 + 7 + 16, y + 5.3);
-  y += 11;
+  const appLabelW = doc.getTextWidth(`${labels.applicationNo}:`) + 5;
+  const dateLabelW = doc.getTextWidth(`${labels.date}:`) + 5;
+  doc.text(displayAppNo, marginX + appLabelW, chipCY);
+  doc.text(submissionDate, marginX + chipW + chipGap + dateLabelW, chipCY);
+  y += chipH + 3;
 
-  // Applicant Details card — two column grid (label above value pairs)
+  // Applicant Details grid — two column, last-odd row spans full width
   y = drawSectionBar(labels.applicantDetails, y);
   const paymentVal = (data.payment_method || "").trim().toLowerCase();
   const isCash = paymentVal === "cash" || paymentVal === "பணம்";
@@ -373,110 +388,114 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     ["District", safeText(data.district, np)],
     ["Pincode", safeText(data.pincode, np)],
   ];
-  // 2-column grid
   const cellW = cw / 2;
-  const cellH = 8;
-  const rows = Math.ceil(applicantFields.length / 2);
-  const gridH = rows * cellH;
-  // Card background
+  const cellH = 9;
+  const totalRows = Math.ceil(applicantFields.length / 2);
+  const gridH = totalRows * cellH;
   doc.setFillColor(...WHITE);
-  doc.setDrawColor(...MID_GREY); doc.setLineWidth(0.25);
-  doc.rect(margin, y, cw, gridH, "FD");
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, y, cw, gridH, "FD");
   applicantFields.forEach((f, i) => {
     const col = i % 2, row = Math.floor(i / 2);
-    const cx = margin + col * cellW;
-    const cy = y + row * cellH;
-    // subtle row bg
-    if (row % 2 === 1) { doc.setFillColor(250, 248, 244); doc.rect(cx, cy, cellW, cellH, "F"); }
-    // divider lines
-    doc.setDrawColor(230, 226, 220); doc.setLineWidth(0.1);
-    if (col === 0) doc.line(cx + cellW, cy, cx + cellW, cy + cellH);
-    doc.line(cx, cy + cellH, cx + cellW, cy + cellH);
+    const isLastOddSpan = (i === applicantFields.length - 1) && applicantFields.length % 2 === 1;
+    const cx = marginX + (isLastOddSpan ? 0 : col * cellW);
+    const cyR = y + row * cellH;
+    const wC = isLastOddSpan ? cw : cellW;
+    if (row % 2 === 1) {
+      doc.setFillColor(...GOLD_SOFT); doc.rect(cx, cyR, wC, cellH, "F");
+    }
+    // dividers
+    doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.15);
+    if (!isLastOddSpan && col === 0) doc.line(cx + cellW, cyR, cx + cellW, cyR + cellH);
+    if (row < totalRows - 1) doc.line(cx, cyR + cellH, cx + wC, cyR + cellH);
     // label
-    doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...TEXT_GREY);
-    doc.text(f[0].toUpperCase(), cx + 3, cy + 3);
-    // value
-    doc.setFont(fontFamily, "normal"); doc.setFontSize(8.5); doc.setTextColor(...TEXT_BLACK);
-    const v = doc.splitTextToSize(f[1], cellW - 6);
-    doc.text(v[0] || "", cx + 3, cy + 6.8);
+    doc.setFont(fontFamily, "bold"); doc.setFontSize(6.8); doc.setTextColor(...GOLD_DARK);
+    doc.text(f[0].toUpperCase(), cx + 3.5, cyR + 3.2);
+    // value (vertically balanced)
+    doc.setFont(fontFamily, "normal"); doc.setFontSize(8.6); doc.setTextColor(...TEXT_BLACK);
+    const v = doc.splitTextToSize(f[1], wC - 7);
+    doc.text(v[0] || "", cx + 3.5, cyR + 7.4);
   });
   y += gridH + 3;
 
-  // Permanent Address — bordered section
+  // Permanent Address — dynamic compact height
   y = drawSectionBar(labels.address, y);
   const addr = safeText(data.address, np);
   const addrLines = doc.splitTextToSize(addr, cw - 6).slice(0, 3);
-  const addrH = Math.max(11, addrLines.length * 4.6 + 4);
-  doc.setDrawColor(...MID_GREY); doc.setLineWidth(0.25);
+  const addrH = addrLines.length * 4.4 + 4.5;
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
   doc.setFillColor(...WHITE);
-  doc.rect(margin, y, cw, addrH, "FD");
+  doc.rect(marginX, y, cw, addrH, "FD");
   doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text(addrLines, margin + 3, y + 5);
+  const addrStartY = y + (addrH - addrLines.length * 4.4) / 2 + 3;
+  doc.text(addrLines, marginX + 3.5, addrStartY);
   y += addrH + 3;
 
-  // Allocated Officer — 2 columns
+  // Allocated Officer — 2 columns with generous padding
   y = drawSectionBar("ALLOCATED OFFICER DETAILS", y);
-  const offW = cw / 2, offH = 9;
-  doc.setDrawColor(...MID_GREY); doc.setLineWidth(0.25); doc.setFillColor(...WHITE);
-  doc.rect(margin, y, cw, offH, "FD");
-  doc.line(margin + offW, y, margin + offW, y + offH);
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...TEXT_GREY);
-  doc.text("ALLOCATED OFFICER", margin + 3, y + 3.3);
-  doc.text("OFFICER NUMBER", margin + offW + 3, y + 3.3);
+  const offW = cw / 2, offH = 12;
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3); doc.setFillColor(...WHITE);
+  doc.rect(marginX, y, cw, offH, "FD");
+  doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.2);
+  doc.line(marginX + offW, y + 2, marginX + offW, y + offH - 2);
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(6.8); doc.setTextColor(...GOLD_DARK);
+  doc.text("ALLOCATED OFFICER", marginX + 3.5, y + 4.2);
+  doc.text("OFFICER NUMBER", marginX + offW + 3.5, y + 4.2);
   doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text(safeText(data.allocated_officer, np), margin + 3, y + 7.4);
-  doc.text(safeText(data.allocated_officer_number, np), margin + offW + 3, y + 7.4);
+  doc.text(safeText(data.allocated_officer, np), marginX + 3.5, y + 9.4);
+  doc.text(safeText(data.allocated_officer_number, np), marginX + offW + 3.5, y + 9.4);
   y += offH + 3;
 
-  // Nominee Details table
+  // Nominee Details table — proportional 45/25/15/15, vertically centered
   y = drawSectionBar(labels.nomineeDetails, y);
   const nomCols = [
-    { label: "NOMINEE", w: cw * 0.35 },
+    { label: "NOMINEE NAME", w: cw * 0.45 },
     { label: "RELATIONSHIP", w: cw * 0.25 },
-    { label: "GENDER", w: cw * 0.20 },
-    { label: "AGE", w: cw * 0.20 },
+    { label: "GENDER", w: cw * 0.15 },
+    { label: "AGE", w: cw * 0.15 },
   ];
-  const headerH = 6.5, rowHeight = 7.5;
+  const nomHeaderH = 7, nomRowH = 8.5;
   // header row
-  doc.setFillColor(...LIGHT_GREY_BG);
-  doc.setDrawColor(...MID_GREY); doc.setLineWidth(0.25);
-  doc.rect(margin, y, cw, headerH, "FD");
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.6); doc.setTextColor(...DARK_BROWN);
-  let cx = margin;
-  nomCols.forEach((c) => { doc.text(c.label, cx + 3, y + 4.4); cx += c.w; });
-  y += headerH;
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, y, cw, nomHeaderH, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.6); doc.setTextColor(...GOLD_DARK);
+  let cxH = marginX;
+  nomCols.forEach((c) => { doc.text(c.label, cxH + 3.5, y + 4.6); cxH += c.w; });
+  y += nomHeaderH;
   const nomineeRows = [
     [safeText(data.nominee1_name, np), safeText(data.nominee1_relation, np), safeText(data.nominee1_gender, np), safeText(data.nominee1_age, np)],
     [safeText(data.nominee2_name, np), safeText(data.nominee2_relation, np), safeText(data.nominee2_gender, np), safeText(data.nominee2_age, np)],
   ];
   nomineeRows.forEach((row, ri) => {
-    if (ri % 2 === 1) { doc.setFillColor(250, 248, 244); doc.rect(margin, y, cw, rowHeight, "F"); }
-    doc.setDrawColor(230, 226, 220); doc.setLineWidth(0.15);
-    doc.line(margin, y + rowHeight, margin + cw, y + rowHeight);
-    doc.setFont(fontFamily, "normal"); doc.setFontSize(8.5); doc.setTextColor(...TEXT_BLACK);
-    let rx = margin;
+    if (ri % 2 === 1) { doc.setFillColor(253, 250, 244); doc.rect(marginX, y, cw, nomRowH, "F"); }
+    doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.15);
+    doc.line(marginX, y + nomRowH, marginX + cw, y + nomRowH);
+    doc.setFont(fontFamily, "normal"); doc.setFontSize(8.6); doc.setTextColor(...TEXT_BLACK);
+    let rx = marginX;
     row.forEach((cell, ci) => {
-      doc.text(String(cell), rx + 3, y + 5);
+      doc.text(String(cell), rx + 3.5, y + nomRowH / 2 + 1.6);
       rx += nomCols[ci].w;
     });
-    y += rowHeight;
+    y += nomRowH;
   });
   // outer border
-  doc.setDrawColor(...MID_GREY); doc.setLineWidth(0.25);
-  doc.rect(margin, y - rowHeight * nomineeRows.length - headerH, cw, headerH + rowHeight * nomineeRows.length, "S");
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, y - nomRowH * nomineeRows.length - nomHeaderH, cw, nomHeaderH + nomRowH * nomineeRows.length, "S");
   y += 3;
 
-  // Additional Message
+  // Additional Message — dynamic height, compact when short
   const msg = safeText(data.additional_message, "");
   if (msg.length > 0) {
     y = drawSectionBar(labels.additionalMessage, y);
-    const mLines = doc.splitTextToSize(msg, cw - 6).slice(0, 3);
-    const mH = Math.max(11, mLines.length * 4.6 + 4);
+    doc.setFont(fontFamily, "normal"); doc.setFontSize(9);
+    const mLines = doc.splitTextToSize(msg, cw - 7).slice(0, 4);
+    const mH = mLines.length * 4.4 + 5;
     doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
-    doc.setFillColor(253, 250, 244);
-    doc.rect(margin, y, cw, mH, "FD");
-    doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-    doc.text(mLines, margin + 3, y + 5);
+    doc.setFillColor(...GOLD_SOFT);
+    doc.rect(marginX, y, cw, mH, "FD");
+    doc.setTextColor(...TEXT_BLACK);
+    doc.text(mLines, marginX + 3.5, y + 5);
     y += mH;
   }
 
@@ -488,31 +507,31 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y = drawSectionBar(labels.aadhaarImages, y);
   const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
   const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
-  const gap = 6;
-  const boxW = (cw - gap) / 2;
-  const boxH = 55;
+  const gapImg = 6;
+  const boxW = (cw - gapImg) / 2;
+  const boxH = 58;
   const labelH = 6;
-  doc.setFillColor(...LIGHT_GREY_BG);
-  doc.rect(margin, y, boxW, labelH, "F");
-  doc.rect(margin + boxW + gap, y, boxW, labelH, "F");
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.aadhaarFront, margin + boxW / 2, y + 4.2, { align: "center" });
-  doc.text(labels.aadhaarBack, margin + boxW + gap + boxW / 2, y + 4.2, { align: "center" });
+  doc.setFillColor(...GOLD_SOFT);
+  doc.rect(marginX, y, boxW, labelH, "F");
+  doc.rect(marginX + boxW + gapImg, y, boxW, labelH, "F");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(...GOLD_DARK);
+  doc.text(labels.aadhaarFront, marginX + boxW / 2, y + 4.2, { align: "center" });
+  doc.text(labels.aadhaarBack, marginX + boxW + gapImg + boxW / 2, y + 4.2, { align: "center" });
   y += labelH;
-  doc.setDrawColor(...MID_GREY); doc.setLineWidth(0.4);
-  doc.rect(margin, y, boxW, boxH, "S");
-  doc.rect(margin + boxW + gap, y, boxW, boxH, "S");
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.4);
+  doc.rect(marginX, y, boxW, boxH, "S");
+  doc.rect(marginX + boxW + gapImg, y, boxW, boxH, "S");
   if (aadhaarFront) {
-    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, margin + 1.5, y + 1.5, boxW - 3, boxH - 3); }
+    try { doc.addImage(aadhaarFront.base64, aadhaarFront.type, marginX + 2, y + 2, boxW - 4, boxH - 4); }
     catch (e) { console.error("Aadhaar front error:", e); }
   }
   if (aadhaarBack) {
-    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, margin + boxW + gap + 1.5, y + 1.5, boxW - 3, boxH - 3); }
+    try { doc.addImage(aadhaarBack.base64, aadhaarBack.type, marginX + boxW + gapImg + 2, y + 2, boxW - 4, boxH - 4); }
     catch (e) { console.error("Aadhaar back error:", e); }
   }
   y += boxH + 5;
 
-  // Plan Card
+  // Plan Card — balanced two-column
   const planCode = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
   const planName = data.plan_name || "";
   const planAmount = data.plan_amount;
@@ -523,75 +542,101 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y = drawSectionBar(labels.selectedPlan, y);
   const cardY = y;
   const padX = 6;
-  // Card outline
-  const benefitLineH = 5.2;
-  const contentH = 26 + (planActivation ? 6 : 0) + 6 + benefits.length * benefitLineH + 4;
-  doc.setFillColor(253, 250, 244);
-  doc.setDrawColor(...GOLD); doc.setLineWidth(0.5);
-  doc.roundedRect(margin, cardY, cw, contentH, 2, 2, "FD");
+  const colGap = 6;
+  const colW = (cw - colGap) / 2;
 
-  let cy = cardY + 8;
-  // Plan title + name
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(14); doc.setTextColor(...DARK_BROWN);
-  doc.text(`${planCode} PLAN${planName ? "  —  " + planName : ""}`, margin + padX, cy);
-  cy += 8;
-  // Amount + worth
-  if (typeof planAmount === "number") {
-    doc.setFont(fontFamily, "bold"); doc.setFontSize(16); doc.setTextColor(...GOLD);
-    doc.text(`Rs. ${planAmount.toLocaleString("en-IN")}`, margin + padX, cy);
-    if (typeof planWorth === "number") {
-      doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_GREY);
-      doc.text(`${labels.benefitsWorth}: Rs. ${planWorth.toLocaleString("en-IN")}`,
-        pw - margin - padX, cy - 1, { align: "right" });
-    }
-    cy += 6;
-  }
-  if (planActivation) {
-    doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-    doc.text(`${labels.activation}: `, margin + padX, cy);
-    const w = doc.getTextWidth(`${labels.activation}: `);
-    doc.setFont(fontFamily, "normal");
-    doc.text(planActivation, margin + padX + w, cy);
-    cy += 6;
-  }
-  // Benefits header
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(10); doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.planBenefits, margin + padX, cy);
-  cy += 5;
-  // Benefits list with check icons — 2 columns if many
+  // Compute needed height from both columns
+  const benefitLineH = 5.0;
+  const leftLines = 3 + (planActivation ? 0 : 0); // title, amount, start date
+  const leftH = 10 /*title*/ + 12 /*amount*/ + 8 /*start date*/;
+  const rightH = 10 /*worth*/ + 8 /*coverage*/ + 6 /*label*/ + Math.max(1, benefits.length) * benefitLineH;
+  const cardH = Math.max(leftH, rightH) + 12;
+
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.55);
+  doc.roundedRect(marginX, cardY, cw, cardH, 2.2, 2.2, "FD");
+  // Column separator
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.2);
+  doc.line(marginX + colW + colGap / 2, cardY + 4, marginX + colW + colGap / 2, cardY + cardH - 4);
+
+  // LEFT column
+  const lx = marginX + padX;
+  let ly = cardY + 8;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
+  doc.text("SELECTED PLAN", lx, ly);
+  ly += 5;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(13); doc.setTextColor(...TEXT_BLACK);
+  doc.text(`${planCode}${planName ? "  —  " + planName : ""}`, lx, ly);
+  ly += 8;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
+  doc.text("PLAN AMOUNT", lx, ly);
+  ly += 5;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(15); doc.setTextColor(...GOLD_DARK);
+  doc.text(typeof planAmount === "number" ? `Rs. ${planAmount.toLocaleString("en-IN")}` : "—", lx, ly);
+  ly += 7;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
+  doc.text("SERVICE START DATE", lx, ly);
+  ly += 4.5;
   doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  benefits.forEach((b) => {
-    iconCheck(margin + padX, cy - 1.8, 3);
-    doc.text(String(b), margin + padX + 5, cy);
-    cy += benefitLineH;
-  });
-  y = cardY + contentH + 6;
+  doc.text(planActivation || submissionDate, lx, ly);
 
-  // Seal & Signature — centered at bottom
+  // RIGHT column
+  const rxc = marginX + colW + colGap + padX / 2;
+  let ry = cardY + 8;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
+  doc.text("BENEFITS WORTH", rxc, ry);
+  ry += 5;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(13); doc.setTextColor(...GOLD_DARK);
+  doc.text(typeof planWorth === "number" ? `Rs. ${planWorth.toLocaleString("en-IN")}` : "—", rxc, ry);
+  ry += 7;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
+  doc.text("COVERAGE", rxc, ry);
+  ry += 4.5;
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
+  doc.text("Complete funeral service — A to Z arrangements", rxc, ry);
+  ry += 6;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
+  doc.text("PLAN SUMMARY", rxc, ry);
+  ry += 4.5;
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.6); doc.setTextColor(...TEXT_BLACK);
+  benefits.slice(0, 5).forEach((b) => {
+    iconCheck(rxc, ry - 1.8, 2.6);
+    const bl = doc.splitTextToSize(String(b), colW - padX - 6);
+    doc.text(bl[0] || "", rxc + 4.5, ry);
+    ry += benefitLineH;
+  });
+
+  y = cardY + cardH + 4;
+
+  // ─── Seal & Signature block: bottom-right aligned ───
   const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
   const sealSignW = 55;
-  let sealSignH = 45;
+  let sealSignH = 40;
   if (sealSignImg) {
     try {
       const props = doc.getImageProperties(`data:image/${sealSignImg.type.toLowerCase()};base64,${sealSignImg.base64}`);
       sealSignH = sealSignW * (props.height / props.width);
     } catch (_) {}
   }
-  const bottomY = 297 - 20; // above bottom margin
-  const blockH = sealSignH + 12;
-  const blockTop = bottomY - blockH;
-  const sigCx = pw / 2;
-  // Company name above image
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(10); doc.setTextColor(...DARK_BROWN);
-  doc.text("William Carey Funeral Services Pvt. Ltd.", sigCx, blockTop, { align: "center" });
-  // Seal-signature image
+  const blockRightX = pw - marginX;
+  const blockBottomY = ph - marginBottom;
+  const totalBlockH = 6 /*company*/ + 4 /*gap*/ + sealSignH + 4 /*gap*/ + 5 /*MD*/;
+  const blockTopY = blockBottomY - totalBlockH;
+  const centerXOfBlock = blockRightX - sealSignW / 2;
+
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text("William Carey Funeral Services Pvt. Ltd.", blockRightX, blockTopY + 4, { align: "right" });
   if (sealSignImg) {
-    try { doc.addImage(sealSignImg.base64, sealSignImg.type, sigCx - sealSignW / 2, blockTop + 2, sealSignW, sealSignH); }
-    catch (e) { console.error("Seal error:", e); }
+    try {
+      doc.addImage(
+        sealSignImg.base64, sealSignImg.type,
+        blockRightX - sealSignW, blockTopY + 8,
+        sealSignW, sealSignH
+      );
+    } catch (e) { console.error("Seal error:", e); }
   }
-  // Managing Director below
   doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text(labels.managingDirector, sigCx, blockTop + 2 + sealSignH + 5, { align: "center" });
+  doc.text(labels.managingDirector, blockRightX, blockTopY + 8 + sealSignH + 5, { align: "right" });
 
   const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
   console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes, pages:", doc.getNumberOfPages());
