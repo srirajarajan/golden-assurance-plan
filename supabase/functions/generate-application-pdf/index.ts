@@ -349,10 +349,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     [labels.mobileNumber, safeText(data.mobile_number, np)],
     [labels.paymentMethod, paymentDisplay],
     ["Date of Birth", safeText(data.dob, np)],
-    ["Area", safeText(data.area, np)],
+    ["Taluk", safeText(data.taluk || data.area, np)],
     ["District", safeText(data.district, np)],
     ["Pincode", safeText(data.pincode, np)],
     ["Allocated Officer", safeText(data.allocated_officer, np)],
+    ["Allocated Officer No.", safeText(data.allocated_officer_number, np)],
     [labels.address, safeText(data.address, np)],
   ];
 
