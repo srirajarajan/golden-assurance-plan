@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,8 @@ type Mode = 'list' | 'create' | 'view';
 
 const InvoiceGeneratorPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isStaffMode = location.pathname.startsWith('/staff');
   const { user, isLoading, checkIsAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -96,9 +98,29 @@ const InvoiceGeneratorPage: React.FC = () => {
     (async () => {
       if (!user && !isLoading) { navigate('/login'); return; }
       if (user && !isLoading) {
-        const ok = await checkIsAdmin();
-        if (!ok) { navigate('/'); return; }
+        if (!isStaffMode) {
+          const ok = await checkIsAdmin();
+          if (!ok) { navigate('/'); return; }
+        }
         await fetchInvoices();
+        // Prefill from sessionStorage if staff coming from a submission
+        if (isStaffMode) {
+          try {
+            const raw = sessionStorage.getItem('prefill_invoice');
+            if (raw) {
+              const p = JSON.parse(raw);
+              setMode('create');
+              setCustomerName(p.customer_name || '');
+              setMobile(p.mobile || '');
+              setAddress(p.address || '');
+              setCity(p.city || '');
+              setPincode(p.pincode || '');
+              setPlanType(p.plan_type || '');
+              fetchNextNumber();
+              sessionStorage.removeItem('prefill_invoice');
+            }
+          } catch { /* noop */ }
+        }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -260,8 +282,8 @@ const InvoiceGeneratorPage: React.FC = () => {
         {/* Toolbar — hidden in print */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 no-print">
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Admin
+            <Button variant="outline" onClick={() => navigate(isStaffMode ? '/apply' : '/admin')}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> {isStaffMode ? 'Back to Application' : 'Back to Admin'}
             </Button>
             <h1 className="font-display text-2xl md:text-3xl font-bold text-primary flex items-center gap-2">
               <FileText className="h-7 w-7" /> Invoice Generator
