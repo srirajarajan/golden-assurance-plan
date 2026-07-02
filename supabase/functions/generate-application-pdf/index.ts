@@ -125,7 +125,7 @@ const englishLabels = {
   nomineeRelation: "Relationship",
   additionalMessage: "ADDITIONAL MESSAGE",
   notProvided: "Not Provided",
-  footer: "This is a system-generated service application document.",
+  footer: "",
   managingDirector: "Managing Director",
   paymentMethod: "Payment Method",
   cash: "Cash",
