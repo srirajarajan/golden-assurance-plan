@@ -17,6 +17,7 @@ export type Database = {
       applications: {
         Row: {
           allocated_officer: string | null
+          allocated_officer_number: string | null
           application_number: string | null
           area: string | null
           district: string | null
@@ -30,9 +31,11 @@ export type Database = {
           staff_email: string
           staff_user_id: string
           submitted_at: string
+          taluk: string | null
         }
         Insert: {
           allocated_officer?: string | null
+          allocated_officer_number?: string | null
           application_number?: string | null
           area?: string | null
           district?: string | null
@@ -46,9 +49,11 @@ export type Database = {
           staff_email: string
           staff_user_id: string
           submitted_at?: string
+          taluk?: string | null
         }
         Update: {
           allocated_officer?: string | null
+          allocated_officer_number?: string | null
           application_number?: string | null
           area?: string | null
           district?: string | null
@@ -62,6 +67,7 @@ export type Database = {
           staff_email?: string
           staff_user_id?: string
           submitted_at?: string
+          taluk?: string | null
         }
         Relationships: []
       }

@@ -37,6 +37,18 @@ const ApplicationPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('silver');
   const [applicationNumber, setApplicationNumber] = useState<string>('');
+  const [successData, setSuccessData] = useState<null | {
+    application_number: string;
+    member_name: string;
+    plan_name: string;
+    plan_id: PlanId;
+    mobile: string;
+    address: string;
+    taluk: string;
+    district: string;
+    pincode: string;
+    submission_date: string;
+  }>(null);
 
   const { toast } = useToast();
 
@@ -161,6 +173,7 @@ const ApplicationPage: React.FC = () => {
         district: (formData.get('district') as string)?.trim() || '',
         pincode: (formData.get('pincode') as string)?.trim() || '',
         allocated_officer: (formData.get('allocated_officer') as string)?.trim() || '',
+        allocated_officer_number: (formData.get('allocated_officer_number') as string)?.trim() || '',
         member_name: (formData.get('member_name') as string)?.trim() || '',
         age: (formData.get('age') as string)?.trim() || '',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || '',
@@ -254,19 +267,34 @@ const ApplicationPage: React.FC = () => {
         mobile_number: mobileNumber,
         dob: payload.dob || null,
         area: payload.area || null,
+        taluk: payload.area || null,
         district: payload.district || null,
         pincode: payload.pincode || null,
         allocated_officer: payload.allocated_officer || null,
+        allocated_officer_number: payload.allocated_officer_number || null,
         pdf_path: `${appNum}.pdf`,
       });
 
-      toast({ title: 'Thank you!', description: `Application ${appNum} submitted successfully. (Serial: ${serialNumber})` });
+      const memberName = payload.member_name || 'Applicant';
+      setSuccessData({
+        application_number: appNum,
+        member_name: memberName,
+        plan_name: plan.name,
+        plan_id: plan.id,
+        mobile: mobileNumber,
+        address: payload.address,
+        taluk: payload.area,
+        district: payload.district,
+        pincode: payload.pincode,
+        submission_date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
+      });
       form.reset();
       setApplicationNumber('');
       removeImage(setApplicantPhoto);
       removeImage(setAadhaarFront);
       removeImage(setAadhaarBack);
       setPaymentMethod('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
       console.error('Submit Error:', error);
       toast({ title: 'Error', description: error?.message || 'Failed to submit. Please try again.', variant: 'destructive' });
@@ -376,6 +404,60 @@ const ApplicationPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
       <div className="max-w-3xl mx-auto">
+        {successData && (
+          <Card className="shadow-xl border-2 mb-6 border-green-500/50">
+            <CardHeader className="bg-green-50 border-b border-green-200 text-center">
+              <div className="flex items-center justify-center gap-2 text-green-700">
+                <Check className="h-7 w-7" />
+                <CardTitle className="text-2xl font-bold">Application Submitted Successfully</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="p-3 rounded border bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Application Number</div>
+                  <div className="font-mono font-bold text-primary text-lg">{successData.application_number}</div>
+                </div>
+                <div className="p-3 rounded border bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Applicant Name</div>
+                  <div className="font-semibold">{successData.member_name}</div>
+                </div>
+                <div className="p-3 rounded border bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Selected Plan</div>
+                  <div className="font-semibold">{successData.plan_name}</div>
+                </div>
+                <div className="p-3 rounded border bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Submission Date</div>
+                  <div className="font-semibold">{successData.submission_date}</div>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button
+                  className="flex-1"
+                  size="lg"
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem('prefill_invoice', JSON.stringify({
+                        customer_name: successData.member_name,
+                        mobile: successData.mobile,
+                        address: successData.address,
+                        city: successData.taluk,
+                        pincode: successData.pincode,
+                        plan_type: successData.plan_id,
+                      }));
+                    } catch { /* noop */ }
+                    navigate('/staff/invoice');
+                  }}
+                >
+                  Create Invoice
+                </Button>
+                <Button variant="outline" className="flex-1" size="lg" onClick={() => setSuccessData(null)}>
+                  Do It Later
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
             <CardTitle className="text-2xl md:text-3xl font-bold text-primary">Funeral Service Application</CardTitle>
@@ -491,8 +573,8 @@ const ApplicationPage: React.FC = () => {
                     <Input id="dob" name="dob" type="date" className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="area" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Area</Label>
-                    <Input id="area" name="area" placeholder="Enter area" className="mt-1" />
+                    <Label htmlFor="area" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Taluk</Label>
+                    <Input id="area" name="area" placeholder="Enter taluk" className="mt-1" />
                   </div>
                   <div>
                     <Label htmlFor="district" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> District</Label>
@@ -506,6 +588,11 @@ const ApplicationPage: React.FC = () => {
                   <div>
                     <Label htmlFor="allocated_officer" className="flex items-center gap-1"><User className="w-4 h-4" /> Allocated Officer</Label>
                     <Input id="allocated_officer" name="allocated_officer" placeholder="Officer name" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="allocated_officer_number" className="flex items-center gap-1"><Phone className="w-4 h-4" /> Allocated Officer Number</Label>
+                    <Input id="allocated_officer_number" name="allocated_officer_number" type="tel" maxLength={10} inputMode="numeric" placeholder="Officer mobile number" className="mt-1"
+                      onInput={(e) => { const i = e.target as HTMLInputElement; i.value = i.value.replace(/\D/g, '').slice(0, 10); }} />
                   </div>
                   <div>
                     <Label htmlFor="guardian_name">Father / Husband Name</Label>
@@ -616,7 +703,7 @@ const ApplicationPage: React.FC = () => {
                       <option value="Daughter">Daughter</option>
                       <option value="Wife">Wife</option>
                       <option value="Husband">Husband</option>
-                      <option value="Spouse">Spouse</option>
+                      <option value="Guardian">Guardian</option>
                     </select></div>
                 </div>
               </div>
@@ -646,7 +733,7 @@ const ApplicationPage: React.FC = () => {
                       <option value="Daughter">Daughter</option>
                       <option value="Wife">Wife</option>
                       <option value="Husband">Husband</option>
-                      <option value="Spouse">Spouse</option>
+                      <option value="Guardian">Guardian</option>
                     </select></div>
                 </div>
               </div>
