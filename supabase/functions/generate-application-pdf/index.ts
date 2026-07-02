@@ -14,9 +14,11 @@ interface ApplicationData {
   application_number?: string;
   dob?: string;
   area?: string;
+  taluk?: string;
   district?: string;
   pincode?: string;
   allocated_officer?: string;
+  allocated_officer_number?: string;
   member_name: string;
   age: string;
   guardian_name: string;
