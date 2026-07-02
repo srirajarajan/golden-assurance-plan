@@ -245,31 +245,54 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   };
 
   // ═══════════════════════════════════════════
-  // PAGE 1 - HEADER
+  // PAGE 1 - INVOICE-STYLE 3-COLUMN HEADER
   // ═══════════════════════════════════════════
-  doc.setFontSize(14);
+  const baseUrlHeader = Deno.env.get("SUPABASE_URL")!;
+  const logoImg = await loadImageFromUrl(`${baseUrlHeader}/storage/v1/object/public/pdf-assets/logo.png`);
+  const headerTop = y;
+  const logoSize = 20;
+  if (logoImg) {
+    try {
+      doc.addImage(logoImg.base64, logoImg.type, margin, headerTop, logoSize, logoSize);
+    } catch (e) { console.error("Logo error:", e); }
+  }
+  // Center: company name + address
   doc.setFont(fontFamily, "bold");
+  doc.setFontSize(13);
   doc.setTextColor(...DARK_BROWN);
-  doc.text(labels.title, margin, y + 5);
-  doc.setFontSize(10);
+  doc.text("William Carey Funeral Services Pvt. Ltd.", pw / 2, headerTop + 6, { align: "center" });
   doc.setFont(fontFamily, "normal");
-  doc.setTextColor(...GOLD);
-  doc.text(labels.subtitle, margin, y + 11);
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_GREY);
+  doc.text("RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008", pw / 2, headerTop + 11, { align: "center" });
 
-  doc.setFontSize(9);
-  doc.setTextColor(...TEXT_BLACK);
-  doc.setFont(fontFamily, "bold");
-  const displayAppNo = (data.application_number && data.application_number.trim()) || data.serial_number;
-  doc.text(`${labels.applicationNo}: ${displayAppNo}`, pw - margin, y + 5, { align: "right" });
+  // Right: contact
   doc.setFont(fontFamily, "normal");
-  doc.text(`${labels.date}: ${submissionDate}`, pw - margin, y + 11, { align: "right" });
-  y += 14;
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_BLACK);
+  const rx = pw - margin;
+  doc.text("Tel: 9600350889", rx, headerTop + 5, { align: "right" });
+  doc.text("wcfheadofficeslm2016@gmail.com", rx, headerTop + 10, { align: "right" });
+  doc.setTextColor(...GOLD);
+  doc.text("www.williamcareyfuneralservices.com", rx, headerTop + 15, { align: "right" });
+  doc.setTextColor(...TEXT_BLACK);
+
+  y = headerTop + logoSize + 2;
 
   // Divider
   doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(0.6);
   doc.line(margin, y, pw - margin, y);
-  y += 6;
+  y += 4;
+
+  // App No + Date row
+  const displayAppNo = (data.application_number && data.application_number.trim()) || data.serial_number;
+  doc.setFont(fontFamily, "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...DARK_BROWN);
+  doc.text(`${labels.applicationNo}: ${displayAppNo}`, margin, y + 4);
+  doc.text(`${labels.date}: ${submissionDate}`, pw - margin, y + 4, { align: "right" });
+  y += 7;
 
   // ═══════════════════════════════════════════
   // APPLICANT PHOTO — top-right container
