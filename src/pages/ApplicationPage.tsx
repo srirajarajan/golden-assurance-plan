@@ -37,6 +37,18 @@ const ApplicationPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('silver');
   const [applicationNumber, setApplicationNumber] = useState<string>('');
+  const [successData, setSuccessData] = useState<null | {
+    application_number: string;
+    member_name: string;
+    plan_name: string;
+    plan_id: PlanId;
+    mobile: string;
+    address: string;
+    taluk: string;
+    district: string;
+    pincode: string;
+    submission_date: string;
+  }>(null);
 
   const { toast } = useToast();
 
@@ -161,6 +173,7 @@ const ApplicationPage: React.FC = () => {
         district: (formData.get('district') as string)?.trim() || '',
         pincode: (formData.get('pincode') as string)?.trim() || '',
         allocated_officer: (formData.get('allocated_officer') as string)?.trim() || '',
+        allocated_officer_number: (formData.get('allocated_officer_number') as string)?.trim() || '',
         member_name: (formData.get('member_name') as string)?.trim() || '',
         age: (formData.get('age') as string)?.trim() || '',
         guardian_name: (formData.get('guardian_name') as string)?.trim() || '',
@@ -254,19 +267,34 @@ const ApplicationPage: React.FC = () => {
         mobile_number: mobileNumber,
         dob: payload.dob || null,
         area: payload.area || null,
+        taluk: payload.area || null,
         district: payload.district || null,
         pincode: payload.pincode || null,
         allocated_officer: payload.allocated_officer || null,
+        allocated_officer_number: payload.allocated_officer_number || null,
         pdf_path: `${appNum}.pdf`,
       });
 
-      toast({ title: 'Thank you!', description: `Application ${appNum} submitted successfully. (Serial: ${serialNumber})` });
+      const memberName = payload.member_name || 'Applicant';
+      setSuccessData({
+        application_number: appNum,
+        member_name: memberName,
+        plan_name: plan.name,
+        plan_id: plan.id,
+        mobile: mobileNumber,
+        address: payload.address,
+        taluk: payload.area,
+        district: payload.district,
+        pincode: payload.pincode,
+        submission_date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
+      });
       form.reset();
       setApplicationNumber('');
       removeImage(setApplicantPhoto);
       removeImage(setAadhaarFront);
       removeImage(setAadhaarBack);
       setPaymentMethod('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
       console.error('Submit Error:', error);
       toast({ title: 'Error', description: error?.message || 'Failed to submit. Please try again.', variant: 'destructive' });
