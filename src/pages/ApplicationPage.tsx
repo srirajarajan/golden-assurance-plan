@@ -586,15 +586,6 @@ const ApplicationPage: React.FC = () => {
                       onInput={(e) => { const i = e.target as HTMLInputElement; i.value = i.value.replace(/\D/g, '').slice(0, 6); }} />
                   </div>
                   <div>
-                    <Label htmlFor="allocated_officer" className="flex items-center gap-1"><User className="w-4 h-4" /> Allocated Officer</Label>
-                    <Input id="allocated_officer" name="allocated_officer" placeholder="Officer name" className="mt-1" />
-                  </div>
-                  <div>
-                    <Label htmlFor="allocated_officer_number" className="flex items-center gap-1"><Phone className="w-4 h-4" /> Allocated Officer Number</Label>
-                    <Input id="allocated_officer_number" name="allocated_officer_number" type="tel" maxLength={10} inputMode="numeric" placeholder="Officer mobile number" className="mt-1"
-                      onInput={(e) => { const i = e.target as HTMLInputElement; i.value = i.value.replace(/\D/g, '').slice(0, 10); }} />
-                  </div>
-                  <div>
                     <Label htmlFor="guardian_name">Father / Husband Name</Label>
                     <Input id="guardian_name" name="guardian_name" placeholder="Enter father/husband name" className="mt-1" />
                   </div>
@@ -654,6 +645,24 @@ const ApplicationPage: React.FC = () => {
                 <div>
                   <Label htmlFor="address" className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Permanent Address</Label>
                   <Textarea id="address" name="address" placeholder="Enter full address" className="mt-1" rows={3} />
+                </div>
+              </div>
+
+              {/* Allocated Officer Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" /> Allocated Officer Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="allocated_officer" className="flex items-center gap-1"><User className="w-4 h-4" /> Allocated Officer</Label>
+                    <Input id="allocated_officer" name="allocated_officer" placeholder="Officer name" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="allocated_officer_number" className="flex items-center gap-1"><Phone className="w-4 h-4" /> Allocated Officer Number</Label>
+                    <Input id="allocated_officer_number" name="allocated_officer_number" type="tel" maxLength={10} inputMode="numeric" placeholder="Officer mobile number" className="mt-1"
+                      onInput={(e) => { const i = e.target as HTMLInputElement; i.value = i.value.replace(/\D/g, '').slice(0, 10); }} />
+                  </div>
                 </div>
               </div>
 
