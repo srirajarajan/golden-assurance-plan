@@ -434,6 +434,10 @@ const ApplicationPage: React.FC = () => {
                   <div className="font-semibold">{successData.submission_date}</div>
                 </div>
               </div>
+
+              {/* Full Service Plan Details in submitted language */}
+              <PlanDetailsCard planId={successData.plan_id} />
+
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Button
                   className="flex-1"
