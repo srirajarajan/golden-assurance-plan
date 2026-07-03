@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { PLANS, type PlanId, getPlanById } from '@/data/plans';
 import SmartAadhaarCapture from '@/components/SmartAadhaarCapture';
+import PlanDetailsCard from '@/components/PlanDetailsCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ImageState {
   file: File | null;
