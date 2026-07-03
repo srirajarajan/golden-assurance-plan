@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { PLANS, type PlanId, getPlanById } from '@/data/plans';
 import SmartAadhaarCapture from '@/components/SmartAadhaarCapture';
+import PlanDetailsCard from '@/components/PlanDetailsCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ImageState {
   file: File | null;
@@ -28,6 +30,7 @@ const ApplicationPage: React.FC = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const { user, isLoading, userStatus, checkUserStatus } = useAuth();
+  const { language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStep, setSubmitStep] = useState<string>('');
 
@@ -431,6 +434,10 @@ const ApplicationPage: React.FC = () => {
                   <div className="font-semibold">{successData.submission_date}</div>
                 </div>
               </div>
+
+              {/* Full Service Plan Details in submitted language */}
+              <PlanDetailsCard planId={successData.plan_id} />
+
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Button
                   className="flex-1"
@@ -539,6 +546,9 @@ const ApplicationPage: React.FC = () => {
                     );
                   })}
                 </div>
+
+                {/* Selected Service Plan Details — bilingual */}
+                <PlanDetailsCard planId={selectedPlan} />
               </div>
 
               {/* Photo */}

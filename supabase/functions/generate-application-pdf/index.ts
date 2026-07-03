@@ -194,6 +194,144 @@ async function loadTamilFont(): Promise<string | null> {
   }
 }
 
+// ═════════════════ Bilingual Service Plan Details (mirror of src/data/planDetails.ts) ═════════════════
+interface PdfPlanServiceRow { no: number; service: string; description: string; }
+interface PdfPlanDetail {
+  tagline: string; worthText: string;
+  colNo: string; colService: string; colDescription: string;
+  services: PdfPlanServiceRow[]; memorial: string; noteTitle: string; notes: string[];
+}
+const PDF_PLAN_DETAILS: Record<"silver" | "gold" | "platinum", { en: PdfPlanDetail; ta: PdfPlanDetail }> = {
+  silver: {
+    en: {
+      tagline: "Peaceful Funeral Service – For Economically Weaker Families",
+      worthText: "Benefits Worth Rs. 15,000",
+      colNo: "S.No", colService: "Service", colDescription: "Description",
+      services: [
+        { no: 1, service: "Heaven Vehicle", description: "Up to 10 km. Additional charges apply beyond 10 km." },
+        { no: 2, service: "Ritual Expenses", description: "Shroud cloth, 2 garlands, ritual pot and other pooja materials." },
+        { no: 3, service: "Ice Box", description: "Up to 24 hours. Additional charges apply for extra hours." },
+        { no: 4, service: "Pandal + 50 Chairs", description: "For 24 hours." },
+        { no: 5, service: "Fireworks", description: "Included." },
+      ],
+      memorial: "Memorial Service — From the 16th Day Ceremony",
+      noteTitle: "Note",
+      notes: [
+        "Drinking water will be provided.",
+        "Death Certificate arrangements will be made by William Carey Funeral Services.",
+      ],
+    },
+    ta: {
+      tagline: "அமைதியான இறுதிச் சடங்கு – ஏழை, எளிய குடும்பத்திற்கு",
+      worthText: "₹15,000 மதிப்புள்ள பொருட்கள்",
+      colNo: "வ. எண்", colService: "சேவை", colDescription: "விவரம்",
+      services: [
+        { no: 1, service: "சொர்க்க ரதம்", description: "10 km வரை (கூடுதல் km-க்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 2, service: "சாமி செலவு", description: "கோர துணி, மாலை – 2, பானை, இதர பூஜை செலவு" },
+        { no: 3, service: "ஐஸ் பாக்ஸ்", description: "24 மணி நேரத்திற்கு மட்டும் (கூடுதல் மணி நேரத்திற்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 4, service: "பந்தல் + 50 நாற்காலி", description: "24 மணி நேரம்" },
+        { no: 5, service: "பட்டாசு வகைகள்", description: "—" },
+      ],
+      memorial: "நினைவு சேவை — 16-வது நாளிலிருந்து",
+      noteTitle: "குறிப்பு",
+      notes: [
+        "கூடுதலாக குடிநீர் வைக்கப்படும்.",
+        "இறப்பு சான்றிதழ் நிறுவனத்தின் மூலம் வாங்கி கொடுக்கப்படும்.",
+      ],
+    },
+  },
+  gold: {
+    en: {
+      tagline: "Dignified Funeral Service – For Middle-Class Families",
+      worthText: "Benefits Worth Rs. 25,000",
+      colNo: "S.No", colService: "Service", colDescription: "Description",
+      services: [
+        { no: 1, service: "Heaven Vehicle", description: "Up to 20 km. Additional charges apply beyond 20 km." },
+        { no: 2, service: "Ritual Expenses", description: "Shroud cloth, 2 garlands, ritual pot and other pooja materials." },
+        { no: 3, service: "Ice Box", description: "Up to 24 hours. Additional charges apply for extra hours." },
+        { no: 4, service: "Pandal + 70 Chairs", description: "For 24 hours." },
+        { no: 5, service: "Fireworks", description: "Included." },
+        { no: 6, service: "Traditional Band", description: "Up to 8 hours. Additional charges apply thereafter." },
+        { no: 7, service: "Flower Decoration", description: "Small floral decoration included." },
+        { no: 8, service: "Tea Arrangement", description: "For 100 people." },
+        { no: 9, service: "Drinking Water Cans", description: "Included." },
+      ],
+      memorial: "Memorial Service — From the 32nd Day Ceremony",
+      noteTitle: "Note",
+      notes: ["Death Certificate arrangements will be made by William Carey Funeral Services."],
+    },
+    ta: {
+      tagline: "கண்ணியமான இறுதிச் சடங்கு – நடுத்தர குடும்பத்திற்கு",
+      worthText: "₹25,000 மதிப்புள்ள பொருட்கள்",
+      colNo: "வ. எண்", colService: "சேவை", colDescription: "விவரம்",
+      services: [
+        { no: 1, service: "சொர்க்க ரதம்", description: "20 km வரை (கூடுதல் km-க்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 2, service: "சாமி செலவு", description: "கோர துணி, மாலை – 2, பானை, இதர பூஜை செலவு" },
+        { no: 3, service: "ஐஸ் பாக்ஸ்", description: "24 மணி நேரத்திற்கு மட்டும் (கூடுதல் மணி நேரத்திற்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 4, service: "பந்தல் + 70 நாற்காலி", description: "24 மணி நேரம்" },
+        { no: 5, service: "பட்டாசு வகைகள்", description: "—" },
+        { no: 6, service: "மேளம்", description: "8 மணி நேரம் (கூடுதல் மணி நேரத்திற்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 7, service: "சிறிய பூ அலங்காரம்", description: "—" },
+        { no: 8, service: "டீ செலவு", description: "100 நபர்களுக்கு" },
+        { no: 9, service: "குடிநீர் கேன்", description: "—" },
+      ],
+      memorial: "நினைவு சேவை — 32-வது நாளிலிருந்து",
+      noteTitle: "குறிப்பு",
+      notes: ["இறப்பு சான்றிதழ் நிறுவனத்தின் மூலம் வாங்கி கொடுக்கப்படும்."],
+    },
+  },
+  platinum: {
+    en: {
+      tagline: "Royal Funeral Service – For VIP Families",
+      worthText: "Benefits Worth Rs. 40,000",
+      colNo: "S.No", colService: "Service", colDescription: "Description",
+      services: [
+        { no: 1, service: "Golden Hearse", description: "Up to 20 km." },
+        { no: 2, service: "Premium Flower Decoration", description: "Floral decoration worth Rs. 5,000." },
+        { no: 3, service: "Ritual Expenses", description: "Shroud cloth, 2 garlands, ritual pot and other pooja materials." },
+        { no: 4, service: "Ice Box", description: "Up to 24 hours. Additional charges apply thereafter." },
+        { no: 5, service: "Pandal + 70 Chairs", description: "For 24 hours." },
+        { no: 6, service: "Fireworks", description: "Included." },
+        { no: 7, service: "Traditional Band", description: "Up to 8 hours. Additional charges apply thereafter." },
+        { no: 8, service: "Small Flower Decoration", description: "Included." },
+        { no: 9, service: "Tea Arrangement", description: "For 100 people." },
+        { no: 10, service: "Drinking Water Cans", description: "Included." },
+        { no: 11, service: "Ritual Expense Support", description: "Priests and ceremonial arrangements." },
+      ],
+      memorial: "Memorial Service — From the 64th Day Ceremony",
+      noteTitle: "Note",
+      notes: ["Death Certificate arrangements will be made by William Carey Funeral Services."],
+    },
+    ta: {
+      tagline: "ராஜ மரியாதை இறுதிச் சடங்கு – விஐபி குடும்பத்திற்கு",
+      worthText: "₹40,000 மதிப்புள்ள பொருட்கள்",
+      colNo: "வ. எண்", colService: "சேவை", colDescription: "விவரம்",
+      services: [
+        { no: 1, service: "தங்கரதம்", description: "20 km வரை" },
+        { no: 2, service: "பூ அலங்காரம்", description: "₹5,000 மதிப்புள்ள பூ அலங்காரம்" },
+        { no: 3, service: "சாமி செலவு", description: "கோர துணி, மாலை – 2, பானை, இதர பூஜை செலவு" },
+        { no: 4, service: "ஐஸ் பாக்ஸ்", description: "24 மணி நேரத்திற்கு மட்டும் (கூடுதல் மணி நேரத்திற்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 5, service: "பந்தல் + 70 நாற்காலி", description: "24 மணி நேரம்" },
+        { no: 6, service: "பட்டாசு வகைகள்", description: "—" },
+        { no: 7, service: "மேளம்", description: "8 மணி நேரம் (கூடுதல் மணி நேரத்திற்கு கட்டணம் வசூலிக்கப்படும்.)" },
+        { no: 8, service: "சிறிய பூ அலங்காரம்", description: "—" },
+        { no: 9, service: "டீ செலவு", description: "100 நபர்களுக்கு" },
+        { no: 10, service: "குடிநீர் கேன்", description: "—" },
+        { no: 11, service: "காரியச் செலவு பங்கு", description: "சாஸ்திரிகள், சாமான் ஏற்பாடுகள்" },
+      ],
+      memorial: "நினைவு சேவை — 64-வது நாளிலிருந்து",
+      noteTitle: "குறிப்பு",
+      notes: ["இறப்பு சான்றிதழ் நிறுவனத்தின் மூலம் வாங்கி கொடுக்கப்படும்."],
+    },
+  },
+};
+function getPlanDetailForPdf(id: string, lang: "en" | "ta"): PdfPlanDetail {
+  const key = (id || "").toLowerCase();
+  const entry = (PDF_PLAN_DETAILS as Record<string, { en: PdfPlanDetail; ta: PdfPlanDetail }>)[key]
+    || PDF_PLAN_DETAILS.silver;
+  return entry[lang];
+}
+
 // ─── Colors ───
 // Official William Carey Golden Theme (no brown)
 const GOLD = [164, 127, 55] as const;        // #A47F37 primary gold
@@ -531,82 +669,87 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
   y += boxH + 5;
 
-  // Plan Card — balanced two-column
-  const planCode = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
-  const planName = data.plan_name || "";
-  const planAmount = data.plan_amount;
-  const planWorth = data.plan_worth;
-  const planActivation = data.plan_activation || "";
-  const benefits = Array.isArray(data.plan_benefits) ? data.plan_benefits : [];
+  // ═══════════ Service Plan Details — Bilingual detailed table ═══════════
+  const planIdKey = ((data.selected_plan || data.plan_code || "").toString().toLowerCase()) as
+    "silver" | "gold" | "platinum";
+  const planDetail = getPlanDetailForPdf(planIdKey, lang);
+  const planCodeUpper = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
 
   y = drawSectionBar(labels.selectedPlan, y);
-  const cardY = y;
-  const padX = 6;
-  const colGap = 6;
-  const colW = (cw - colGap) / 2;
 
-  // Compute needed height from both columns
-  const benefitLineH = 5.0;
-  const leftLines = 3 + (planActivation ? 0 : 0); // title, amount, start date
-  const leftH = 10 /*title*/ + 12 /*amount*/ + 8 /*start date*/;
-  const rightH = 10 /*worth*/ + 8 /*coverage*/ + 6 /*label*/ + Math.max(1, benefits.length) * benefitLineH;
-  const cardH = Math.max(leftH, rightH) + 12;
-
+  // Plan header strip: CODE PLAN + worth text + tagline
+  const headStripH = 12;
   doc.setFillColor(...GOLD_SOFT);
-  doc.setDrawColor(...GOLD); doc.setLineWidth(0.55);
-  doc.roundedRect(marginX, cardY, cw, cardH, 2.2, 2.2, "FD");
-  // Column separator
-  doc.setDrawColor(...GOLD); doc.setLineWidth(0.2);
-  doc.line(marginX + colW + colGap / 2, cardY + 4, marginX + colW + colGap / 2, cardY + cardH - 4);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, y, cw, headStripH, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(11); doc.setTextColor(...GOLD_DARK);
+  doc.text(`${planCodeUpper} PLAN`, marginX + 3.5, y + 5);
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.worthText, pw - marginX - 3.5, y + 5, { align: "right" });
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.4); doc.setTextColor(...TEXT_BLACK);
+  const taglineLines = doc.splitTextToSize(planDetail.tagline, cw - 7).slice(0, 1);
+  doc.text(taglineLines[0] || "", marginX + 3.5, y + 10);
+  y += headStripH;
 
-  // LEFT column
-  const lx = marginX + padX;
-  let ly = cardY + 8;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("SELECTED PLAN", lx, ly);
-  ly += 5;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(13); doc.setTextColor(...TEXT_BLACK);
-  doc.text(`${planCode}${planName ? "  —  " + planName : ""}`, lx, ly);
-  ly += 8;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("PLAN AMOUNT", lx, ly);
-  ly += 5;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(15); doc.setTextColor(...GOLD_DARK);
-  doc.text(typeof planAmount === "number" ? `Rs. ${planAmount.toLocaleString("en-IN")}` : "—", lx, ly);
-  ly += 7;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("SERVICE START DATE", lx, ly);
-  ly += 4.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text(planActivation || submissionDate, lx, ly);
+  // Table header
+  const tblColNoW = 12;
+  const tblColServiceW = 55;
+  const tblColDescW = cw - tblColNoW - tblColServiceW;
+  const tblHeaderH = 7;
+  const tblRowH = 5.6;
+  doc.setFillColor(...GOLD_BAND);
+  doc.rect(marginX, y, cw, tblHeaderH, "F");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+  doc.text(planDetail.colNo, marginX + 3, y + 4.7);
+  doc.text(planDetail.colService, marginX + tblColNoW + 3, y + 4.7);
+  doc.text(planDetail.colDescription, marginX + tblColNoW + tblColServiceW + 3, y + 4.7);
+  y += tblHeaderH;
 
-  // RIGHT column
-  const rxc = marginX + colW + colGap + padX / 2;
-  let ry = cardY + 8;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("BENEFITS WORTH", rxc, ry);
-  ry += 5;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(13); doc.setTextColor(...GOLD_DARK);
-  doc.text(typeof planWorth === "number" ? `Rs. ${planWorth.toLocaleString("en-IN")}` : "—", rxc, ry);
-  ry += 7;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("COVERAGE", rxc, ry);
-  ry += 4.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text("Complete funeral service — A to Z arrangements", rxc, ry);
-  ry += 6;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("PLAN SUMMARY", rxc, ry);
-  ry += 4.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.6); doc.setTextColor(...TEXT_BLACK);
-  benefits.slice(0, 5).forEach((b) => {
-    iconCheck(rxc, ry - 1.8, 2.6);
-    const bl = doc.splitTextToSize(String(b), colW - padX - 6);
-    doc.text(bl[0] || "", rxc + 4.5, ry);
-    ry += benefitLineH;
+  // Table body
+  doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.15);
+  planDetail.services.forEach((row, ri) => {
+    if (ri % 2 === 1) { doc.setFillColor(...GOLD_SOFT); doc.rect(marginX, y, cw, tblRowH, "F"); }
+    doc.setFont(fontFamily, "normal"); doc.setFontSize(7.8); doc.setTextColor(...TEXT_BLACK);
+    doc.text(String(row.no), marginX + 3, y + tblRowH - 1.7);
+    const svc = doc.splitTextToSize(row.service, tblColServiceW - 4).slice(0, 1);
+    doc.text(svc[0] || "", marginX + tblColNoW + 3, y + tblRowH - 1.7);
+    const desc = doc.splitTextToSize(row.description, tblColDescW - 4).slice(0, 1);
+    doc.text(desc[0] || "", marginX + tblColNoW + tblColServiceW + 3, y + tblRowH - 1.7);
+    // horizontal separator
+    doc.line(marginX, y + tblRowH, marginX + cw, y + tblRowH);
+    y += tblRowH;
   });
+  // vertical separators + outer border
+  const tblTopY = y - planDetail.services.length * tblRowH - tblHeaderH;
+  const tblBottomY = y;
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, tblTopY, cw, tblBottomY - tblTopY, "S");
+  doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.2);
+  doc.line(marginX + tblColNoW, tblTopY, marginX + tblColNoW, tblBottomY);
+  doc.line(marginX + tblColNoW + tblColServiceW, tblTopY, marginX + tblColNoW + tblColServiceW, tblBottomY);
+  y += 3;
 
-  y = cardY + cardH + 4;
+  // Memorial chip
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
+  const memH = 7;
+  doc.roundedRect(marginX, y, cw, memH, 1.4, 1.4, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8.6); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.memorial, marginX + 3.5, y + 4.8);
+  y += memH + 3;
+
+  // Note
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.6); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.noteTitle.toUpperCase(), marginX, y);
+  y += 3.5;
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8); doc.setTextColor(...TEXT_BLACK);
+  planDetail.notes.forEach((n) => {
+    iconCheck(marginX, y - 1.8, 2.4);
+    const nl = doc.splitTextToSize(n, cw - 6).slice(0, 2);
+    doc.text(nl, marginX + 4, y);
+    y += nl.length * 4.2 + 0.6;
+  });
+  y += 2;
 
   // ─── Seal & Signature block: bottom-right aligned ───
   const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
