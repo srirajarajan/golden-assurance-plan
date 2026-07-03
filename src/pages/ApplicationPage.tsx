@@ -542,6 +542,9 @@ const ApplicationPage: React.FC = () => {
                     );
                   })}
                 </div>
+
+                {/* Selected Service Plan Details — bilingual */}
+                <PlanDetailsCard planId={selectedPlan} />
               </div>
 
               {/* Photo */}
