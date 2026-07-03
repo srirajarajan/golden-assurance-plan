@@ -531,82 +531,87 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
   y += boxH + 5;
 
-  // Plan Card — balanced two-column
-  const planCode = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
-  const planName = data.plan_name || "";
-  const planAmount = data.plan_amount;
-  const planWorth = data.plan_worth;
-  const planActivation = data.plan_activation || "";
-  const benefits = Array.isArray(data.plan_benefits) ? data.plan_benefits : [];
+  // ═══════════ Service Plan Details — Bilingual detailed table ═══════════
+  const planIdKey = ((data.selected_plan || data.plan_code || "").toString().toLowerCase()) as
+    "silver" | "gold" | "platinum";
+  const planDetail = getPlanDetailForPdf(planIdKey, lang);
+  const planCodeUpper = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
 
   y = drawSectionBar(labels.selectedPlan, y);
-  const cardY = y;
-  const padX = 6;
-  const colGap = 6;
-  const colW = (cw - colGap) / 2;
 
-  // Compute needed height from both columns
-  const benefitLineH = 5.0;
-  const leftLines = 3 + (planActivation ? 0 : 0); // title, amount, start date
-  const leftH = 10 /*title*/ + 12 /*amount*/ + 8 /*start date*/;
-  const rightH = 10 /*worth*/ + 8 /*coverage*/ + 6 /*label*/ + Math.max(1, benefits.length) * benefitLineH;
-  const cardH = Math.max(leftH, rightH) + 12;
-
+  // Plan header strip: CODE PLAN + worth text + tagline
+  const headStripH = 12;
   doc.setFillColor(...GOLD_SOFT);
-  doc.setDrawColor(...GOLD); doc.setLineWidth(0.55);
-  doc.roundedRect(marginX, cardY, cw, cardH, 2.2, 2.2, "FD");
-  // Column separator
-  doc.setDrawColor(...GOLD); doc.setLineWidth(0.2);
-  doc.line(marginX + colW + colGap / 2, cardY + 4, marginX + colW + colGap / 2, cardY + cardH - 4);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, y, cw, headStripH, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(11); doc.setTextColor(...GOLD_DARK);
+  doc.text(`${planCodeUpper} PLAN`, marginX + 3.5, y + 5);
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.worthText, pw - marginX - 3.5, y + 5, { align: "right" });
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.4); doc.setTextColor(...TEXT_BLACK);
+  const taglineLines = doc.splitTextToSize(planDetail.tagline, cw - 7).slice(0, 1);
+  doc.text(taglineLines[0] || "", marginX + 3.5, y + 10);
+  y += headStripH;
 
-  // LEFT column
-  const lx = marginX + padX;
-  let ly = cardY + 8;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("SELECTED PLAN", lx, ly);
-  ly += 5;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(13); doc.setTextColor(...TEXT_BLACK);
-  doc.text(`${planCode}${planName ? "  —  " + planName : ""}`, lx, ly);
-  ly += 8;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("PLAN AMOUNT", lx, ly);
-  ly += 5;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(15); doc.setTextColor(...GOLD_DARK);
-  doc.text(typeof planAmount === "number" ? `Rs. ${planAmount.toLocaleString("en-IN")}` : "—", lx, ly);
-  ly += 7;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("SERVICE START DATE", lx, ly);
-  ly += 4.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text(planActivation || submissionDate, lx, ly);
+  // Table header
+  const tblColNoW = 12;
+  const tblColServiceW = 55;
+  const tblColDescW = cw - tblColNoW - tblColServiceW;
+  const tblHeaderH = 7;
+  const tblRowH = 5.6;
+  doc.setFillColor(...GOLD_BAND);
+  doc.rect(marginX, y, cw, tblHeaderH, "F");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+  doc.text(planDetail.colNo, marginX + 3, y + 4.7);
+  doc.text(planDetail.colService, marginX + tblColNoW + 3, y + 4.7);
+  doc.text(planDetail.colDescription, marginX + tblColNoW + tblColServiceW + 3, y + 4.7);
+  y += tblHeaderH;
 
-  // RIGHT column
-  const rxc = marginX + colW + colGap + padX / 2;
-  let ry = cardY + 8;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("BENEFITS WORTH", rxc, ry);
-  ry += 5;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(13); doc.setTextColor(...GOLD_DARK);
-  doc.text(typeof planWorth === "number" ? `Rs. ${planWorth.toLocaleString("en-IN")}` : "—", rxc, ry);
-  ry += 7;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("COVERAGE", rxc, ry);
-  ry += 4.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text("Complete funeral service — A to Z arrangements", rxc, ry);
-  ry += 6;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.2); doc.setTextColor(...GOLD_DARK);
-  doc.text("PLAN SUMMARY", rxc, ry);
-  ry += 4.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.6); doc.setTextColor(...TEXT_BLACK);
-  benefits.slice(0, 5).forEach((b) => {
-    iconCheck(rxc, ry - 1.8, 2.6);
-    const bl = doc.splitTextToSize(String(b), colW - padX - 6);
-    doc.text(bl[0] || "", rxc + 4.5, ry);
-    ry += benefitLineH;
+  // Table body
+  doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.15);
+  planDetail.services.forEach((row, ri) => {
+    if (ri % 2 === 1) { doc.setFillColor(...GOLD_SOFT); doc.rect(marginX, y, cw, tblRowH, "F"); }
+    doc.setFont(fontFamily, "normal"); doc.setFontSize(7.8); doc.setTextColor(...TEXT_BLACK);
+    doc.text(String(row.no), marginX + 3, y + tblRowH - 1.7);
+    const svc = doc.splitTextToSize(row.service, tblColServiceW - 4).slice(0, 1);
+    doc.text(svc[0] || "", marginX + tblColNoW + 3, y + tblRowH - 1.7);
+    const desc = doc.splitTextToSize(row.description, tblColDescW - 4).slice(0, 1);
+    doc.text(desc[0] || "", marginX + tblColNoW + tblColServiceW + 3, y + tblRowH - 1.7);
+    // horizontal separator
+    doc.line(marginX, y + tblRowH, marginX + cw, y + tblRowH);
+    y += tblRowH;
   });
+  // vertical separators + outer border
+  const tblTopY = y - planDetail.services.length * tblRowH - tblHeaderH;
+  const tblBottomY = y;
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
+  doc.rect(marginX, tblTopY, cw, tblBottomY - tblTopY, "S");
+  doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.2);
+  doc.line(marginX + tblColNoW, tblTopY, marginX + tblColNoW, tblBottomY);
+  doc.line(marginX + tblColNoW + tblColServiceW, tblTopY, marginX + tblColNoW + tblColServiceW, tblBottomY);
+  y += 3;
 
-  y = cardY + cardH + 4;
+  // Memorial chip
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
+  const memH = 7;
+  doc.roundedRect(marginX, y, cw, memH, 1.4, 1.4, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8.6); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.memorial, marginX + 3.5, y + 4.8);
+  y += memH + 3;
+
+  // Note
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.6); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.noteTitle.toUpperCase(), marginX, y);
+  y += 3.5;
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8); doc.setTextColor(...TEXT_BLACK);
+  planDetail.notes.forEach((n) => {
+    iconCheck(marginX, y - 1.8, 2.4);
+    const nl = doc.splitTextToSize(n, cw - 6).slice(0, 2);
+    doc.text(nl, marginX + 4, y);
+    y += nl.length * 4.2 + 0.6;
+  });
+  y += 2;
 
   // ─── Seal & Signature block: bottom-right aligned ───
   const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
