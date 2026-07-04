@@ -413,44 +413,77 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const logoImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/logo.png`);
   const drawHeader = () => {
     const top = marginTop;
-    const logoSize = 28;
-    const headerH = logoSize; // shared vertical band
+    // Fixed 3-column grid: 18% / 50% / 32%
+    const leftColW = cw * 0.18;
+    const centerColW = cw * 0.50;
+    const rightColW = cw * 0.32;
+    const leftX = marginX;
+    const centerX = marginX + leftColW;
+    const rightX = marginX + leftColW + centerColW;
+
+    // Logo sized within left column (increased by ~20%)
+    const logoSize = Math.min(leftColW - 2, 30);
+    const headerH = Math.max(logoSize, 30);
     const cyBand = top + headerH / 2;
 
-    // Left: logo vertically centered in band
+    // Left: logo vertically centered in its column
     if (logoImg) {
-      try { doc.addImage(logoImg.base64, logoImg.type, marginX, top, logoSize, logoSize); }
-      catch (e) { console.error("Logo error:", e); }
+      try {
+        doc.addImage(
+          logoImg.base64, logoImg.type,
+          leftX + (leftColW - logoSize) / 2,
+          top + (headerH - logoSize) / 2,
+          logoSize, logoSize,
+        );
+      } catch (e) { console.error("Logo error:", e); }
     }
 
-    // Center: name + address, vertically centered around cyBand
+    // Center: company name + address, vertically centered within band
+    const centerMid = centerX + centerColW / 2;
     doc.setFont(fontFamily, "bold");
-    doc.setFontSize(14.5);
+    doc.setFontSize(13.5);
     doc.setTextColor(...GOLD_DARK);
-    doc.text("William Carey Funeral Services Pvt. Ltd.", pw / 2, cyBand - 2, { align: "center" });
+    doc.text("William Carey Funeral Services Pvt. Ltd.", centerMid, cyBand - 2, {
+      align: "center", maxWidth: centerColW - 2,
+    });
     doc.setFont(fontFamily, "normal");
-    doc.setFontSize(8.6);
+    doc.setFontSize(8.2);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("RR Complex, Kannankurichi Main Road,", pw / 2, cyBand + 3, { align: "center" });
-    doc.text("Chinnathirupathi, Salem – 636008", pw / 2, cyBand + 7, { align: "center" });
+    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, cyBand + 3.2, {
+      align: "center", maxWidth: centerColW - 2,
+    });
+    doc.text("Chinnathirupathi, Salem – 636008", centerMid, cyBand + 7.2, {
+      align: "center", maxWidth: centerColW - 2,
+    });
 
-    // Right: contact – 3 evenly spaced lines, aligned so block matches band
-    const rx = pw - marginX;
+    // Right: contact block — icon left, text left-aligned, safely inside right column
+    const contactPadLeft = 2;
+    const iconTextGap = 2.2;
+    const iconSize = 3;
+    const iconX = rightX + contactPadLeft;
+    const textX = iconX + iconSize + iconTextGap;
+    const textMaxW = rightColW - contactPadLeft - iconSize - iconTextGap - 1; // safe area
+
     doc.setFont(fontFamily, "normal");
-    doc.setFontSize(8);
-    const lineGap = 5.2;
-    const startY = cyBand - lineGap; // top line
-    const lines = [
-      { icon: iconPhone, text: "9600350889", color: TEXT_BLACK },
-      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com", color: TEXT_BLACK },
-      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com", color: GOLD_DARK },
+    const contactRows = [
+      { icon: iconPhone, text: "9600350889", size: 8.4, color: TEXT_BLACK },
+      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com", size: 7.4, color: TEXT_BLACK },
+      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com", size: 7.4, color: GOLD_DARK },
     ];
-    lines.forEach((ln, i) => {
+    const lineGap = 5.4;
+    const startY = cyBand - lineGap;
+    contactRows.forEach((ln, i) => {
       const ly = startY + i * lineGap;
+      ln.icon(iconX, ly - 1.2, iconSize);
+      doc.setFontSize(ln.size);
       doc.setTextColor(...ln.color);
-      const tw = doc.getTextWidth(ln.text);
-      doc.text(ln.text, rx, ly);
-      ln.icon(rx - tw - 4.5, ly - 1.2, 3);
+      // Shrink further only if truly needed
+      let size = ln.size;
+      while (doc.getTextWidth(ln.text) > textMaxW && size > 6) {
+        size -= 0.2;
+        doc.setFontSize(size);
+      }
+      doc.text(ln.text, textX, ly, { maxWidth: textMaxW });
     });
 
     // Golden divider
@@ -783,12 +816,13 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       );
     } catch (e) { console.error("Seal error:", e); }
   }
-  const mdY = blockTopY + sealSignH + gapAfterImg + mdLineH - 1;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9.5); doc.setTextColor(...TEXT_BLACK);
-  doc.text(labels.managingDirector, centerX, mdY, { align: "center" });
-  const coY = mdY + gapBetweenLines + coLineH - 1;
+  // Order: [Seal & Signature image] -> Company Name -> Managing Director
+  const coY = blockTopY + sealSignH + gapAfterImg + coLineH - 1;
   doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
   doc.text("William Carey Funeral Services Pvt. Ltd.", centerX, coY, { align: "center" });
+  const mdY = coY + gapBetweenLines + mdLineH - 1;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9.5); doc.setTextColor(...TEXT_BLACK);
+  doc.text(labels.managingDirector, centerX, mdY, { align: "center" });
 
   const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
   console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes, pages:", doc.getNumberOfPages());
