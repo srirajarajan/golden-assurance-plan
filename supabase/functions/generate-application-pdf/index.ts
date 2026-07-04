@@ -57,7 +57,7 @@ interface ApplicationData {
 }
 
 const tamilLabels = {
-  title: "William Carey Funeral Services Pvt. Ltd.",
+  title: "William Carey Services Pvt. Ltd.",
   subtitle: "விண்ணப்பப் படிவம்",
   applicationNo: "விண்ணப்ப எண்",
   date: "தேதி",
@@ -97,7 +97,7 @@ const tamilLabels = {
 };
 
 const englishLabels = {
-  title: "William Carey Funeral Services Pvt. Ltd.",
+  title: "William Carey Services Pvt. Ltd.",
   subtitle: "Application Form",
   applicationNo: "Application No",
   date: "Date",
@@ -218,7 +218,7 @@ const PDF_PLAN_DETAILS: Record<"silver" | "gold" | "platinum", { en: PdfPlanDeta
       noteTitle: "Note",
       notes: [
         "Drinking water will be provided.",
-        "Death Certificate arrangements will be made by William Carey Funeral Services.",
+        "Death Certificate arrangements will be made by William Carey Services.",
       ],
     },
     ta: {
@@ -258,7 +258,7 @@ const PDF_PLAN_DETAILS: Record<"silver" | "gold" | "platinum", { en: PdfPlanDeta
       ],
       memorial: "Memorial Service — From the 32nd Day Ceremony",
       noteTitle: "Note",
-      notes: ["Death Certificate arrangements will be made by William Carey Funeral Services."],
+      notes: ["Death Certificate arrangements will be made by William Carey Services."],
     },
     ta: {
       tagline: "கண்ணியமான இறுதிச் சடங்கு – நடுத்தர குடும்பத்திற்கு",
@@ -300,7 +300,7 @@ const PDF_PLAN_DETAILS: Record<"silver" | "gold" | "platinum", { en: PdfPlanDeta
       ],
       memorial: "Memorial Service — From the 64th Day Ceremony",
       noteTitle: "Note",
-      notes: ["Death Certificate arrangements will be made by William Carey Funeral Services."],
+      notes: ["Death Certificate arrangements will be made by William Carey Services."],
     },
     ta: {
       tagline: "ராஜ மரியாதை இறுதிச் சடங்கு – விஐபி குடும்பத்திற்கு",
@@ -441,7 +441,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Center: company name + address, vertically centered within band
     const centerMid = centerX + centerColW / 2;
     // Auto-shrink company name so it always fits on a single line
-    const coName = "William Carey Funeral Services Pvt. Ltd.";
+    const coName = "William Carey Services Pvt. Ltd.";
     const coMaxW = centerColW - 2;
     doc.setFont(fontFamily, "bold");
     let coSize = 13.5;
@@ -852,7 +852,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // Order: [Seal & Signature image] -> Company Name -> Managing Director
   const coY = blockTopY + sealSignH + gapAfterImg + coLineH - 1;
   doc.setFont(fontFamily, "bold"); doc.setFontSize(8.6); doc.setTextColor(...GOLD_DARK);
-  doc.text("William Carey Funeral Services Pvt. Ltd.", centerX, coY, {
+  doc.text("William Carey Services Pvt. Ltd.", centerX, coY, {
     align: "center", maxWidth: sealSignW + 10,
   });
   const mdY = coY + gapBetweenLines + mdLineH - 1;
@@ -873,7 +873,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
   const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
 
   const emailPayload = {
-    from: "William Carey Funeral Services <onboarding@resend.dev>",
+    from: "William Carey Services <onboarding@resend.dev>",
     to: ["williamcareyfuneral99@gmail.com"],
     subject: `New Application Received - ${serialNumber}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
@@ -886,7 +886,7 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
       </table>
       <p>Please see the attached PDF for full details.</p>
       <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
-      <p style="color:#888;font-size:12px">William Carey Funeral Services Pvt. Ltd.</p>
+      <p style="color:#888;font-size:12px">William Carey Services Pvt. Ltd.</p>
     </div>`,
     attachments: [{ filename, content: pdfBase64 }],
   };

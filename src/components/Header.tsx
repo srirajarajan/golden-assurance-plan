@@ -42,10 +42,10 @@ const Header = () => {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="William Carey Funeral Services Pvt. Ltd." className="h-14 w-14 object-contain" loading="eager" />
+            <img src={logo} alt="William Carey Services Pvt. Ltd." className="h-14 w-14 object-contain" loading="eager" />
             <span className="hidden sm:flex flex-col leading-tight">
               <span className="font-display text-base md:text-lg font-semibold text-secondary">
-                {language === 'ta' ? 'வில்லியம் கேரி ஈமச்சடங்கு சேவைகள்' : 'William Carey Funeral Services'}
+                {language === 'ta' ? 'வில்லியம் கேரி சேவைகள்' : 'William Carey Services'}
               </span>
               <span className="text-[10px] md:text-xs text-muted-foreground tracking-wide">
                 {language === 'ta' ? 'பிரைவேட் லிமிடெட்' : 'Pvt. Ltd.'}

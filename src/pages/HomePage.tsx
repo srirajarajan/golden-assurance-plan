@@ -48,7 +48,7 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150" />
                 <img
                   src={logo}
-                  alt="William Carey Funeral Services Pvt. Ltd."
+                  alt="William Carey Services Pvt. Ltd."
                   className="relative h-32 w-32 md:h-40 md:w-40 object-contain gold-glow rounded-full"
                 />
               </div>
@@ -61,8 +61,8 @@ const HomePage = () => {
               </h1>
               <p className="font-display text-base md:text-lg text-muted-foreground mt-3">
                 {language === 'ta'
-                  ? 'William Carey Funeral Services Pvt. Ltd.'
-                  : 'வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்'}
+                  ? 'William Carey Services Pvt. Ltd.'
+                  : 'வில்லியம் கேரி சேவைகள் பிரைவேட் லிமிடெட்'}
               </p>
             </div>
 

@@ -25,7 +25,7 @@ export const translations = {
         { title: "No Financial Burden on Children", desc: "Children and family members will not need to borrow money during emergencies." }
       ],
       noteCardOne: "When receiving services through this scheme, showing the official Service Card is mandatory.",
-      noteCardTwo: "Every beneficiary joining this scheme will receive sweets and savory snacks during the Diwali festival through William Carey Funeral Services Pvt. Ltd.",
+      noteCardTwo: "Every beneficiary joining this scheme will receive sweets and savory snacks during the Diwali festival through William Carey Services Pvt. Ltd.",
       docsTitle: "Required Documents",
       docs: [
         { label: "Family Card Xerox", qty: "2 Copies" },
@@ -36,7 +36,7 @@ export const translations = {
       adminLine: "For more details, please contact us"
     },
     hero: {
-      title: "William Carey Funeral Services Pvt. Ltd.",
+      title: "William Carey Services Pvt. Ltd.",
       subtitle: "Dignified, trusted and affordable funeral service plans for families across Tamil Nadu.",
       applyBtn: "Apply Now",
       benefitsBtn: "View Plans"
@@ -79,7 +79,7 @@ export const translations = {
       relation: "Relationship",
       relationPlaceholder: "Enter relationship",
       selectGender: "Select Gender",
-      directorAuth: "Authorized by Director – William Carey Funeral Services Pvt. Ltd.",
+      directorAuth: "Authorized by Director – William Carey Services Pvt. Ltd.",
       submit: "Submit Application",
       submitting: "Submitting...",
       required: "*",
@@ -140,7 +140,7 @@ export const translations = {
     },
     footer: {
       rights: "All Rights Reserved",
-      tagline: "William Carey Funeral Services Pvt. Ltd. — Hope & Dignity since 2020",
+      tagline: "William Carey Services Pvt. Ltd. — Hope & Dignity since 2020",
       email: "wcfheadofficeslm2016@gmail.com"
     }
   },
@@ -170,7 +170,7 @@ export const translations = {
         { title: "குழந்தைகள் மீது நிதி சுமை இல்லை", desc: "அவசர காலங்களில் குழந்தைகளும் குடும்ப உறுப்பினர்களும் கடன் வாங்க வேண்டியதில்லை." }
       ],
       noteCardOne: "இத்திட்டத்தின் மூலம் சேவை பெறும் போது, அதிகாரபூர்வ சேவை அட்டையை காட்டுவது கட்டாயமாகும்.",
-      noteCardTwo: "இத்திட்டத்தில் இணையும் ஒவ்வொரு பயனாளிக்கும் தீபாவளி பண்டிகையின் போது வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட் மூலம் இனிப்புகள் மற்றும் காரசேவ் வழங்கப்படும்.",
+      noteCardTwo: "இத்திட்டத்தில் இணையும் ஒவ்வொரு பயனாளிக்கும் தீபாவளி பண்டிகையின் போது வில்லியம் கேரி சேவைகள் பிரைவேட் லிமிடெட் மூலம் இனிப்புகள் மற்றும் காரசேவ் வழங்கப்படும்.",
       docsTitle: "தேவையான ஆவணங்கள்",
       docs: [
         { label: "குடும்ப அட்டை நகல்", qty: "2 பிரதிகள்" },
@@ -181,7 +181,7 @@ export const translations = {
       adminLine: "மேலதிக விவரங்களுக்கு, எங்களை தொடர்பு கொள்ளவும்"
     },
     hero: {
-      title: "வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்",
+      title: "வில்லியம் கேரி சேவைகள் பிரைவேட் லிமிடெட்",
       subtitle: "கண்ணியமான, நம்பகமான மற்றும் மலிவான ஈமச்சடங்கு சேவை திட்டங்கள் — உங்கள் குடும்பத்திற்கான பாதுகாப்பு.",
       applyBtn: "விண்ணப்பிக்க",
       benefitsBtn: "சேவை திட்டங்கள்"
@@ -224,7 +224,7 @@ export const translations = {
       relation: "உறவு முறை",
       relationPlaceholder: "உறவு முறையை உள்ளிடவும்",
       selectGender: "பாலினம் தேர்வு செய்க",
-      directorAuth: "இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட்",
+      directorAuth: "இயக்குநரால் அங்கீகரிக்கப்பட்டது – வில்லியம் கேரி சேவைகள் பிரைவேட் லிமிடெட்",
       submit: "விண்ணப்பத்தை சமர்ப்பிக்க",
       submitting: "சமர்ப்பிக்கிறது...",
       required: "*",
@@ -285,7 +285,7 @@ export const translations = {
     },
     footer: {
       rights: "அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை",
-      tagline: "வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட் — 2020 முதல் நம்பிக்கையும் கண்ணியமும்",
+      tagline: "வில்லியம் கேரி சேவைகள் பிரைவேட் லிமிடெட் — 2020 முதல் நம்பிக்கையும் கண்ணியமும்",
       email: "wcfheadofficeslm2016@gmail.com"
     }
   }

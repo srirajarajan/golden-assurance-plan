@@ -41,7 +41,7 @@ export const PLAN_DETAILS: Record<PlanId, PlanDetailBilingual> = {
       noteTitle: 'Note',
       notes: [
         'Drinking water will be provided.',
-        'Death Certificate arrangements will be made by William Carey Funeral Services.',
+        'Death Certificate arrangements will be made by William Carey Services.',
       ],
     },
     ta: {
@@ -81,7 +81,7 @@ export const PLAN_DETAILS: Record<PlanId, PlanDetailBilingual> = {
       ],
       memorial: 'Memorial Service — From the 32nd Day Ceremony',
       noteTitle: 'Note',
-      notes: ['Death Certificate arrangements will be made by William Carey Funeral Services.'],
+      notes: ['Death Certificate arrangements will be made by William Carey Services.'],
     },
     ta: {
       tagline: 'கண்ணியமான இறுதிச் சடங்கு – நடுத்தர குடும்பத்திற்கு',
@@ -123,7 +123,7 @@ export const PLAN_DETAILS: Record<PlanId, PlanDetailBilingual> = {
       ],
       memorial: 'Memorial Service — From the 64th Day Ceremony',
       noteTitle: 'Note',
-      notes: ['Death Certificate arrangements will be made by William Carey Funeral Services.'],
+      notes: ['Death Certificate arrangements will be made by William Carey Services.'],
     },
     ta: {
       tagline: 'ராஜ மரியாதை இறுதிச் சடங்கு – விஐபி குடும்பத்திற்கு',
