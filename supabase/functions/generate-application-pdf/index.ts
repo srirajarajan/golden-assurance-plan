@@ -464,25 +464,33 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     const textX = iconX + iconSize + iconTextGap;
     const textMaxW = rightColW - contactPadLeft - iconSize - iconTextGap - 1; // safe area
 
+    // All rows share the same font size and colour for a clean contact block
     doc.setFont(fontFamily, "normal");
     const contactRows = [
-      { icon: iconPhone, text: "9600350889", size: 8.4, color: TEXT_BLACK },
-      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com", size: 7.4, color: TEXT_BLACK },
-      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com", size: 7.4, color: GOLD_DARK },
+      { icon: iconPhone, text: "9600350889" },
+      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com" },
+      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com" },
     ];
-    const lineGap = 5.4;
+    const baseSize = 7.6;
+    // Determine a uniform font size that fits every row within the safe area
+    let uniformSize = baseSize;
+    doc.setFontSize(uniformSize);
+    contactRows.forEach((ln) => {
+      let s = uniformSize;
+      doc.setFontSize(s);
+      while (doc.getTextWidth(ln.text) > textMaxW && s > 6) {
+        s -= 0.2;
+        doc.setFontSize(s);
+      }
+      if (s < uniformSize) uniformSize = s;
+    });
+    const lineGap = 5.2;
     const startY = cyBand - lineGap;
+    doc.setFontSize(uniformSize);
+    doc.setTextColor(...TEXT_BLACK);
     contactRows.forEach((ln, i) => {
       const ly = startY + i * lineGap;
       ln.icon(iconX, ly - 1.2, iconSize);
-      doc.setFontSize(ln.size);
-      doc.setTextColor(...ln.color);
-      // Shrink further only if truly needed
-      let size = ln.size;
-      while (doc.getTextWidth(ln.text) > textMaxW && size > 6) {
-        size -= 0.2;
-        doc.setFontSize(size);
-      }
       doc.text(ln.text, textX, ly, { maxWidth: textMaxW });
     });
 
