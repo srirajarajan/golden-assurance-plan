@@ -39,7 +39,7 @@ interface InvoiceRow {
 const COMPANY = {
   name: 'William Carey Funeral Services Pvt. Ltd.',
   website: 'www.williamcareyfuneralservices.com',
-  email: 'williamcareyfuneral99@gmail.com',
+  email: 'wcfheadofficeslm2016@gmail.com',
   phone: '9600350889',
   address: 'RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008',
 };
@@ -520,6 +520,12 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             <a href={`tel:${COMPANY.phone}`} className="text-foreground no-underline">{COMPANY.phone}</a>
           </div>
           <div className="flex items-center justify-end gap-1.5">
+            <span aria-hidden>✉</span>
+            <a href={`mailto:${COMPANY.email}`} className="text-primary underline">
+              {COMPANY.email}
+            </a>
+          </div>
+          <div className="flex items-center justify-end gap-1.5">
             <span aria-hidden>🌐</span>
             <a
               href={`https://${COMPANY.website}`}
@@ -528,12 +534,6 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
               className="text-primary underline"
             >
               {COMPANY.website}
-            </a>
-          </div>
-          <div className="flex items-center justify-end gap-1.5">
-            <span aria-hidden>✉</span>
-            <a href={`mailto:${COMPANY.email}`} className="text-primary underline">
-              {COMPANY.email}
             </a>
           </div>
         </div>

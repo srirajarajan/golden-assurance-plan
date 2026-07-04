@@ -127,7 +127,7 @@ export const translations = {
       subtitle: "Get in touch with us for any queries",
       phone: "Phone",
       email: "Email",
-      emailAddress: "williamcareyfuneral99@gmail.com",
+      emailAddress: "wcfheadofficeslm2016@gmail.com",
       address: "Address",
       addressText: "RR Complex, Kannankurichi Main Road, Chinnathirupathi Bus Stand, Salem-636008. (M5JC+4GM Salem, Tamil Nadu)",
       formTitle: "Send us a Message",
@@ -141,7 +141,7 @@ export const translations = {
     footer: {
       rights: "All Rights Reserved",
       tagline: "William Carey Funeral Services Pvt. Ltd. — Hope & Dignity since 2020",
-      email: "williamcareyfuneral99@gmail.com"
+      email: "wcfheadofficeslm2016@gmail.com"
     }
   },
   ta: {
@@ -272,7 +272,7 @@ export const translations = {
       subtitle: "எந்த கேள்விகளுக்கும் எங்களை தொடர்பு கொள்ளுங்கள்",
       phone: "தொலைபேசி",
       email: "மின்னஞ்சல்",
-      emailAddress: "williamcareyfuneral99@gmail.com",
+      emailAddress: "wcfheadofficeslm2016@gmail.com",
       address: "முகவரி",
       addressText: "RR காம்ப்ளக்ஸ், கன்னங்குறிச்சி மெயின் ரோடு, சின்னத்திருப்பதி பஸ் நிலையம், சேலம்-636008. (M5JC+4GM Salem, Tamil Nadu)",
       formTitle: "எங்களுக்கு செய்தி அனுப்புங்கள்",
@@ -286,7 +286,7 @@ export const translations = {
     footer: {
       rights: "அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை",
       tagline: "வில்லியம் கேரி ஈமச்சடங்கு சேவைகள் பிரைவேட் லிமிடெட் — 2020 முதல் நம்பிக்கையும் கண்ணியமும்",
-      email: "williamcareyfuneral99@gmail.com"
+      email: "wcfheadofficeslm2016@gmail.com"
     }
   }
 };
