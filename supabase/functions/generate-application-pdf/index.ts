@@ -768,42 +768,53 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.text(taglineLines[0] || "", marginX + 3.5, y + 10);
   y += headStripH;
 
-  // Table header
-  const tblColNoW = 12;
-  const tblColServiceW = 55;
+  // ─── Restored professional plan table (multi-line description, generous rows) ───
+  const tblColNoW = 14;
+  const tblColServiceW = 58;
   const tblColDescW = cw - tblColNoW - tblColServiceW;
-  const tblHeaderH = 7;
-  const tblRowH = 5.6;
+  const tblHeaderH = 8;
+  const tblLineH = 4.2;
+  const cellPadX = 3.5;
+  const cellPadY = 3.2;
+
+  // Header
   doc.setFillColor(...GOLD_BAND);
   doc.rect(marginX, y, cw, tblHeaderH, "F");
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-  doc.text(planDetail.colNo, marginX + 3, y + 4.7);
-  doc.text(planDetail.colService, marginX + tblColNoW + 3, y + 4.7);
-  doc.text(planDetail.colDescription, marginX + tblColNoW + tblColServiceW + 3, y + 4.7);
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8.6); doc.setTextColor(255, 255, 255);
+  doc.text(planDetail.colNo, marginX + cellPadX, y + 5.4);
+  doc.text(planDetail.colService, marginX + tblColNoW + cellPadX, y + 5.4);
+  doc.text(planDetail.colDescription, marginX + tblColNoW + tblColServiceW + cellPadX, y + 5.4);
   y += tblHeaderH;
 
-  // Table body
-  doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.15);
+  const tblTopY = y - tblHeaderH;
+
+  // Body — wrap description over up to 2 lines
   planDetail.services.forEach((row, ri) => {
-    if (ri % 2 === 1) { doc.setFillColor(...GOLD_SOFT); doc.rect(marginX, y, cw, tblRowH, "F"); }
-    doc.setFont(fontFamily, "normal"); doc.setFontSize(7.8); doc.setTextColor(...TEXT_BLACK);
-    doc.text(String(row.no), marginX + 3, y + tblRowH - 1.7);
-    const svc = doc.splitTextToSize(row.service, tblColServiceW - 4).slice(0, 1);
-    doc.text(svc[0] || "", marginX + tblColNoW + 3, y + tblRowH - 1.7);
-    const desc = doc.splitTextToSize(row.description, tblColDescW - 4).slice(0, 1);
-    doc.text(desc[0] || "", marginX + tblColNoW + tblColServiceW + 3, y + tblRowH - 1.7);
-    // horizontal separator
-    doc.line(marginX, y + tblRowH, marginX + cw, y + tblRowH);
-    y += tblRowH;
+    doc.setFont(fontFamily, "normal"); doc.setFontSize(8.4);
+    const svcLines = doc.splitTextToSize(row.service, tblColServiceW - 2 * cellPadX).slice(0, 2);
+    const descLines = doc.splitTextToSize(row.description, tblColDescW - 2 * cellPadX).slice(0, 2);
+    const rowLines = Math.max(1, svcLines.length, descLines.length);
+    const rowH = Math.max(7.5, rowLines * tblLineH + 3);
+
+    if (ri % 2 === 1) { doc.setFillColor(...GOLD_SOFT); doc.rect(marginX, y, cw, rowH, "F"); }
+
+    doc.setTextColor(...TEXT_BLACK);
+    doc.text(String(row.no), marginX + cellPadX, y + cellPadY + 2);
+    doc.text(svcLines, marginX + tblColNoW + cellPadX, y + cellPadY + 2);
+    doc.text(descLines, marginX + tblColNoW + tblColServiceW + cellPadX, y + cellPadY + 2);
+
+    doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.15);
+    doc.line(marginX, y + rowH, marginX + cw, y + rowH);
+    y += rowH;
   });
-  // vertical separators + outer border
-  const tblTopY = y - planDetail.services.length * tblRowH - tblHeaderH;
+
   const tblBottomY = y;
+  // Outer border + column dividers
   doc.setDrawColor(...GOLD); doc.setLineWidth(0.35);
   doc.rect(marginX, tblTopY, cw, tblBottomY - tblTopY, "S");
   doc.setDrawColor(...LINE_GREY); doc.setLineWidth(0.2);
-  doc.line(marginX + tblColNoW, tblTopY, marginX + tblColNoW, tblBottomY);
-  doc.line(marginX + tblColNoW + tblColServiceW, tblTopY, marginX + tblColNoW + tblColServiceW, tblBottomY);
+  doc.line(marginX + tblColNoW, tblTopY + tblHeaderH, marginX + tblColNoW, tblBottomY);
+  doc.line(marginX + tblColNoW + tblColServiceW, tblTopY + tblHeaderH, marginX + tblColNoW + tblColServiceW, tblBottomY);
   y += 3;
 
   // ─── Seal & Signature block: bottom-right aligned ───
