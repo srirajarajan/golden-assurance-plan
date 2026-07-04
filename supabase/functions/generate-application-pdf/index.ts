@@ -675,8 +675,36 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.rect(marginX, y, cw, mH, "FD");
     doc.setTextColor(...TEXT_BLACK);
     doc.text(mLines, marginX + 3.5, y + 5);
-    y += mH;
+    y += mH + 4;
+  } else {
+    y += 1;
   }
+
+  // Resolve plan detail early so Memorial + Note can render on Page 1
+  const planIdKey = ((data.selected_plan || data.plan_code || "").toString().toLowerCase()) as
+    "silver" | "gold" | "platinum";
+  const planDetail = getPlanDetailForPdf(planIdKey, lang);
+
+  // Memorial chip on Page 1 (moved from Page 2)
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
+  const memH1 = 8;
+  doc.roundedRect(marginX, y, cw, memH1, 1.6, 1.6, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.memorial, marginX + 3.5, y + 5.4);
+  y += memH1 + 4;
+
+  // Note on Page 1
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.noteTitle.toUpperCase(), marginX, y);
+  y += 4;
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.4); doc.setTextColor(...TEXT_BLACK);
+  planDetail.notes.forEach((n) => {
+    iconCheck(marginX, y - 1.8, 2.4);
+    const nl = doc.splitTextToSize(n, cw - 6).slice(0, 3);
+    doc.text(nl, marginX + 4, y);
+    y += nl.length * 4.4 + 1;
+  });
 
   // ═════════════════════════ PAGE 2 ═════════════════════════
   doc.addPage();
