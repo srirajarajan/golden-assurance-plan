@@ -440,20 +440,28 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
     // Center: company name + address, vertically centered within band
     const centerMid = centerX + centerColW / 2;
+    // Auto-shrink company name so it always fits on a single line
+    const coName = "William Carey Funeral Services Pvt. Ltd.";
+    const coMaxW = centerColW - 2;
     doc.setFont(fontFamily, "bold");
-    doc.setFontSize(13.5);
+    let coSize = 13.5;
+    doc.setFontSize(coSize);
+    while (doc.getTextWidth(coName) > coMaxW && coSize > 9) {
+      coSize -= 0.2;
+      doc.setFontSize(coSize);
+    }
     doc.setTextColor(...GOLD_DARK);
-    doc.text("William Carey Funeral Services Pvt. Ltd.", centerMid, cyBand - 2, {
-      align: "center", maxWidth: centerColW - 2,
-    });
+    // Company name (single line) + address block below with 6-8px vertical gap
+    const coBaseY = cyBand - 3.5;
+    doc.text(coName, centerMid, coBaseY, { align: "center" });
     doc.setFont(fontFamily, "normal");
     doc.setFontSize(8.2);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, cyBand + 3.2, {
-      align: "center", maxWidth: centerColW - 2,
+    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, coBaseY + 4.6, {
+      align: "center",
     });
-    doc.text("Chinnathirupathi, Salem – 636008", centerMid, cyBand + 7.2, {
-      align: "center", maxWidth: centerColW - 2,
+    doc.text("Chinnathirupathi, Salem – 636008", centerMid, coBaseY + 8.4, {
+      align: "center",
     });
 
     // Right: contact block — icon left, text left-aligned, safely inside right column
@@ -484,13 +492,15 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       }
       if (s < uniformSize) uniformSize = s;
     });
+    // Match Invoice header colours: phone → text-foreground, email/website → primary (gold)
+    const rowColors = [TEXT_BLACK, GOLD_DARK, GOLD_DARK] as const;
     const lineGap = 5.2;
     const startY = cyBand - lineGap;
     doc.setFontSize(uniformSize);
-    doc.setTextColor(...TEXT_BLACK);
     contactRows.forEach((ln, i) => {
       const ly = startY + i * lineGap;
       ln.icon(iconX, ly - 1.2, iconSize);
+      doc.setTextColor(...rowColors[i]);
       doc.text(ln.text, textX, ly, { maxWidth: textMaxW });
     });
 
