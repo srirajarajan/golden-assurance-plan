@@ -816,12 +816,13 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       );
     } catch (e) { console.error("Seal error:", e); }
   }
-  const mdY = blockTopY + sealSignH + gapAfterImg + mdLineH - 1;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9.5); doc.setTextColor(...TEXT_BLACK);
-  doc.text(labels.managingDirector, centerX, mdY, { align: "center" });
-  const coY = mdY + gapBetweenLines + coLineH - 1;
+  // Order: [Seal & Signature image] -> Company Name -> Managing Director
+  const coY = blockTopY + sealSignH + gapAfterImg + coLineH - 1;
   doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
   doc.text("William Carey Funeral Services Pvt. Ltd.", centerX, coY, { align: "center" });
+  const mdY = coY + gapBetweenLines + mdLineH - 1;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9.5); doc.setTextColor(...TEXT_BLACK);
+  doc.text(labels.managingDirector, centerX, mdY, { align: "center" });
 
   const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
   console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes, pages:", doc.getNumberOfPages());
