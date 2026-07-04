@@ -413,7 +413,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   const logoImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/logo.png`);
   const drawHeader = () => {
     const top = marginTop;
-    const logoSize = 22;
+    const logoSize = 28;
     const headerH = logoSize; // shared vertical band
     const cyBand = top + headerH / 2;
 
@@ -425,14 +425,14 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
     // Center: name + address, vertically centered around cyBand
     doc.setFont(fontFamily, "bold");
-    doc.setFontSize(13);
+    doc.setFontSize(14.5);
     doc.setTextColor(...GOLD_DARK);
-    doc.text("William Carey Funeral Services Pvt. Ltd.", pw / 2, cyBand - 1, { align: "center" });
+    doc.text("William Carey Funeral Services Pvt. Ltd.", pw / 2, cyBand - 2, { align: "center" });
     doc.setFont(fontFamily, "normal");
-    doc.setFontSize(7.8);
+    doc.setFontSize(8.6);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem – 636008",
-      pw / 2, cyBand + 4, { align: "center" });
+    doc.text("RR Complex, Kannankurichi Main Road,", pw / 2, cyBand + 3, { align: "center" });
+    doc.text("Chinnathirupathi, Salem – 636008", pw / 2, cyBand + 7, { align: "center" });
 
     // Right: contact – 3 evenly spaced lines, aligned so block matches band
     const rx = pw - marginX;
@@ -454,7 +454,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     });
 
     // Golden divider
-    const divY = top + headerH + 3;
+    const divY = top + headerH + 4;
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.7);
     doc.line(marginX, divY, pw - marginX, divY);
