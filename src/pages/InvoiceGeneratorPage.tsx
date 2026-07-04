@@ -37,7 +37,7 @@ interface InvoiceRow {
 }
 
 const COMPANY = {
-  name: 'William Carey Funeral Services Pvt. Ltd.',
+  name: 'William Carey Services Pvt. Ltd.',
   website: 'www.williamcareyfuneralservices.com',
   email: 'wcfheadofficeslm2016@gmail.com',
   phone: '9600350889',
@@ -618,7 +618,7 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
 
       {/* GST note */}
       <div className="border border-t-0 border-gray-300 p-2 text-[11px] italic text-muted-foreground bg-green-50">
-        GST on documentation charges has been paid by William Carey Funeral Services Pvt. Ltd. and is not charged to the customer.
+        GST on documentation charges has been paid by William Carey Services Pvt. Ltd. and is not charged to the customer.
       </div>
 
       {/* Total in words */}
@@ -653,7 +653,7 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
       </div>
 
       <div className="text-center text-[10px] text-muted-foreground mt-6 border-t pt-2">
-        Thank you for trusting William Carey Funeral Services Pvt. Ltd.
+        Thank you for trusting William Carey Services Pvt. Ltd.
       </div>
     </div>
   );

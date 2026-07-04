@@ -42,7 +42,7 @@ const ContactPage = () => {
     // Build the WhatsApp message
     const whatsappMessage = `Hello 👋
 
-I would like to know more about William Carey Funeral Services Pvt. Ltd.
+I would like to know more about William Carey Services Pvt. Ltd.
 
 Name: ${parsed.data.name}
 Phone: ${parsed.data.phone}
@@ -57,7 +57,7 @@ Message: ${parsed.data.message}`;
   };
 
   const whatsappUrl = `https://wa.me/919600350699?text=${encodeURIComponent(
-    'Hello, I would like to know more about William Carey Funeral Services Pvt. Ltd.'
+    'Hello, I would like to know more about William Carey Services Pvt. Ltd.'
   )}`;
 
   return (
