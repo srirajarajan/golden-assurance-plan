@@ -464,25 +464,33 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     const textX = iconX + iconSize + iconTextGap;
     const textMaxW = rightColW - contactPadLeft - iconSize - iconTextGap - 1; // safe area
 
+    // All rows share the same font size and colour for a clean contact block
     doc.setFont(fontFamily, "normal");
     const contactRows = [
-      { icon: iconPhone, text: "9600350889", size: 8.4, color: TEXT_BLACK },
-      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com", size: 7.4, color: TEXT_BLACK },
-      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com", size: 7.4, color: GOLD_DARK },
+      { icon: iconPhone, text: "9600350889" },
+      { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com" },
+      { icon: iconGlobe, text: "www.williamcareyfuneralservices.com" },
     ];
-    const lineGap = 5.4;
+    const baseSize = 7.6;
+    // Determine a uniform font size that fits every row within the safe area
+    let uniformSize = baseSize;
+    doc.setFontSize(uniformSize);
+    contactRows.forEach((ln) => {
+      let s = uniformSize;
+      doc.setFontSize(s);
+      while (doc.getTextWidth(ln.text) > textMaxW && s > 6) {
+        s -= 0.2;
+        doc.setFontSize(s);
+      }
+      if (s < uniformSize) uniformSize = s;
+    });
+    const lineGap = 5.2;
     const startY = cyBand - lineGap;
+    doc.setFontSize(uniformSize);
+    doc.setTextColor(...TEXT_BLACK);
     contactRows.forEach((ln, i) => {
       const ly = startY + i * lineGap;
       ln.icon(iconX, ly - 1.2, iconSize);
-      doc.setFontSize(ln.size);
-      doc.setTextColor(...ln.color);
-      // Shrink further only if truly needed
-      let size = ln.size;
-      while (doc.getTextWidth(ln.text) > textMaxW && size > 6) {
-        size -= 0.2;
-        doc.setFontSize(size);
-      }
       doc.text(ln.text, textX, ly, { maxWidth: textMaxW });
     });
 
@@ -667,8 +675,36 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.rect(marginX, y, cw, mH, "FD");
     doc.setTextColor(...TEXT_BLACK);
     doc.text(mLines, marginX + 3.5, y + 5);
-    y += mH;
+    y += mH + 4;
+  } else {
+    y += 1;
   }
+
+  // Resolve plan detail early so Memorial + Note can render on Page 1
+  const planIdKey = ((data.selected_plan || data.plan_code || "").toString().toLowerCase()) as
+    "silver" | "gold" | "platinum";
+  const planDetail = getPlanDetailForPdf(planIdKey, lang);
+
+  // Memorial chip on Page 1 (moved from Page 2)
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
+  const memH1 = 8;
+  doc.roundedRect(marginX, y, cw, memH1, 1.6, 1.6, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.memorial, marginX + 3.5, y + 5.4);
+  y += memH1 + 4;
+
+  // Note on Page 1
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8); doc.setTextColor(...GOLD_DARK);
+  doc.text(planDetail.noteTitle.toUpperCase(), marginX, y);
+  y += 4;
+  doc.setFont(fontFamily, "normal"); doc.setFontSize(8.4); doc.setTextColor(...TEXT_BLACK);
+  planDetail.notes.forEach((n) => {
+    iconCheck(marginX, y - 1.8, 2.4);
+    const nl = doc.splitTextToSize(n, cw - 6).slice(0, 3);
+    doc.text(nl, marginX + 4, y);
+    y += nl.length * 4.4 + 1;
+  });
 
   // ═════════════════════════ PAGE 2 ═════════════════════════
   doc.addPage();
@@ -703,9 +739,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += boxH + 5;
 
   // ═══════════ Service Plan Details — Bilingual detailed table ═══════════
-  const planIdKey = ((data.selected_plan || data.plan_code || "").toString().toLowerCase()) as
-    "silver" | "gold" | "platinum";
-  const planDetail = getPlanDetailForPdf(planIdKey, lang);
+  // (planIdKey / planDetail were resolved on Page 1 for the Memorial section)
   const planCodeUpper = (data.plan_code || data.selected_plan || "").toString().toUpperCase();
 
   y = drawSectionBar(labels.selectedPlan, y);
@@ -762,28 +796,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.line(marginX + tblColNoW + tblColServiceW, tblTopY, marginX + tblColNoW + tblColServiceW, tblBottomY);
   y += 3;
 
-  // Memorial chip
-  doc.setFillColor(...GOLD_SOFT);
-  doc.setDrawColor(...GOLD); doc.setLineWidth(0.3);
-  const memH = 7;
-  doc.roundedRect(marginX, y, cw, memH, 1.4, 1.4, "FD");
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(8.6); doc.setTextColor(...GOLD_DARK);
-  doc.text(planDetail.memorial, marginX + 3.5, y + 4.8);
-  y += memH + 3;
-
-  // Note
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(7.6); doc.setTextColor(...GOLD_DARK);
-  doc.text(planDetail.noteTitle.toUpperCase(), marginX, y);
-  y += 3.5;
-  doc.setFont(fontFamily, "normal"); doc.setFontSize(8); doc.setTextColor(...TEXT_BLACK);
-  planDetail.notes.forEach((n) => {
-    iconCheck(marginX, y - 1.8, 2.4);
-    const nl = doc.splitTextToSize(n, cw - 6).slice(0, 2);
-    doc.text(nl, marginX + 4, y);
-    y += nl.length * 4.2 + 0.6;
-  });
-  y += 2;
-
   // ─── Seal & Signature block: bottom-right aligned ───
   const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
   const sealSignW = 58;
@@ -818,10 +830,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   }
   // Order: [Seal & Signature image] -> Company Name -> Managing Director
   const coY = blockTopY + sealSignH + gapAfterImg + coLineH - 1;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
-  doc.text("William Carey Funeral Services Pvt. Ltd.", centerX, coY, { align: "center" });
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(8.6); doc.setTextColor(...GOLD_DARK);
+  doc.text("William Carey Funeral Services Pvt. Ltd.", centerX, coY, {
+    align: "center", maxWidth: sealSignW + 10,
+  });
   const mdY = coY + gapBetweenLines + mdLineH - 1;
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9.5); doc.setTextColor(...TEXT_BLACK);
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
   doc.text(labels.managingDirector, centerX, mdY, { align: "center" });
 
   const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
