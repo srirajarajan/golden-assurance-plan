@@ -753,7 +753,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   // ─── Seal & Signature block: bottom-right aligned ───
   const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
-  const sealSignW = 55;
+  const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
     try {
@@ -761,25 +761,34 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       sealSignH = sealSignW * (props.height / props.width);
     } catch (_) {}
   }
+  // Grouped block: [seal+signature image] -> Managing Director -> Company Name.
+  // All lines centered relative to the seal image width, block anchored bottom-right.
   const blockRightX = pw - marginX;
   const blockBottomY = ph - marginBottom;
-  const totalBlockH = 6 /*company*/ + 4 /*gap*/ + sealSignH + 4 /*gap*/ + 5 /*MD*/;
+  const gapAfterImg = 3.5;
+  const gapBetweenLines = 4.5;
+  const mdLineH = 4.5;
+  const coLineH = 4.5;
+  const totalBlockH = sealSignH + gapAfterImg + mdLineH + gapBetweenLines + coLineH;
   const blockTopY = blockBottomY - totalBlockH;
-  const centerXOfBlock = blockRightX - sealSignW / 2;
+  const blockLeftX = blockRightX - sealSignW;
+  const centerX = blockLeftX + sealSignW / 2;
 
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
-  doc.text("William Carey Funeral Services Pvt. Ltd.", blockRightX, blockTopY + 4, { align: "right" });
   if (sealSignImg) {
     try {
       doc.addImage(
         sealSignImg.base64, sealSignImg.type,
-        blockRightX - sealSignW, blockTopY + 8,
+        blockLeftX, blockTopY,
         sealSignW, sealSignH
       );
     } catch (e) { console.error("Seal error:", e); }
   }
-  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...TEXT_BLACK);
-  doc.text(labels.managingDirector, blockRightX, blockTopY + 8 + sealSignH + 5, { align: "right" });
+  const mdY = blockTopY + sealSignH + gapAfterImg + mdLineH - 1;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9.5); doc.setTextColor(...TEXT_BLACK);
+  doc.text(labels.managingDirector, centerX, mdY, { align: "center" });
+  const coY = mdY + gapBetweenLines + coLineH - 1;
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text("William Carey Funeral Services Pvt. Ltd.", centerX, coY, { align: "center" });
 
   const pdfBytes = new Uint8Array(doc.output("arraybuffer"));
   console.log("PDF GENERATED SUCCESSFULLY, size:", pdfBytes.length, "bytes, pages:", doc.getNumberOfPages());
