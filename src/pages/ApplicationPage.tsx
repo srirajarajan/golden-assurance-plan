@@ -450,7 +450,10 @@ const ApplicationPage: React.FC = () => {
                   size="lg"
                   onClick={() => {
                     try {
+                      // Always source from successData (the just-submitted app),
+                      // never a stale older submission.
                       sessionStorage.setItem('prefill_invoice', JSON.stringify({
+                        application_number: successData.application_number,
                         customer_name: successData.member_name,
                         mobile: successData.mobile,
                         address: successData.address,
