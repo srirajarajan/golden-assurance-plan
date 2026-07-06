@@ -34,6 +34,7 @@ interface InvoiceRow {
   invoice_date: string;
   service_date: string | null;
   created_at: string;
+  application_number?: string | null;
 }
 
 const COMPANY = {
@@ -274,8 +275,9 @@ const InvoiceGeneratorPage: React.FC = () => {
       invoice_date: invoiceDate,
       service_date: serviceDate,
       created_at: new Date().toISOString(),
+      application_number: applicationNumber || null,
     } as InvoiceRow;
-  }, [mode, selectedPlan, nextNumber, customerName, mobile, address, city, state, pincode, invoiceDate, serviceDate]);
+  }, [mode, selectedPlan, nextNumber, customerName, mobile, address, city, state, pincode, invoiceDate, serviceDate, applicationNumber]);
 
   const invoiceToRender = mode === 'view' ? viewing : previewInvoice;
 
