@@ -445,8 +445,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     const centerMid = centerX + centerColW / 2;
     const coName = "William Carey Services Pvt. Ltd.";
     const coMaxW = centerColW - 2;
-    doc.setFont("helvetica", "bold");
-    let coSize = 14;
+    doc.setFont("helvetica", "normal");
+    let coSize = 15;
     doc.setFontSize(coSize);
     while (doc.getTextWidth(coName) > coMaxW && coSize > 10) {
       coSize -= 0.2;
