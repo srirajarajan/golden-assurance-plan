@@ -279,7 +279,7 @@ const ApplicationPage: React.FC = () => {
       });
 
       const memberName = payload.member_name || 'Applicant';
-      setSuccessData({
+      const latest = {
         application_number: appNum,
         member_name: memberName,
         plan_name: plan.name,
@@ -290,7 +290,13 @@ const ApplicationPage: React.FC = () => {
         district: payload.district,
         pincode: payload.pincode,
         submission_date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
-      });
+      };
+      setSuccessData(latest);
+      // Always overwrite "latest submitted application" so Create Invoice
+      // (now or later, after Do It Later) opens the most recent one.
+      try {
+        sessionStorage.setItem('latest_application', JSON.stringify(latest));
+      } catch { /* noop */ }
       form.reset();
       setApplicationNumber('');
       removeImage(setApplicantPhoto);
