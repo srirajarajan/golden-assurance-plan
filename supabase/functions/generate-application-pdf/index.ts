@@ -492,8 +492,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       }
       if (s < uniformSize) uniformSize = s;
     });
-    // Match Invoice header colours: phone → text-foreground, email/website → primary (gold)
+    // Match Invoice header: phone → foreground, email/website → primary (gold) + underline
     const rowColors = [TEXT_BLACK, GOLD_DARK, GOLD_DARK] as const;
+    const rowUnderline = [false, true, true] as const;
     const lineGap = 5.2;
     const startY = cyBand - lineGap;
     doc.setFontSize(uniformSize);
@@ -502,6 +503,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       ln.icon(iconX, ly - 1.2, iconSize);
       doc.setTextColor(...rowColors[i]);
       doc.text(ln.text, textX, ly, { maxWidth: textMaxW });
+      if (rowUnderline[i]) {
+        const tw = Math.min(doc.getTextWidth(ln.text), textMaxW);
+        doc.setDrawColor(...rowColors[i]);
+        doc.setLineWidth(0.15);
+        doc.line(textX, ly + 0.6, textX + tw, ly + 0.6);
+      }
     });
 
     // Golden divider
@@ -535,7 +542,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // ═════════════════════════ PAGE 1 ═════════════════════════
   y = drawHeader();
 
-  // App No + Date — twin equal chips
+  // App No + Date — twin equal chips with FIXED-WIDTH label columns so
+  // values like WCF0010 … WCF999999 never crowd the label.
   const displayAppNo = (data.application_number && data.application_number.trim()) || data.serial_number;
   const chipGap = 4;
   const chipW = (cw - chipGap) / 2;
@@ -546,14 +554,25 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   doc.setLineWidth(0.35);
   doc.roundedRect(marginX, y, chipW, chipH, 1.6, 1.6, "FD");
   doc.roundedRect(marginX + chipW + chipGap, y, chipW, chipH, 1.6, 1.6, "FD");
+  // Fixed label column width (~30mm for App No., ~18mm for Date) + fixed 8mm gap
+  const labelPadL = 3.5;
+  const appLabelColW = 30;   // reserves space for label + colon
+  const dateLabelColW = 18;
+  const labelValueGap = 8;   // ~22-25px gap between label and value
   doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
-  doc.text(`${labels.applicationNo}:`, marginX + 3.5, chipCY);
-  doc.text(`${labels.date}:`, marginX + chipW + chipGap + 3.5, chipCY);
+  doc.text(`${labels.applicationNo} :`, marginX + labelPadL, chipCY);
+  doc.text(`${labels.date} :`, marginX + chipW + chipGap + labelPadL, chipCY);
   doc.setFont(fontFamily, "normal"); doc.setTextColor(...TEXT_BLACK);
-  const appLabelW = doc.getTextWidth(`${labels.applicationNo}:`) + 5;
-  const dateLabelW = doc.getTextWidth(`${labels.date}:`) + 5;
-  doc.text(displayAppNo, marginX + appLabelW, chipCY);
-  doc.text(submissionDate, marginX + chipW + chipGap + dateLabelW, chipCY);
+  doc.text(
+    displayAppNo,
+    marginX + labelPadL + appLabelColW + labelValueGap,
+    chipCY,
+  );
+  doc.text(
+    submissionDate,
+    marginX + chipW + chipGap + labelPadL + dateLabelColW + labelValueGap,
+    chipCY,
+  );
   y += chipH + 3;
 
   // Applicant Details grid — two column, last-odd row spans full width
