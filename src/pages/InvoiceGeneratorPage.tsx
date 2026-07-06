@@ -586,6 +586,9 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
           <table className="w-full">
             <tbody>
               <tr><td className="font-semibold pr-2 py-0.5 w-32">Invoice No.</td><td className="font-mono">{invoice.invoice_number}</td></tr>
+              {invoice.application_number ? (
+                <tr><td className="font-semibold pr-2 py-0.5">Application No.</td><td className="font-mono">{invoice.application_number}</td></tr>
+              ) : null}
               <tr><td className="font-semibold pr-2 py-0.5">Invoice Date</td><td>{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Service Start Date</td><td>{invoice.service_date ? new Date(invoice.service_date).toLocaleDateString('en-IN') : '—'}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Plan Type</td><td className="capitalize">{invoice.plan_type}</td></tr>
