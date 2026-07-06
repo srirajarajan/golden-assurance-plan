@@ -438,32 +438,41 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       } catch (e) { console.error("Logo error:", e); }
     }
 
-    // Center: company name (serif bold gold) + address (sans muted)
-    // Uses jsPDF built-ins so Latin renders cleanly (Noto Sans Tamil is only
-    // registered as "normal" and produced fake-bold artefacts on Latin text).
-    // Serif "times" mirrors the Invoice header's Playfair Display face.
+    // Center: company name (serif, bold-weight gold) + address (sans muted).
+    // The Invoice header uses Playfair Display bold, which is a Latin-only
+    // serif face; jsPDF's built-in "times" is the closest match. We simulate
+    // a bold weight by stroking the glyph outlines instead of using the
+    // "bold" style flag, which produced letter-spacing artefacts in this
+    // Deno jsPDF build.
     const centerMid = centerX + centerColW / 2;
     const coName = "William Carey Services Pvt. Ltd.";
     const coMaxW = centerColW - 2;
-    doc.setFont("helvetica", "normal");
-    let coSize = 15;
+    doc.setFont("times", "normal");
+    let coSize = 17;
     doc.setFontSize(coSize);
-    while (doc.getTextWidth(coName) > coMaxW && coSize > 10) {
+    while (doc.getTextWidth(coName) > coMaxW && coSize > 11) {
       coSize -= 0.2;
       doc.setFontSize(coSize);
     }
     doc.setTextColor(...GOLD_DARK);
+    doc.setDrawColor(...GOLD_DARK);
+    doc.setLineWidth(0.25);
     const coBaseY = cyBand - 2.5;
-    doc.text(coName, centerMid, coBaseY, { align: "center" });
+    // "fill+stroke" render mode gives a heavier weight without the fake-bold
+    // spacing artefact we get from setFont(..., "bold").
+    doc.text(coName, centerMid, coBaseY, { align: "center", renderingMode: "fillThenStroke" } as any);
+    doc.setLineWidth(0.2);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.4);
+    doc.setFontSize(9);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, coBaseY + 4.8, {
+    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, coBaseY + 5.4, {
       align: "center",
-    });
-    doc.text("Chinnathirupathi, Salem – 636008", centerMid, coBaseY + 8.6, {
+      renderingMode: "fill",
+    } as any);
+    doc.text("Chinnathirupathi, Salem – 636008", centerMid, coBaseY + 9.6, {
       align: "center",
-    });
+      renderingMode: "fill",
+    } as any);
 
     // Right: contact block — right-aligned text with icon just before it,
     // mirroring the Invoice header (text-right, whitespace-nowrap).
