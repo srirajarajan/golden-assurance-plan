@@ -940,17 +940,6 @@ serve(async (req: Request) => {
 
     const pdfBuffer = await buildPdfBuffer(data);
     const fileLabel = (data.application_number && data.application_number.trim()) || data.serial_number;
-    // Optional: return the raw PDF for internal preview/QA without sending email
-    if ((data as any).return_pdf === true) {
-      return new Response(pdfBuffer, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `inline; filename="${fileLabel}.pdf"`,
-        },
-      });
-    }
     const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, fileLabel);
 
     if (!emailResult.ok) {
