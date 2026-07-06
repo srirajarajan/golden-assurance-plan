@@ -438,50 +438,45 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       } catch (e) { console.error("Logo error:", e); }
     }
 
-    // Center: company name + address, vertically centered within band
+    // Center: company name (gold bold) + address (muted) — mirrors Invoice header
     const centerMid = centerX + centerColW / 2;
-    // Auto-shrink company name so it always fits on a single line
     const coName = "William Carey Services Pvt. Ltd.";
     const coMaxW = centerColW - 2;
     doc.setFont(fontFamily, "bold");
-    let coSize = 13.5;
+    let coSize = 15;
     doc.setFontSize(coSize);
-    while (doc.getTextWidth(coName) > coMaxW && coSize > 9) {
+    while (doc.getTextWidth(coName) > coMaxW && coSize > 10) {
       coSize -= 0.2;
       doc.setFontSize(coSize);
     }
     doc.setTextColor(...GOLD_DARK);
-    // Company name (single line) + address block below with 6-8px vertical gap
-    const coBaseY = cyBand - 3.5;
+    const coBaseY = cyBand - 2.5;
     doc.text(coName, centerMid, coBaseY, { align: "center" });
     doc.setFont(fontFamily, "normal");
-    doc.setFontSize(8.2);
+    doc.setFontSize(8.4);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, coBaseY + 4.6, {
+    doc.text("RR Complex, Kannankurichi Main Road,", centerMid, coBaseY + 4.8, {
       align: "center",
     });
-    doc.text("Chinnathirupathi, Salem – 636008", centerMid, coBaseY + 8.4, {
+    doc.text("Chinnathirupathi, Salem – 636008", centerMid, coBaseY + 8.6, {
       align: "center",
     });
 
-    // Right: contact block — icon left, text left-aligned, safely inside right column
-    const contactPadLeft = 2;
-    const iconTextGap = 2.2;
+    // Right: contact block — right-aligned text with icon just before it,
+    // mirroring the Invoice header (text-right, whitespace-nowrap).
+    const rightEdge = pw - marginX;
     const iconSize = 3;
-    const iconX = rightX + contactPadLeft;
-    const textX = iconX + iconSize + iconTextGap;
-    const textMaxW = rightColW - contactPadLeft - iconSize - iconTextGap - 1; // safe area
+    const iconTextGap = 1.8;
 
-    // All rows share the same font size and colour for a clean contact block
     doc.setFont(fontFamily, "normal");
     const contactRows = [
       { icon: iconPhone, text: "9600350889" },
       { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com" },
       { icon: iconGlobe, text: "www.williamcareyfuneralservices.com" },
     ];
-    const baseSize = 7.6;
-    // Determine a uniform font size that fits every row within the safe area
-    let uniformSize = baseSize;
+    // Fit all rows within right column width
+    const textMaxW = rightColW - iconSize - iconTextGap - 1;
+    let uniformSize = 8;
     doc.setFontSize(uniformSize);
     contactRows.forEach((ln) => {
       let s = uniformSize;
@@ -492,33 +487,32 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       }
       if (s < uniformSize) uniformSize = s;
     });
-    // Match Invoice header: phone → foreground, email/website → primary (gold) + underline
+    doc.setFontSize(uniformSize);
+    // Match Invoice: phone → foreground, email/website → primary (gold) + underline
     const rowColors = [TEXT_BLACK, GOLD_DARK, GOLD_DARK] as const;
     const rowUnderline = [false, true, true] as const;
     const lineGap = 5.2;
     const startY = cyBand - lineGap;
-    doc.setFontSize(uniformSize);
     contactRows.forEach((ln, i) => {
       const ly = startY + i * lineGap;
+      const tw = Math.min(doc.getTextWidth(ln.text), textMaxW);
+      const textStartX = rightEdge - tw;
+      const iconX = textStartX - iconTextGap - iconSize;
       ln.icon(iconX, ly - 1.2, iconSize);
       doc.setTextColor(...rowColors[i]);
-      doc.text(ln.text, textX, ly, { maxWidth: textMaxW });
+      doc.text(ln.text, rightEdge, ly, { align: "right", maxWidth: textMaxW });
       if (rowUnderline[i]) {
-        const tw = Math.min(doc.getTextWidth(ln.text), textMaxW);
         doc.setDrawColor(...rowColors[i]);
         doc.setLineWidth(0.15);
-        doc.line(textX, ly + 0.6, textX + tw, ly + 0.6);
+        doc.line(textStartX, ly + 0.6, rightEdge, ly + 0.6);
       }
     });
 
-    // Golden divider
+    // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
     const divY = top + headerH + 4;
     doc.setDrawColor(...GOLD);
-    doc.setLineWidth(0.7);
+    doc.setLineWidth(0.8);
     doc.line(marginX, divY, pw - marginX, divY);
-    doc.setDrawColor(...GOLD_BAND);
-    doc.setLineWidth(0.25);
-    doc.line(marginX, divY + 1.1, pw - marginX, divY + 1.1);
 
     return divY + 4;
   };
