@@ -83,6 +83,7 @@ const InvoiceGeneratorPage: React.FC = () => {
   // form
   const [customerName, setCustomerName] = useState('');
   const [mobile, setMobile] = useState('');
+  const [applicationNumber, setApplicationNumber] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('Tamil Nadu');
@@ -106,16 +107,21 @@ const InvoiceGeneratorPage: React.FC = () => {
         // Prefill from sessionStorage if staff coming from a submission
         if (isStaffMode) {
           try {
-            const raw = sessionStorage.getItem('prefill_invoice');
+            // Prefer explicit "Create Invoice" click payload; fall back to the
+            // most recently submitted application so the freshest one always wins.
+            const raw =
+              sessionStorage.getItem('prefill_invoice') ||
+              sessionStorage.getItem('latest_application');
             if (raw) {
               const p = JSON.parse(raw);
               setMode('create');
-              setCustomerName(p.customer_name || '');
+              setCustomerName(p.customer_name || p.member_name || '');
               setMobile(p.mobile || '');
+              setApplicationNumber(p.application_number || '');
               setAddress(p.address || '');
-              setCity(p.city || '');
+              setCity(p.city || p.taluk || '');
               setPincode(p.pincode || '');
-              setPlanType(p.plan_type || '');
+              setPlanType(p.plan_type || p.plan_id || '');
               fetchNextNumber();
               sessionStorage.removeItem('prefill_invoice');
             }
@@ -147,7 +153,8 @@ const InvoiceGeneratorPage: React.FC = () => {
 
   const openCreate = () => {
     setMode('create');
-    setCustomerName(''); setMobile(''); setAddress(''); setCity('');
+    setCustomerName(''); setMobile(''); setApplicationNumber('');
+    setAddress(''); setCity('');
     setState('Tamil Nadu'); setPincode(''); setPlanType('');
     setInvoiceDate(new Date().toISOString().slice(0, 10));
     setServiceDate(new Date().toISOString().slice(0, 10));
