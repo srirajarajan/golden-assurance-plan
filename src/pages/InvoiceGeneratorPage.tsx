@@ -383,6 +383,18 @@ const InvoiceGeneratorPage: React.FC = () => {
                     <Input value={nextNumber || 'Auto-generating…'} readOnly className="font-mono bg-muted/40" />
                   </div>
                   <div className="col-span-2">
+                    <Label>Application Number</Label>
+                    <Input
+                      value={applicationNumber}
+                      onChange={(e) => setApplicationNumber(e.target.value)}
+                      placeholder="e.g. WCF0011"
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pre-filled from the latest submitted application. Edit if needed.
+                    </p>
+                  </div>
+                  <div className="col-span-2">
                     <Label>Customer Name *</Label>
                     <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                   </div>
