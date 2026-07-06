@@ -438,11 +438,14 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       } catch (e) { console.error("Logo error:", e); }
     }
 
-    // Center: company name (gold bold) + address (muted) — mirrors Invoice header
+    // Center: company name (serif bold gold) + address (sans muted)
+    // Uses jsPDF built-ins so Latin renders cleanly (Noto Sans Tamil is only
+    // registered as "normal" and produced fake-bold artefacts on Latin text).
+    // Serif "times" mirrors the Invoice header's Playfair Display face.
     const centerMid = centerX + centerColW / 2;
     const coName = "William Carey Services Pvt. Ltd.";
     const coMaxW = centerColW - 2;
-    doc.setFont(fontFamily, "bold");
+    doc.setFont("helvetica", "normal");
     let coSize = 15;
     doc.setFontSize(coSize);
     while (doc.getTextWidth(coName) > coMaxW && coSize > 10) {
@@ -452,7 +455,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     doc.setTextColor(...GOLD_DARK);
     const coBaseY = cyBand - 2.5;
     doc.text(coName, centerMid, coBaseY, { align: "center" });
-    doc.setFont(fontFamily, "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8.4);
     doc.setTextColor(...TEXT_GREY);
     doc.text("RR Complex, Kannankurichi Main Road,", centerMid, coBaseY + 4.8, {
@@ -468,7 +471,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     const iconSize = 3;
     const iconTextGap = 1.8;
 
-    doc.setFont(fontFamily, "normal");
+    doc.setFont("helvetica", "normal");
     const contactRows = [
       { icon: iconPhone, text: "9600350889" },
       { icon: iconMail,  text: "wcfheadofficeslm2016@gmail.com" },
@@ -507,6 +510,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
         doc.line(textStartX, ly + 0.6, rightEdge, ly + 0.6);
       }
     });
+    // Restore the document's default font for downstream sections
+    doc.setFont(fontFamily, "normal");
 
     // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
     const divY = top + headerH + 4;
