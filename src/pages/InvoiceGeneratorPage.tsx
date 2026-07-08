@@ -674,9 +674,9 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             <img
               src={roundSeal}
               alt="William Carey Services Pvt. Ltd. Official Seal"
-              className="mt-2"
-              style={{ width: '42mm', height: '42mm', objectFit: 'contain' }}
+              style={{ width: '36mm', height: '36mm', objectFit: 'contain', marginTop: '7px', marginBottom: '7px' }}
             />
+            <div className="text-xs text-center">Authorized Signature</div>
           </div>
         </div>
       </div>
