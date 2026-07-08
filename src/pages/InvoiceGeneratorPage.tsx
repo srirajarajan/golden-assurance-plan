@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PLANS, getPlanById, PlanId } from '@/data/plans';
 import { numberToIndianWords } from '@/lib/numberToWords';
 import logo from '@/assets/logo.png';
+import roundSeal from '@/assets/wc-round-seal.png';
 import {
   Loader2, Printer, Download, ArrowLeft, FileText, Search, Trash2, Eye, RefreshCw, Plus,
 } from 'lucide-react';
@@ -664,19 +665,27 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             </tbody>
           </table>
         </div>
-        <div className="p-3 flex flex-col justify-between">
-          <div className="text-xs text-right text-muted-foreground italic">
+        <div className="p-3 flex flex-col items-center justify-between">
+          <div className="text-xs text-center text-muted-foreground italic w-full">
             Certified that the particulars given above are true and correct.
           </div>
-          <div className="text-right mt-6">
-            <div className="font-semibold text-primary">For {COMPANY.name}</div>
-            <div className="h-12" />
-            <div className="border-t border-gray-400 inline-block px-8 pt-1 text-xs">Authorized Signatory</div>
+          <div className="flex flex-col items-center mt-2">
+            <div className="font-semibold text-primary text-center">For {COMPANY.name}</div>
+            <img
+              src={roundSeal}
+              alt="William Carey Services Pvt. Ltd. Official Seal"
+              className="mt-2"
+              style={{ width: '42mm', height: '42mm', objectFit: 'contain' }}
+            />
           </div>
         </div>
       </div>
 
-      <div className="text-center text-[10px] text-muted-foreground mt-6 border-t pt-2">
+      <div className="text-center text-[10px] text-gray-500 mt-4 italic">
+        This is a computer-generated invoice and does not require a physical signature.
+      </div>
+
+      <div className="text-center text-[10px] text-muted-foreground mt-2 border-t pt-2">
         Thank you for trusting William Carey Services Pvt. Ltd.
       </div>
     </div>
