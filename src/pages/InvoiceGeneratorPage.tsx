@@ -35,7 +35,6 @@ interface InvoiceRow {
   invoice_date: string;
   service_date: string | null;
   created_at: string;
-  application_number?: string | null;
 }
 
 const COMPANY = {
@@ -85,7 +84,6 @@ const InvoiceGeneratorPage: React.FC = () => {
   // form
   const [customerName, setCustomerName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [applicationNumber, setApplicationNumber] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('Tamil Nadu');
@@ -119,7 +117,6 @@ const InvoiceGeneratorPage: React.FC = () => {
               setMode('create');
               setCustomerName(p.customer_name || p.member_name || '');
               setMobile(p.mobile || '');
-              setApplicationNumber(p.application_number || '');
               setAddress(p.address || '');
               setCity(p.city || p.taluk || '');
               setPincode(p.pincode || '');
@@ -155,7 +152,7 @@ const InvoiceGeneratorPage: React.FC = () => {
 
   const openCreate = () => {
     setMode('create');
-    setCustomerName(''); setMobile(''); setApplicationNumber('');
+    setCustomerName(''); setMobile('');
     setAddress(''); setCity('');
     setState('Tamil Nadu'); setPincode(''); setPlanType('');
     setInvoiceDate(new Date().toISOString().slice(0, 10));
@@ -276,9 +273,8 @@ const InvoiceGeneratorPage: React.FC = () => {
       invoice_date: invoiceDate,
       service_date: serviceDate,
       created_at: new Date().toISOString(),
-      application_number: applicationNumber || null,
     } as InvoiceRow;
-  }, [mode, selectedPlan, nextNumber, customerName, mobile, address, city, state, pincode, invoiceDate, serviceDate, applicationNumber]);
+  }, [mode, selectedPlan, nextNumber, customerName, mobile, address, city, state, pincode, invoiceDate, serviceDate]);
 
   const invoiceToRender = mode === 'view' ? viewing : previewInvoice;
 
@@ -384,18 +380,6 @@ const InvoiceGeneratorPage: React.FC = () => {
                   <div className="col-span-2">
                     <Label>Invoice Number</Label>
                     <Input value={nextNumber || 'Auto-generating…'} readOnly className="font-mono bg-muted/40" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Application Number</Label>
-                    <Input
-                      value={applicationNumber}
-                      onChange={(e) => setApplicationNumber(e.target.value)}
-                      placeholder="e.g. WCF0011"
-                      className="font-mono"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Pre-filled from the latest submitted application. Edit if needed.
-                    </p>
                   </div>
                   <div className="col-span-2">
                     <Label>Customer Name *</Label>
@@ -587,9 +571,6 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
           <table className="w-full">
             <tbody>
               <tr><td className="font-semibold pr-2 py-0.5 w-32">Invoice No.</td><td className="font-mono">{invoice.invoice_number}</td></tr>
-              {invoice.application_number ? (
-                <tr><td className="font-semibold pr-2 py-0.5">Application No.</td><td className="font-mono">{invoice.application_number}</td></tr>
-              ) : null}
               <tr><td className="font-semibold pr-2 py-0.5">Invoice Date</td><td>{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Service Start Date</td><td>{invoice.service_date ? new Date(invoice.service_date).toLocaleDateString('en-IN') : '—'}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Plan Type</td><td className="capitalize">{invoice.plan_type}</td></tr>
