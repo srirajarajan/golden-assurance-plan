@@ -532,7 +532,9 @@ const ApplicationPage: React.FC = () => {
             <CardHeader className="bg-green-50 border-b border-green-200 text-center">
               <div className="flex items-center justify-center gap-2 text-green-700">
                 <Check className="h-7 w-7" />
-                <CardTitle className="text-2xl font-bold">Application Submitted Successfully</CardTitle>
+                <CardTitle className="text-2xl font-bold">
+                  {isEditMode ? 'Application Updated Successfully' : 'Application Submitted Successfully'}
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
