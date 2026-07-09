@@ -590,8 +590,12 @@ const ApplicationPage: React.FC = () => {
         )}
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-primary">Funeral Service Application</CardTitle>
-            <p className="text-muted-foreground mt-2">Application Form</p>
+            <CardTitle className="text-2xl md:text-3xl font-bold text-primary">
+              {isEditMode ? 'Edit Application' : 'Funeral Service Application'}
+            </CardTitle>
+            <p className="text-muted-foreground mt-2">
+              {isEditMode ? 'Update the submitted application details below' : 'Application Form'}
+            </p>
           </CardHeader>
 
           <CardContent className="p-6">
@@ -885,11 +889,11 @@ const ApplicationPage: React.FC = () => {
                 <Textarea id="additional_message" name="additional_message" placeholder="Any additional information..." rows={3} />
               </div>
 
-              <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting}>
+              <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting || loadingEdit}>
                 {isSubmitting ? (
                   <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{submitStep || 'Submitting...'}</>
                 ) : (
-                  <><Send className="mr-2 h-5 w-5" />Submit Application</>
+                  <><Send className="mr-2 h-5 w-5" />{isEditMode ? 'Update Application' : 'Submit Application'}</>
                 )}
               </Button>
             </form>
