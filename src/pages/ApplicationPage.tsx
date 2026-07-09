@@ -222,32 +222,41 @@ const ApplicationPage: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
-      // Duplicate check
-      const { data: existing } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('application_number', appNum)
-        .maybeSingle();
-      if (existing) {
-        toast({ title: 'Duplicate', description: `Application Number ${appNum} already exists.`, variant: 'destructive' });
-        setIsSubmitting(false);
-        return;
+      // Duplicate check — exclude current record when editing
+      {
+        let q = supabase.from('applications').select('id').eq('application_number', appNum);
+        if (isEditMode && editingApp?.id) q = q.neq('id', editingApp.id);
+        const { data: existing } = await q.maybeSingle();
+        if (existing) {
+          toast({ title: 'Duplicate', description: `Application Number ${appNum} already exists.`, variant: 'destructive' });
+          setIsSubmitting(false);
+          return;
+        }
       }
       if (!paymentMethod) {
         toast({ title: 'Error', description: 'Please select a payment method', variant: 'destructive' });
         setIsSubmitting(false);
         return;
       }
-      if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file) {
+      const havePhoto = applicantPhoto.file || applicantPhoto.path;
+      const haveFront = aadhaarFront.file || aadhaarFront.path;
+      const haveBack = aadhaarBack.file || aadhaarBack.path;
+      if (!havePhoto || !haveFront || !haveBack) {
         throw new Error('Please upload Photo, Aadhaar Front and Aadhaar Back');
       }
 
       setSubmitStep('Uploading images...');
-      const applicantPhotoPath = await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId);
+      const applicantPhotoPath = applicantPhoto.file
+        ? await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId)
+        : applicantPhoto.path;
       if (!applicantPhotoPath) throw new Error('Failed to upload applicant photo');
-      const aadhaarFrontPath = await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId);
+      const aadhaarFrontPath = aadhaarFront.file
+        ? await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId)
+        : aadhaarFront.path;
       if (!aadhaarFrontPath) throw new Error('Failed to upload Aadhaar front');
-      const aadhaarBackPath = await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId);
+      const aadhaarBackPath = aadhaarBack.file
+        ? await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId)
+        : aadhaarBack.path;
       if (!aadhaarBackPath) throw new Error('Failed to upload Aadhaar back');
 
       const { data: sessionData } = await supabase.auth.getSession();
@@ -299,21 +308,27 @@ const ApplicationPage: React.FC = () => {
         user_id: userId,
       };
 
-      setSubmitStep('Generating serial number...');
-      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          ...(supabaseKey ? { apikey: supabaseKey } : {}),
-        },
-        body: JSON.stringify({ staff_user_id: userId }),
-      });
-      const serialData = await serialRes.json();
-      if (!serialRes.ok || serialData.error) throw new Error(serialData.error || 'Failed to generate serial number');
-      const serialNumber = serialData.serial_number;
+      let serialNumber: string;
+      if (isEditMode && editingApp?.serial_number) {
+        // Preserve original serial when editing
+        serialNumber = editingApp.serial_number;
+      } else {
+        setSubmitStep('Generating serial number...');
+        const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            ...(supabaseKey ? { apikey: supabaseKey } : {}),
+          },
+          body: JSON.stringify({ staff_user_id: userId }),
+        });
+        const serialData = await serialRes.json();
+        if (!serialRes.ok || serialData.error) throw new Error(serialData.error || 'Failed to generate serial number');
+        serialNumber = serialData.serial_number;
+      }
 
-      setSubmitStep('Sending notification...');
+      setSubmitStep(isEditMode ? 'Regenerating PDF...' : 'Sending notification...');
       const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
         method: 'POST',
         headers: {
@@ -349,11 +364,11 @@ const ApplicationPage: React.FC = () => {
         } catch (err) { console.error('SMS error:', err); }
       }
 
-      await supabase.from('applications').insert({
+      const dbRow: any = {
         serial_number: serialNumber,
         application_number: appNum,
-        staff_user_id: userId,
-        staff_email: user.email || '',
+        staff_user_id: isEditMode && editingApp?.staff_user_id ? editingApp.staff_user_id : userId,
+        staff_email: isEditMode && editingApp?.staff_email ? editingApp.staff_email : (user.email || ''),
         member_name: payload.member_name,
         mobile_number: mobileNumber,
         dob: payload.dob || null,
@@ -364,7 +379,14 @@ const ApplicationPage: React.FC = () => {
         allocated_officer: payload.allocated_officer || null,
         allocated_officer_number: payload.allocated_officer_number || null,
         pdf_path: `${appNum}.pdf`,
-      });
+        form_data: payload,
+        updated_by: userId,
+      };
+      if (isEditMode && editingApp?.id) {
+        await (supabase as any).from('applications').update(dbRow).eq('id', editingApp.id);
+      } else {
+        await (supabase as any).from('applications').insert(dbRow);
+      }
 
       const memberName = payload.member_name || 'Applicant';
       const latest = {
@@ -385,12 +407,16 @@ const ApplicationPage: React.FC = () => {
       try {
         sessionStorage.setItem('latest_application', JSON.stringify(latest));
       } catch { /* noop */ }
-      form.reset();
-      setApplicationNumber('');
-      removeImage(setApplicantPhoto);
-      removeImage(setAadhaarFront);
-      removeImage(setAadhaarBack);
-      setPaymentMethod('');
+      if (!isEditMode) {
+        form.reset();
+        setApplicationNumber('');
+        removeImage(setApplicantPhoto);
+        removeImage(setAadhaarFront);
+        removeImage(setAadhaarBack);
+        setPaymentMethod('');
+      } else {
+        toast({ title: 'Updated', description: `Application ${appNum} updated successfully.` });
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
       console.error('Submit Error:', error);
