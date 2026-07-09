@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Download, Loader2, Printer, FileSpreadsheet, FileText, Search } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Printer, FileSpreadsheet, FileText, Search, Pencil } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -161,6 +161,7 @@ const StaffDetailPage: React.FC = () => {
                       <th className="text-left py-3 px-3 font-medium">District</th>
                       <th className="text-left py-3 px-3 font-medium">{t.date}</th>
                       <th className="text-left py-3 px-3 font-medium print:hidden">{t.view}</th>
+                      <th className="text-left py-3 px-3 font-medium print:hidden">{language === 'ta' ? 'திருத்து' : 'Edit'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -174,6 +175,11 @@ const StaffDetailPage: React.FC = () => {
                         <td className="py-3 px-3 print:hidden">
                           <Button size="sm" variant="outline" onClick={() => openPdf(a)}>
                             <Download className="mr-1 h-3 w-3" /> PDF
+                          </Button>
+                        </td>
+                        <td className="py-3 px-3 print:hidden">
+                          <Button size="sm" variant="default" onClick={() => navigate(`/apply?edit=${a.id}`)}>
+                            <Pencil className="mr-1 h-3 w-3" /> {language === 'ta' ? 'திருத்து' : 'Edit'}
                           </Button>
                         </td>
                       </tr>

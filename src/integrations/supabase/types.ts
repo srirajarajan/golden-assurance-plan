@@ -22,6 +22,7 @@ export type Database = {
           area: string | null
           district: string | null
           dob: string | null
+          form_data: Json | null
           id: string
           member_name: string | null
           mobile_number: string | null
@@ -32,6 +33,8 @@ export type Database = {
           staff_user_id: string
           submitted_at: string
           taluk: string | null
+          updated_at: string
+          updated_by: string | null
         }
         Insert: {
           allocated_officer?: string | null
@@ -40,6 +43,7 @@ export type Database = {
           area?: string | null
           district?: string | null
           dob?: string | null
+          form_data?: Json | null
           id?: string
           member_name?: string | null
           mobile_number?: string | null
@@ -50,6 +54,8 @@ export type Database = {
           staff_user_id: string
           submitted_at?: string
           taluk?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           allocated_officer?: string | null
@@ -58,6 +64,7 @@ export type Database = {
           area?: string | null
           district?: string | null
           dob?: string | null
+          form_data?: Json | null
           id?: string
           member_name?: string | null
           mobile_number?: string | null
@@ -68,6 +75,8 @@ export type Database = {
           staff_user_id?: string
           submitted_at?: string
           taluk?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }

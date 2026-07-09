@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +28,9 @@ const PLAN_ICONS = { silver: Star, gold: Sparkles, platinum: Crown } as const;
 
 const ApplicationPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
+  const isEditMode = !!editId;
   const formRef = useRef<HTMLFormElement>(null);
   const { user, isLoading, userStatus, checkUserStatus } = useAuth();
   const { language } = useLanguage();
@@ -40,6 +43,8 @@ const ApplicationPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('silver');
   const [applicationNumber, setApplicationNumber] = useState<string>('');
+  const [editingApp, setEditingApp] = useState<any | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState<boolean>(false);
   const [successData, setSuccessData] = useState<null | {
     application_number: string;
     member_name: string;
@@ -56,6 +61,89 @@ const ApplicationPage: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => { if (user) checkUserStatus(); }, [user]);
+
+  // Prefill form when editing an existing application
+  useEffect(() => {
+    if (!editId || !user) return;
+    (async () => {
+      setLoadingEdit(true);
+      try {
+        const { data, error } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('id', editId)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) {
+          toast({ title: 'Not found', description: 'Application not found', variant: 'destructive' });
+          navigate('/admin');
+          return;
+        }
+        setEditingApp(data);
+        const fd: any = (data as any).form_data || {};
+        setApplicationNumber(data.application_number || '');
+        if (fd.selected_plan) setSelectedPlan(fd.selected_plan as PlanId);
+        if (fd.payment_method) setPaymentMethod(fd.payment_method);
+
+        // Prefill form field values after next render
+        setTimeout(() => {
+          const form = formRef.current;
+          if (!form) return;
+          const setVal = (name: string, value: any) => {
+            const el = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+            if (el && value != null) (el as any).value = value;
+          };
+          setVal('member_name', fd.member_name ?? data.member_name ?? '');
+          setVal('age', fd.age ?? '');
+          setVal('dob', fd.dob ?? data.dob ?? '');
+          setVal('area', fd.area ?? data.area ?? '');
+          setVal('district', fd.district ?? data.district ?? '');
+          setVal('pincode', fd.pincode ?? data.pincode ?? '');
+          setVal('guardian_name', fd.guardian_name ?? '');
+          setVal('gender', fd.gender ?? '');
+          setVal('occupation', fd.occupation ?? '');
+          setVal('ration_card', fd.ration_card ?? '');
+          setVal('annual_income', fd.annual_income ?? '');
+          setVal('aadhaar_number', fd.aadhaar_number ?? '');
+          setVal('mobile_number', fd.mobile_number ?? data.mobile_number ?? '');
+          setVal('address', fd.address ?? '');
+          setVal('nominee1_name', fd.nominee1_name ?? '');
+          setVal('nominee1_gender', fd.nominee1_gender ?? '');
+          setVal('nominee1_age', fd.nominee1_age ?? '');
+          setVal('nominee1_relation', fd.nominee1_relation ?? '');
+          setVal('nominee2_name', fd.nominee2_name ?? '');
+          setVal('nominee2_gender', fd.nominee2_gender ?? '');
+          setVal('nominee2_age', fd.nominee2_age ?? '');
+          setVal('nominee2_relation', fd.nominee2_relation ?? '');
+          setVal('additional_message', fd.additional_message ?? '');
+          setVal('allocated_officer', fd.allocated_officer ?? data.allocated_officer ?? '');
+          setVal('allocated_officer_number', fd.allocated_officer_number ?? data.allocated_officer_number ?? '');
+        }, 50);
+
+        // Prefill image previews via signed URLs (keep existing paths)
+        const signPreview = async (path: string | undefined) => {
+          if (!path) return '';
+          const { data: signed } = await supabase.storage
+            .from('applications-images')
+            .createSignedUrl(path, 300);
+          return signed?.signedUrl || '';
+        };
+        const [aPhoto, aFront, aBack] = await Promise.all([
+          signPreview(fd.applicant_photo_path),
+          signPreview(fd.aadhaar_front_path),
+          signPreview(fd.aadhaar_back_path),
+        ]);
+        if (fd.applicant_photo_path) setApplicantPhoto({ file: null, preview: aPhoto, path: fd.applicant_photo_path });
+        if (fd.aadhaar_front_path) setAadhaarFront({ file: null, preview: aFront, path: fd.aadhaar_front_path });
+        if (fd.aadhaar_back_path) setAadhaarBack({ file: null, preview: aBack, path: fd.aadhaar_back_path });
+      } catch (err: any) {
+        console.error('Load edit error:', err);
+        toast({ title: 'Error', description: err?.message || 'Failed to load application', variant: 'destructive' });
+      } finally {
+        setLoadingEdit(false);
+      }
+    })();
+  }, [editId, user]);
 
   useEffect(() => {
     return () => {
@@ -134,32 +222,41 @@ const ApplicationPage: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
-      // Duplicate check
-      const { data: existing } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('application_number', appNum)
-        .maybeSingle();
-      if (existing) {
-        toast({ title: 'Duplicate', description: `Application Number ${appNum} already exists.`, variant: 'destructive' });
-        setIsSubmitting(false);
-        return;
+      // Duplicate check — exclude current record when editing
+      {
+        let q = supabase.from('applications').select('id').eq('application_number', appNum);
+        if (isEditMode && editingApp?.id) q = q.neq('id', editingApp.id);
+        const { data: existing } = await q.maybeSingle();
+        if (existing) {
+          toast({ title: 'Duplicate', description: `Application Number ${appNum} already exists.`, variant: 'destructive' });
+          setIsSubmitting(false);
+          return;
+        }
       }
       if (!paymentMethod) {
         toast({ title: 'Error', description: 'Please select a payment method', variant: 'destructive' });
         setIsSubmitting(false);
         return;
       }
-      if (!applicantPhoto.file || !aadhaarFront.file || !aadhaarBack.file) {
+      const havePhoto = applicantPhoto.file || applicantPhoto.path;
+      const haveFront = aadhaarFront.file || aadhaarFront.path;
+      const haveBack = aadhaarBack.file || aadhaarBack.path;
+      if (!havePhoto || !haveFront || !haveBack) {
         throw new Error('Please upload Photo, Aadhaar Front and Aadhaar Back');
       }
 
       setSubmitStep('Uploading images...');
-      const applicantPhotoPath = await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId);
+      const applicantPhotoPath = applicantPhoto.file
+        ? await uploadImageToPrivateStorage(applicantPhoto.file, 'applicant_photo', userId)
+        : applicantPhoto.path;
       if (!applicantPhotoPath) throw new Error('Failed to upload applicant photo');
-      const aadhaarFrontPath = await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId);
+      const aadhaarFrontPath = aadhaarFront.file
+        ? await uploadImageToPrivateStorage(aadhaarFront.file, 'aadhaar_front', userId)
+        : aadhaarFront.path;
       if (!aadhaarFrontPath) throw new Error('Failed to upload Aadhaar front');
-      const aadhaarBackPath = await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId);
+      const aadhaarBackPath = aadhaarBack.file
+        ? await uploadImageToPrivateStorage(aadhaarBack.file, 'aadhaar_back', userId)
+        : aadhaarBack.path;
       if (!aadhaarBackPath) throw new Error('Failed to upload Aadhaar back');
 
       const { data: sessionData } = await supabase.auth.getSession();
@@ -211,21 +308,27 @@ const ApplicationPage: React.FC = () => {
         user_id: userId,
       };
 
-      setSubmitStep('Generating serial number...');
-      const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          ...(supabaseKey ? { apikey: supabaseKey } : {}),
-        },
-        body: JSON.stringify({ staff_user_id: userId }),
-      });
-      const serialData = await serialRes.json();
-      if (!serialRes.ok || serialData.error) throw new Error(serialData.error || 'Failed to generate serial number');
-      const serialNumber = serialData.serial_number;
+      let serialNumber: string;
+      if (isEditMode && editingApp?.serial_number) {
+        // Preserve original serial when editing
+        serialNumber = editingApp.serial_number;
+      } else {
+        setSubmitStep('Generating serial number...');
+        const serialRes = await fetch(`${supabaseUrl}/functions/v1/generate-serial`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            ...(supabaseKey ? { apikey: supabaseKey } : {}),
+          },
+          body: JSON.stringify({ staff_user_id: userId }),
+        });
+        const serialData = await serialRes.json();
+        if (!serialRes.ok || serialData.error) throw new Error(serialData.error || 'Failed to generate serial number');
+        serialNumber = serialData.serial_number;
+      }
 
-      setSubmitStep('Sending notification...');
+      setSubmitStep(isEditMode ? 'Regenerating PDF...' : 'Sending notification...');
       const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-application-pdf`, {
         method: 'POST',
         headers: {
@@ -261,11 +364,11 @@ const ApplicationPage: React.FC = () => {
         } catch (err) { console.error('SMS error:', err); }
       }
 
-      await supabase.from('applications').insert({
+      const dbRow: any = {
         serial_number: serialNumber,
         application_number: appNum,
-        staff_user_id: userId,
-        staff_email: user.email || '',
+        staff_user_id: isEditMode && editingApp?.staff_user_id ? editingApp.staff_user_id : userId,
+        staff_email: isEditMode && editingApp?.staff_email ? editingApp.staff_email : (user.email || ''),
         member_name: payload.member_name,
         mobile_number: mobileNumber,
         dob: payload.dob || null,
@@ -276,7 +379,14 @@ const ApplicationPage: React.FC = () => {
         allocated_officer: payload.allocated_officer || null,
         allocated_officer_number: payload.allocated_officer_number || null,
         pdf_path: `${appNum}.pdf`,
-      });
+        form_data: payload,
+        updated_by: userId,
+      };
+      if (isEditMode && editingApp?.id) {
+        await (supabase as any).from('applications').update(dbRow).eq('id', editingApp.id);
+      } else {
+        await (supabase as any).from('applications').insert(dbRow);
+      }
 
       const memberName = payload.member_name || 'Applicant';
       const latest = {
@@ -297,12 +407,16 @@ const ApplicationPage: React.FC = () => {
       try {
         sessionStorage.setItem('latest_application', JSON.stringify(latest));
       } catch { /* noop */ }
-      form.reset();
-      setApplicationNumber('');
-      removeImage(setApplicantPhoto);
-      removeImage(setAadhaarFront);
-      removeImage(setAadhaarBack);
-      setPaymentMethod('');
+      if (!isEditMode) {
+        form.reset();
+        setApplicationNumber('');
+        removeImage(setApplicantPhoto);
+        removeImage(setAadhaarFront);
+        removeImage(setAadhaarBack);
+        setPaymentMethod('');
+      } else {
+        toast({ title: 'Updated', description: `Application ${appNum} updated successfully.` });
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
       console.error('Submit Error:', error);
@@ -418,7 +532,9 @@ const ApplicationPage: React.FC = () => {
             <CardHeader className="bg-green-50 border-b border-green-200 text-center">
               <div className="flex items-center justify-center gap-2 text-green-700">
                 <Check className="h-7 w-7" />
-                <CardTitle className="text-2xl font-bold">Application Submitted Successfully</CardTitle>
+                <CardTitle className="text-2xl font-bold">
+                  {isEditMode ? 'Application Updated Successfully' : 'Application Submitted Successfully'}
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -476,8 +592,12 @@ const ApplicationPage: React.FC = () => {
         )}
         <Card className="shadow-xl border-2">
           <CardHeader className="text-center bg-primary/5 border-b">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-primary">Funeral Service Application</CardTitle>
-            <p className="text-muted-foreground mt-2">Application Form</p>
+            <CardTitle className="text-2xl md:text-3xl font-bold text-primary">
+              {isEditMode ? 'Edit Application' : 'Funeral Service Application'}
+            </CardTitle>
+            <p className="text-muted-foreground mt-2">
+              {isEditMode ? 'Update the submitted application details below' : 'Application Form'}
+            </p>
           </CardHeader>
 
           <CardContent className="p-6">
@@ -771,11 +891,11 @@ const ApplicationPage: React.FC = () => {
                 <Textarea id="additional_message" name="additional_message" placeholder="Any additional information..." rows={3} />
               </div>
 
-              <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting}>
+              <Button type="submit" className="w-full text-lg py-6" disabled={isSubmitting || loadingEdit}>
                 {isSubmitting ? (
                   <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{submitStep || 'Submitting...'}</>
                 ) : (
-                  <><Send className="mr-2 h-5 w-5" />Submit Application</>
+                  <><Send className="mr-2 h-5 w-5" />{isEditMode ? 'Update Application' : 'Submit Application'}</>
                 )}
               </Button>
             </form>
