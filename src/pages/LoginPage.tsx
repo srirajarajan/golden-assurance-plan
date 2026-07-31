@@ -95,8 +95,15 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      // Only Active accounts may enter the application
-      const status = await checkUserStatus();
+      // Only Active accounts may enter the application.
+      // Read the status directly from the freshly authenticated session so we
+      // never depend on React state that may not have propagated yet.
+      const { data: authData } = await supabase.auth.getUser();
+      const uid = authData.user?.id;
+      const { data: profileRow } = uid
+        ? await supabase.from('profiles').select('status').eq('user_id', uid).maybeSingle()
+        : { data: null as any };
+      const status = profileRow?.status ?? (await checkUserStatus());
       if (status !== 'active') {
         await supabase.auth.signOut();
         const messages: Record<string, string> = {
