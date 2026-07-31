@@ -155,17 +155,18 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-async function fetchImageAsBase64(supabase: any, path: string): Promise<{ base64: string; type: string } | null> {
+async function fetchImageAsBase64(supabase: any, bucket: string, path: string, transform?: { width?: number; height?: number }): Promise<{ base64: string; type: string } | null> {
   try {
     if (!path || path.trim() === "") return null;
-    const { data, error } = await supabase.storage.from("applications-images").download(path);
-    if (error) { console.error(`Failed to download image (${path}):`, error.message); return null; }
+    const opts = transform ? { transform } : undefined;
+    const { data, error } = await supabase.storage.from(bucket).download(path, opts);
+    if (error) { console.error(`Failed to download image (${bucket}/${path}):`, error.message); return null; }
     const arrayBuffer = await data.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50;
     const type = isPng ? "PNG" : "JPEG";
     return { base64: uint8ArrayToBase64(bytes), type };
-  } catch (err) { console.error(`Error fetching image (${path}):`, err); return null; }
+  } catch (err) { console.error(`Error fetching image (${bucket}/${path}):`, err); return null; }
 }
 
 async function loadImageFromUrl(url: string): Promise<{ base64: string; type: string } | null> {
@@ -523,33 +524,23 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Restore the document's default font for downstream sections
     doc.setFont(fontFamily, "normal");
 
-    // ── Legal registration row (dedicated two-column block, no borders) ──
-    // Left column (50%): CIN label above its value, left aligned.
-    // Right column (50%): GSTIN label above its value, right aligned.
-    const regGap = 6;
-    const labelY = Math.max(addressBottomY, top + headerH - 6) + regGap;
-    const valueY = labelY + 4;
-    const divY = valueY + regGap;
-    const colW = cw / 2;
-    const leftColX = marginX;                 // left column start
-    const rightColX = marginX + cw;           // right column end (right aligned)
+    // ── Legal registration row (single horizontal line, inline label-value pairs) ──
+    // Render CIN left-aligned and GSTIN right-aligned on the same baseline,
+    // using the same 9pt muted-grey styling as the company address. CIN starts
+    // after the left logo column so it is never visually overlapped.
+    const regGap = 1.5;
+    const regLineY = addressBottomY + regGap;
+    const divY = regLineY + regGap;
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...TEXT_GREY);
-    // Left column
-    doc.setFont("helvetica", "bold");
-    doc.text("CIN", leftColX, labelY, { align: "left", maxWidth: colW });
-    doc.setFont("helvetica", "normal");
-    doc.text("U96030TZ2026PTC039152", leftColX, valueY, { align: "left", maxWidth: colW });
-    // Right column
-    doc.setFont("helvetica", "bold");
-    doc.text("GSTIN", rightColX, labelY, { align: "right", maxWidth: colW });
-    doc.setFont("helvetica", "normal");
-    doc.text("33AAECW4783B1ZF", rightColX, valueY, { align: "right", maxWidth: colW });
-    // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
+    doc.text("CIN : U96030TZ2026PTC039152", centerX, regLineY, { align: "left" });
+    doc.text("GSTIN : 33AAECW4783B1ZF", rightEdge, regLineY, { align: "right" });
+    // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
-    doc.line(marginX, divY, pw - marginX, divY);
+    doc.line(marginX, divY, rightEdge, divY);
 
     return divY + 4;
   };
@@ -772,8 +763,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   // Aadhaar images
   y = drawSectionBar(labels.aadhaarImages, y);
-  const aadhaarFront = await fetchImageAsBase64(supabase, data.aadhaar_front_path);
-  const aadhaarBack = await fetchImageAsBase64(supabase, data.aadhaar_back_path);
+  const aadhaarFront = await fetchImageAsBase64(supabase, "applications-images", data.aadhaar_front_path, { width: 800 });
+  const aadhaarBack = await fetchImageAsBase64(supabase, "applications-images", data.aadhaar_back_path, { width: 800 });
   const gapImg = 6;
   const boxW = (cw - gapImg) / 2;
   const boxH = 58;
@@ -868,7 +859,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += 3;
 
   // ─── Seal & Signature block: bottom-right aligned ───
-  const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
+  const sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 400 });
   const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
