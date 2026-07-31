@@ -526,20 +526,21 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
     // ── Legal registration row (single horizontal line, inline label-value pairs) ──
     // Render CIN left-aligned and GSTIN right-aligned on the same baseline,
-    // using the same 9pt muted-grey styling as the company address.
+    // using the same 9pt muted-grey styling as the company address. CIN starts
+    // after the left logo column so it is never visually overlapped.
     const regGap = 1.5;
     const regLineY = addressBottomY + regGap;
     const divY = regLineY + regGap;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("CIN : U96030TZ2026PTC039152", marginX, regLineY, { align: "left" });
-    doc.text("GSTIN : 33AAECW4783B1ZF", pw - marginX, regLineY, { align: "right" });
+    doc.text("CIN : U96030TZ2026PTC039152", centerX, regLineY, { align: "left" });
+    doc.text("GSTIN : 33AAECW4783B1ZF", rightEdge, regLineY, { align: "right" });
     // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
-    doc.line(marginX, divY, pw - marginX, divY);
+    doc.line(marginX, divY, rightEdge, divY);
 
     return divY + 4;
   };
