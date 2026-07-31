@@ -439,29 +439,40 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   // ═════════════════════════ Premium 3-column Header ═════════════════════════
   const logoImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/logo.png`);
+  // Proportional logo box: fixed reserved area on the left, never stretched.
+  const LOGO_BOX_W = 30;   // mm — fixed max width, identical on every page
+  const LOGO_BOX_H = 26;   // mm — fixed max height
+  const LOGO_GAP = 6;      // mm (~17px) — guaranteed clearance to the name column
+  let logoDrawW = LOGO_BOX_W, logoDrawH = LOGO_BOX_H;
+  if (logoImg) {
+    try {
+      const p = doc.getImageProperties(`data:image/${logoImg.type.toLowerCase()};base64,${logoImg.base64}`);
+      const ratio = Math.min(LOGO_BOX_W / p.width, LOGO_BOX_H / p.height);
+      logoDrawW = p.width * ratio;
+      logoDrawH = p.height * ratio;
+    } catch (_) { /* keep box defaults */ }
+  }
   const drawHeader = () => {
     const top = marginTop;
-    // Fixed 3-column grid: 18% / 50% / 32%
-    const leftColW = cw * 0.18;
-    const centerColW = cw * 0.50;
-    const rightColW = cw * 0.32;
+    // Fixed columns: [logo box] gap [company name/address] gap [contact block]
     const leftX = marginX;
-    const centerX = marginX + leftColW;
-    const rightX = marginX + leftColW + centerColW;
+    const rightColW = 56;
+    const rightX = pw - marginX - rightColW;
+    const centerX = leftX + LOGO_BOX_W + LOGO_GAP;
+    const centerColW = rightX - LOGO_GAP - centerX;
 
-    // Logo sized within left column (increased by ~20%)
-    const logoSize = Math.min(leftColW - 2, 30);
-    const headerH = Math.max(logoSize, 30);
+    const headerH = Math.max(LOGO_BOX_H, 26);
     const cyBand = top + headerH / 2;
 
-    // Left: logo vertically centered in its column
+    // Left: logo scaled proportionally and centred inside its reserved box
     if (logoImg) {
       try {
         doc.addImage(
           logoImg.base64, logoImg.type,
-          leftX + (leftColW - logoSize) / 2,
-          top + (headerH - logoSize) / 2,
-          logoSize, logoSize,
+          leftX + (LOGO_BOX_W - logoDrawW) / 2,
+          cyBand - logoDrawH / 2,
+          logoDrawW, logoDrawH,
+          undefined, "SLOW",
         );
       } catch (e) { console.error("Logo error:", e); }
     }
