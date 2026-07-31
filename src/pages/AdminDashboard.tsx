@@ -324,7 +324,11 @@ const AdminDashboard: React.FC = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ status: 'terminated', exit_date: exitDate || null })
+        .update({
+          status: 'terminated',
+          exit_date: exitDate || null,
+          deactivated_at: new Date().toISOString(),
+        })
         .eq('user_id', userId);
       if (error) throw error;
       setUsers((prev) =>
