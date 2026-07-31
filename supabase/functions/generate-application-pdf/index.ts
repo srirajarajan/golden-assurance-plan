@@ -562,8 +562,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Restore the document's default font for downstream sections
     doc.setFont(fontFamily, "normal");
 
-    // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary
-    const divY = addressBottomY + 3;
+    // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary.
+    // Always sits clear of the tallest header element (logo box or text block).
+    const divY = Math.max(addressBottomY + 3, top + headerH + 3);
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
