@@ -507,12 +507,16 @@ const AdminDashboard: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left py-3 px-3 font-medium">{t.email}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.name}</th>
+                      <th className="text-left py-3 px-3 font-medium">{t.email}</th>
                       <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'தொலைபேசி' : 'Phone'}</th>
                       <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'மாவட்டம்' : 'District'}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'பங்கு' : 'Role'}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.status}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'விண்ணப்பங்கள்' : 'Applications'}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.registeredOn}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'கடைசி உள்நுழைவு' : 'Last Login'}</th>
+                      <th className="text-left py-3 px-3 font-medium">{language === 'ta' ? 'வெளியேறிய தேதி' : 'Exit Date'}</th>
                       <th className="text-left py-3 px-3 font-medium">{t.actions}</th>
                     </tr>
                   </thead>
@@ -520,8 +524,8 @@ const AdminDashboard: React.FC = () => {
                     {filteredUsers.map((profile) => {
                       return (
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-3 text-xs">{profile.email}</td>
                           <td className="py-3 px-3">{profile.full_name || '—'}</td>
+                          <td className="py-3 px-3 text-xs">{profile.email}</td>
                           <td className="py-3 px-3 text-xs">
                             <InlineEditCell
                               value={profile.phone_number}
@@ -538,9 +542,32 @@ const AdminDashboard: React.FC = () => {
                               onUpdate={handleInlineUpdate}
                             />
                           </td>
+                          <td className="py-3 px-3 text-xs">
+                            <span className="inline-flex items-center gap-1 capitalize">
+                              {getRole(profile) === 'super_admin' && (
+                                <ShieldCheck className="h-3 w-3 text-primary" />
+                              )}
+                              {getRole(profile) === 'super_admin'
+                                ? 'Super Admin'
+                                : getRole(profile) === 'admin'
+                                ? 'Admin'
+                                : 'Staff'}
+                            </span>
+                          </td>
                           <td className="py-3 px-3">{getStatusBadge(profile.status)}</td>
+                          <td className="py-3 px-3 text-xs font-medium">{appCounts[profile.user_id] || 0}</td>
                           <td className="py-3 px-3 text-xs text-muted-foreground">
                             {new Date(profile.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-3 text-xs text-muted-foreground">
+                            {profile.last_login_at
+                              ? new Date(profile.last_login_at).toLocaleString()
+                              : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-xs text-muted-foreground">
+                            {profile.status === 'terminated' && profile.exit_date
+                              ? new Date(profile.exit_date).toLocaleDateString()
+                              : '—'}
                           </td>
                           <td className="py-3 px-3">
                             <div className="flex flex-wrap gap-1">
@@ -576,51 +603,61 @@ const AdminDashboard: React.FC = () => {
                                 </>
                               )}
 
-                              {/* Terminate for active */}
-                              {profile.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => navigate(`/admin/staff/${profile.user_id}`)}
+                              >
+                                <Eye className="mr-1 h-3 w-3" />
+                                {language === 'ta' ? 'பார்' : 'View'}
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => openEdit(profile)}
+                              >
+                                <Pencil className="mr-1 h-3 w-3" />
+                                {t.edit}
+                              </Button>
+
+                              {profile.status === 'active' && !isProtected(profile) && (
                                 <Button
                                   size="sm"
                                   variant="destructive"
                                   className="h-7 text-xs"
-                                  onClick={() => updateUserStatus(profile.user_id, 'terminated')}
+                                  onClick={() => requestDeactivate(profile)}
                                   disabled={processingUserId === profile.user_id}
                                 >
-                                  <Ban className="mr-1 h-3 w-3" />
-                                  {t.terminate}
+                                  <Power className="mr-1 h-3 w-3" />
+                                  {language === 'ta' ? 'செயலிழக்கு' : 'Deactivate'}
                                 </Button>
                               )}
 
-                              {/* Reactivate for terminated/rejected */}
                               {(profile.status === 'terminated' || profile.status === 'rejected') && (
                                 <Button
                                   size="sm"
                                   variant="default"
                                   className="h-7 text-xs"
-                                  onClick={() => updateUserStatus(profile.user_id, 'active')}
+                                  onClick={() => activateUser(profile)}
                                   disabled={processingUserId === profile.user_id}
                                 >
                                   <RotateCcw className="mr-1 h-3 w-3" />
-                                  {t.reactivate}
+                                  {language === 'ta' ? 'செயல்படுத்து' : 'Activate'}
                                 </Button>
                               )}
 
-                              {/* Remove for terminated */}
-                              {profile.status === 'terminated' && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="h-7 text-xs"
-                                  onClick={() => {
-                                    if (window.confirm(language === 'ta' ? 'இந்த ஊழியரை நிரந்தரமாக நீக்க விரும்புகிறீர்களா?' : 'Permanently remove this staff and all their data?')) {
-                                      removeStaff(profile.user_id);
-                                    }
-                                  }}
-                                  disabled={processingUserId === profile.user_id}
-                                >
-                                  <UserX className="mr-1 h-3 w-3" />
-                                  {language === 'ta' ? 'நீக்கு' : 'Remove'}
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => sendPasswordReset(profile)}
+                              >
+                                <KeyRound className="mr-1 h-3 w-3" />
+                                {language === 'ta' ? 'கடவுச்சொல் மீட்டமை' : 'Reset Password'}
+                              </Button>
                             </div>
                           </td>
                         </tr>
