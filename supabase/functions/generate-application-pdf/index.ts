@@ -886,9 +886,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   // Pre-processed asset: the white paper background is already keyed out to
   // transparency, so no pixel work happens at request time (keeps the function
   // well inside its CPU/memory budget). Falls back to the original scan.
+  // The stored asset is already 700px wide (≈300 DPI at 58mm), so no transform
+  // or re-encoding is needed at request time.
   const sealSignImg =
-    (await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature-transparent.png", { width: 700 })) ??
-    (await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 700 }));
+    (await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature-transparent.png")) ??
+    (await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 400 }));
   const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
@@ -916,7 +918,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
         sealSignImg.base64, sealSignImg.type,
         blockLeftX, blockTopY,
         sealSignW, sealSignH,
-        undefined, "SLOW",
       );
     } catch (e) { console.error("Seal error:", e); }
   }
