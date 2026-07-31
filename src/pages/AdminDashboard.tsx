@@ -679,6 +679,94 @@ const AdminDashboard: React.FC = () => {
 
       {/* Change Password Section */}
       <ChangePasswordSection language={language} />
+
+      {/* Deactivate dialog — soft delete with optional resignation date */}
+      <Dialog open={!!deactivateTarget} onOpenChange={(o) => !o && setDeactivateTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deactivate User</DialogTitle>
+            <DialogDescription>
+              {deactivateTarget?.full_name || deactivateTarget?.email} will no longer be able to
+              sign in. All applications, invoices and records created by this user are kept
+              permanently.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="exitDate">Resignation / Exit Date (optional)</Label>
+            <Input
+              id="exitDate"
+              type="date"
+              value={exitDate}
+              onChange={(e) => setExitDate(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeactivateTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeactivate}
+              disabled={!!processingUserId}
+            >
+              {processingUserId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit user dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>{editTarget?.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="editName">Name</Label>
+              <Input
+                id="editName"
+                value={editForm.full_name}
+                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="editPhone">Phone</Label>
+              <Input
+                id="editPhone"
+                value={editForm.phone_number}
+                onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="editDistrict">District</Label>
+              <Input
+                id="editDistrict"
+                value={editForm.district}
+                onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="editExit">Resignation / Exit Date</Label>
+              <Input
+                id="editExit"
+                type="date"
+                value={editForm.exit_date}
+                onChange={(e) => setEditForm({ ...editForm, exit_date: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit} disabled={!!processingUserId}>
+              {processingUserId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
