@@ -146,12 +146,7 @@ function getLanguage(data: ApplicationData): "ta" | "en" {
 }
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  const chunkSize = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
-  }
-  return btoa(binary);
+  return base64Encode(bytes);
 }
 
 async function fetchImageAsBase64(supabase: any, bucket: string, path: string, transform?: { width?: number; height?: number }): Promise<{ base64: string; type: string } | null> {
@@ -936,12 +931,11 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 }
 
 // ─── Email ───
-async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialNumber: string): Promise<{ ok: boolean; error?: string }> {
+async function sendEmailWithPdf(pdfUrl: string, fullName: string, serialNumber: string): Promise<{ ok: boolean; error?: string }> {
   if (!RESEND_API_KEY) return { ok: false, error: "Email service not configured. Contact developer." };
 
   const filename = `${serialNumber}.pdf`;
   const submissionDate = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
-  const pdfBase64 = uint8ArrayToBase64(pdfBuffer);
 
   const emailPayload = {
     from: "William Carey Services <onboarding@resend.dev>",
@@ -959,7 +953,10 @@ async function sendEmailWithPdf(pdfBuffer: Uint8Array, fullName: string, serialN
       <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
       <p style="color:#888;font-size:12px">William Carey Services Pvt. Ltd.</p>
     </div>`,
-    attachments: [{ filename, content: pdfBase64 }],
+    // Let the email provider fetch the already-uploaded PDF. Converting a
+    // multi-megabyte PDF to Base64 and JSON-stringifying it here creates two
+    // additional large in-memory copies and can exceed the worker CPU limit.
+    attachments: [{ filename, path: pdfUrl }],
   };
 
   try {
@@ -993,7 +990,39 @@ serve(async (req: Request) => {
 
     const pdfBuffer = await buildPdfBuffer(data);
     const fileLabel = (data.application_number && data.application_number.trim()) || data.serial_number;
-    const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, fileLabel);
+    const safeFileLabel = fileLabel.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const pdfPath = `${safeFileLabel}.pdf`;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("PDF storage is not configured");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { error: uploadError } = await supabase.storage
+      .from("applications-pdf")
+      .upload(pdfPath, pdfBuffer, {
+        contentType: "application/pdf",
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`PDF upload failed: ${uploadError.message}`);
+    }
+
+    // The bucket remains private. This short-lived URL is only handed to the
+    // email provider so it can attach the same bytes that users later download.
+    const { data: signedPdf, error: signedUrlError } = await supabase.storage
+      .from("applications-pdf")
+      .createSignedUrl(pdfPath, 3600);
+
+    if (signedUrlError || !signedPdf?.signedUrl) {
+      throw new Error(`PDF attachment URL failed: ${signedUrlError?.message || "Unknown error"}`);
+    }
+
+    const emailResult = await sendEmailWithPdf(signedPdf.signedUrl, data.member_name, fileLabel);
 
     if (!emailResult.ok) {
       console.error("Email failed:", emailResult.error);
