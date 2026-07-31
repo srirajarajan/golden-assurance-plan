@@ -94,6 +94,19 @@ const LoginPage: React.FC = () => {
         return;
       }
 
+      // Deactivated accounts must never reach the app
+      const currentStatus = await checkUserStatus();
+      if (currentStatus === 'terminated') {
+        await supabase.auth.signOut();
+        toast({
+          title: t.errorTitle,
+          description:
+            'This account has been deactivated. Please contact the administrator.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // After successful sign-in, directly check role and redirect
       const adminStatus = await checkIsAdmin();
       if (adminStatus) {
