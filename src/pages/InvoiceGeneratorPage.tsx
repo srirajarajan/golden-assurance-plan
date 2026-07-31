@@ -194,6 +194,7 @@ const InvoiceGeneratorPage: React.FC = () => {
 
   const validate = (): string | null => {
     if (!customerName.trim()) return 'Customer name is required';
+    if (!applicationNumber.trim()) return 'Application number is required';
     if (!/^\d{10}$/.test(mobile)) return 'Mobile must be exactly 10 digits';
     if (!planType) return 'Please select a plan';
     return null;
@@ -213,7 +214,7 @@ const InvoiceGeneratorPage: React.FC = () => {
         .from('invoices')
         .insert({
           invoice_number,
-          application_number: applicationNumber || null,
+          application_number: applicationNumber.trim(),
           customer_name: customerName.trim(),
           mobile,
           address: address || null,
