@@ -125,7 +125,14 @@ const LoginPage: React.FC = () => {
       }
 
       // Active account — route by role
-      const adminStatus = await checkIsAdmin();
+      const { data: roleRows } = uid
+        ? await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', uid)
+            .in('role', ['admin', 'super_admin'])
+        : { data: [] as any[] };
+      const adminStatus = (roleRows && roleRows.length > 0) || (await checkIsAdmin());
       navigate(adminStatus ? '/admin' : '/apply', { replace: true });
     } catch (error) {
       toast({
