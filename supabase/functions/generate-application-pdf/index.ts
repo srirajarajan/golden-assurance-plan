@@ -469,7 +469,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       align: "center",
       renderingMode: "fill",
     } as any);
-    doc.text("Chinnathirupathi, Salem – 636008", centerMid, coBaseY + 9.6, {
+    const addressBottomY = coBaseY + 9.6;
+    doc.text("Chinnathirupathi, Salem – 636008", centerMid, addressBottomY, {
       align: "center",
       renderingMode: "fill",
     } as any);
@@ -522,16 +523,19 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Restore the document's default font for downstream sections
     doc.setFont(fontFamily, "normal");
 
-    // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
-    const divY = top + headerH + 4;
-    // Legal registration line: CIN left-aligned, GSTIN right-aligned, muted grey,
-    // sitting between the address/contact block and the golden divider.
+    // Legal registration row: two independent text elements — CIN pinned to the
+    // left content margin, GSTIN right-aligned to the right content margin.
+    // Same typography as the address (helvetica 9pt, muted grey) with equal
+    // 6mm spacing above (address) and below (golden divider).
+    const regGap = 6;
+    const regY = Math.max(addressBottomY, top + headerH - 6) + regGap;
+    const divY = regY + regGap;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setTextColor(...TEXT_GREY);
-    const regY = divY - 6;
-    doc.text("CIN : U96030TZ2026PTC039152", marginX, regY);
+    doc.text("CIN : U96030TZ2026PTC039152", marginX, regY, { align: "left" });
     doc.text("GSTIN : 33AAECW4783B1ZF", pw - marginX, regY, { align: "right" });
+    // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
