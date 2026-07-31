@@ -911,7 +911,16 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += 3;
 
   // ─── Seal & Signature block: bottom-right aligned ───
-  const sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 400 });
+  // Downloaded at ~700px wide (≈300 DPI for a 58mm placement) and rendered with
+  // its white paper background keyed out so it blends into the page.
+  let sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 700 });
+  if (sealSignImg && sealSignImg.type === "PNG") {
+    try {
+      const raw = Uint8Array.from(atob(sealSignImg.base64), (c) => c.charCodeAt(0));
+      const keyed = keyOutWhiteBackground(raw);
+      if (keyed) sealSignImg = { base64: uint8ArrayToBase64(keyed), type: "PNG" };
+    } catch (e) { console.error("Seal transparency step skipped:", e); }
+  }
   const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
@@ -938,7 +947,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       doc.addImage(
         sealSignImg.base64, sealSignImg.type,
         blockLeftX, blockTopY,
-        sealSignW, sealSignH
+        sealSignW, sealSignH,
+        undefined, "SLOW",
       );
     } catch (e) { console.error("Seal error:", e); }
   }
