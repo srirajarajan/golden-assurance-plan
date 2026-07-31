@@ -523,18 +523,28 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Restore the document's default font for downstream sections
     doc.setFont(fontFamily, "normal");
 
-    // Legal registration row: two independent text elements — CIN pinned to the
-    // left content margin, GSTIN right-aligned to the right content margin.
-    // Same typography as the address (helvetica 9pt, muted grey) with equal
-    // 6mm spacing above (address) and below (golden divider).
+    // ── Legal registration row (dedicated two-column block, no borders) ──
+    // Left column (50%): CIN label above its value, left aligned.
+    // Right column (50%): GSTIN label above its value, right aligned.
     const regGap = 6;
-    const regY = Math.max(addressBottomY, top + headerH - 6) + regGap;
-    const divY = regY + regGap;
-    doc.setFont("helvetica", "normal");
+    const labelY = Math.max(addressBottomY, top + headerH - 6) + regGap;
+    const valueY = labelY + 4;
+    const divY = valueY + regGap;
+    const colW = cw / 2;
+    const leftColX = marginX;                 // left column start
+    const rightColX = marginX + cw;           // right column end (right aligned)
     doc.setFontSize(9);
     doc.setTextColor(...TEXT_GREY);
-    doc.text("CIN : U96030TZ2026PTC039152", marginX, regY, { align: "left" });
-    doc.text("GSTIN : 33AAECW4783B1ZF", pw - marginX, regY, { align: "right" });
+    // Left column
+    doc.setFont("helvetica", "bold");
+    doc.text("CIN", leftColX, labelY, { align: "left", maxWidth: colW });
+    doc.setFont("helvetica", "normal");
+    doc.text("U96030TZ2026PTC039152", leftColX, valueY, { align: "left", maxWidth: colW });
+    // Right column
+    doc.setFont("helvetica", "bold");
+    doc.text("GSTIN", rightColX, labelY, { align: "right", maxWidth: colW });
+    doc.setFont("helvetica", "normal");
+    doc.text("33AAECW4783B1ZF", rightColX, valueY, { align: "right", maxWidth: colW });
     // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
