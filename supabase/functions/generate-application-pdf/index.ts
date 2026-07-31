@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import UPNG from "https://esm.sh/upng-js@2.1.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -167,6 +168,32 @@ async function fetchImageAsBase64(supabase: any, bucket: string, path: string, t
     const type = isPng ? "PNG" : "JPEG";
     return { base64: uint8ArrayToBase64(bytes), type };
   } catch (err) { console.error(`Error fetching image (${bucket}/${path}):`, err); return null; }
+}
+
+/**
+ * Removes the flat white paper background from a scanned PNG (seal / signature)
+ * so the artwork blends with the PDF page. Pure white becomes fully transparent
+ * and near-white pixels are feathered, which keeps the stroke edges smooth.
+ * Original colours and pixel dimensions are preserved (no crop, no downscale).
+ */
+function keyOutWhiteBackground(pngBytes: Uint8Array): Uint8Array | null {
+  try {
+    const buf = pngBytes.buffer.slice(pngBytes.byteOffset, pngBytes.byteOffset + pngBytes.byteLength);
+    const img: any = UPNG.decode(buf);
+    const rgba = new Uint8Array(UPNG.toRGBA8(img)[0]);
+    const HI = 246; // >= this is treated as pure paper white → fully transparent
+    const LO = 200; // < this stays fully opaque; in between is feathered
+    for (let i = 0; i < rgba.length; i += 4) {
+      const m = Math.min(rgba[i], rgba[i + 1], rgba[i + 2]);
+      if (m >= HI) rgba[i + 3] = 0;
+      else if (m > LO) rgba[i + 3] = Math.round((rgba[i + 3] * (HI - m)) / (HI - LO));
+    }
+    const out = UPNG.encode([rgba.buffer], img.width, img.height, 0);
+    return new Uint8Array(out as ArrayBuffer);
+  } catch (err) {
+    console.error("White-key failed, using original image:", err);
+    return null;
+  }
 }
 
 async function loadImageFromUrl(url: string): Promise<{ base64: string; type: string } | null> {
@@ -412,29 +439,40 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
   // ═════════════════════════ Premium 3-column Header ═════════════════════════
   const logoImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/logo.png`);
+  // Proportional logo box: fixed reserved area on the left, never stretched.
+  const LOGO_BOX_W = 30;   // mm — fixed max width, identical on every page
+  const LOGO_BOX_H = 26;   // mm — fixed max height
+  const LOGO_GAP = 6;      // mm (~17px) — guaranteed clearance to the name column
+  let logoDrawW = LOGO_BOX_W, logoDrawH = LOGO_BOX_H;
+  if (logoImg) {
+    try {
+      const p = doc.getImageProperties(`data:image/${logoImg.type.toLowerCase()};base64,${logoImg.base64}`);
+      const ratio = Math.min(LOGO_BOX_W / p.width, LOGO_BOX_H / p.height);
+      logoDrawW = p.width * ratio;
+      logoDrawH = p.height * ratio;
+    } catch (_) { /* keep box defaults */ }
+  }
   const drawHeader = () => {
     const top = marginTop;
-    // Fixed 3-column grid: 18% / 50% / 32%
-    const leftColW = cw * 0.18;
-    const centerColW = cw * 0.50;
-    const rightColW = cw * 0.32;
+    // Fixed columns: [logo box] gap [company name/address] gap [contact block]
     const leftX = marginX;
-    const centerX = marginX + leftColW;
-    const rightX = marginX + leftColW + centerColW;
+    const rightColW = 56;
+    const rightX = pw - marginX - rightColW;
+    const centerX = leftX + LOGO_BOX_W + LOGO_GAP;
+    const centerColW = rightX - LOGO_GAP - centerX;
 
-    // Logo sized within left column (increased by ~20%)
-    const logoSize = Math.min(leftColW - 2, 30);
-    const headerH = Math.max(logoSize, 30);
+    const headerH = Math.max(LOGO_BOX_H, 26);
     const cyBand = top + headerH / 2;
 
-    // Left: logo vertically centered in its column
+    // Left: logo scaled proportionally and centred inside its reserved box
     if (logoImg) {
       try {
         doc.addImage(
           logoImg.base64, logoImg.type,
-          leftX + (leftColW - logoSize) / 2,
-          top + (headerH - logoSize) / 2,
-          logoSize, logoSize,
+          leftX + (LOGO_BOX_W - logoDrawW) / 2,
+          cyBand - logoDrawH / 2,
+          logoDrawW, logoDrawH,
+          undefined, "SLOW",
         );
       } catch (e) { console.error("Logo error:", e); }
     }
@@ -524,8 +562,9 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Restore the document's default font for downstream sections
     doc.setFont(fontFamily, "normal");
 
-    // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary
-    const divY = addressBottomY + 3;
+    // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary.
+    // Always sits clear of the tallest header element (logo box or text block).
+    const divY = Math.max(addressBottomY + 3, top + headerH + 3);
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
@@ -872,7 +911,16 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += 3;
 
   // ─── Seal & Signature block: bottom-right aligned ───
-  const sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 400 });
+  // Downloaded at ~700px wide (≈300 DPI for a 58mm placement) and rendered with
+  // its white paper background keyed out so it blends into the page.
+  let sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 700 });
+  if (sealSignImg && sealSignImg.type === "PNG") {
+    try {
+      const raw = Uint8Array.from(atob(sealSignImg.base64), (c) => c.charCodeAt(0));
+      const keyed = keyOutWhiteBackground(raw);
+      if (keyed) sealSignImg = { base64: uint8ArrayToBase64(keyed), type: "PNG" };
+    } catch (e) { console.error("Seal transparency step skipped:", e); }
+  }
   const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
@@ -899,7 +947,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
       doc.addImage(
         sealSignImg.base64, sealSignImg.type,
         blockLeftX, blockTopY,
-        sealSignW, sealSignH
+        sealSignW, sealSignH,
+        undefined, "SLOW",
       );
     } catch (e) { console.error("Seal error:", e); }
   }
