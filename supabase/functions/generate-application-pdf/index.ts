@@ -586,6 +586,30 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   );
   y += chipH + 3;
 
+  // Legal registration chips (CIN / GSTIN) — same twin-chip style, directly
+  // below the Application Number and Date row.
+  const regCY = y + chipH / 2 + 1.2;
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(marginX, y, chipW, chipH, 1.6, 1.6, "FD");
+  doc.roundedRect(marginX + chipW + chipGap, y, chipW, chipH, 1.6, 1.6, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text("CIN :", marginX + labelPadL, regCY);
+  doc.text("GSTIN :", marginX + chipW + chipGap + labelPadL, regCY);
+  doc.setFont(fontFamily, "normal"); doc.setTextColor(...TEXT_BLACK);
+  doc.text(
+    "U96030TZ2026PTC039152",
+    marginX + labelPadL + appLabelColW + labelValueGap,
+    regCY,
+  );
+  doc.text(
+    "33AAECW4783B1ZF",
+    marginX + chipW + chipGap + labelPadL + dateLabelColW + labelValueGap,
+    regCY,
+  );
+  y += chipH + 3;
+
   // Applicant Details grid — two column, last-odd row spans full width
   y = drawSectionBar(labels.applicantDetails, y);
   const paymentVal = (data.payment_method || "").trim().toLowerCase();
