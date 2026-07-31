@@ -883,16 +883,12 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += 3;
 
   // ─── Seal & Signature block: bottom-right aligned ───
-  // Downloaded at ~700px wide (≈300 DPI for a 58mm placement) and rendered with
-  // its white paper background keyed out so it blends into the page.
-  let sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 700 });
-  if (sealSignImg && sealSignImg.type === "PNG") {
-    try {
-      const raw = Uint8Array.from(atob(sealSignImg.base64), (c) => c.charCodeAt(0));
-      const keyed = keyOutWhiteBackground(raw);
-      if (keyed) sealSignImg = { base64: uint8ArrayToBase64(keyed), type: "PNG" };
-    } catch (e) { console.error("Seal transparency step skipped:", e); }
-  }
+  // Pre-processed asset: the white paper background is already keyed out to
+  // transparency, so no pixel work happens at request time (keeps the function
+  // well inside its CPU/memory budget). Falls back to the original scan.
+  const sealSignImg =
+    (await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature-transparent.png", { width: 700 })) ??
+    (await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 700 }));
   const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
