@@ -231,9 +231,24 @@ const AdminDashboard: React.FC = () => {
   const updateUserStatus = async (userId: string, newStatus: 'active' | 'rejected' | 'terminated') => {
     setProcessingUserId(userId);
     try {
+      const now = new Date().toISOString();
+      const current = users.find((u) => u.user_id === userId);
+      const audit: Record<string, any> = { status: newStatus };
+      if (newStatus === 'active') {
+        if (current?.status === 'pending') {
+          audit.approved_at = now;
+          audit.approved_by = user?.id || null;
+        } else {
+          audit.reactivated_at = now;
+          audit.reactivated_by = user?.id || null;
+        }
+      }
+      if (newStatus === 'terminated' || newStatus === 'rejected') {
+        audit.deactivated_at = now;
+      }
       const { error } = await supabase
         .from('profiles')
-        .update({ status: newStatus })
+        .update(audit)
         .eq('user_id', userId);
       if (error) throw error;
 
