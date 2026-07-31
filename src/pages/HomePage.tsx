@@ -119,6 +119,38 @@ const HomePage = () => {
 
       {/* Service Plans */}
       <PlansSection />
+
+      {/* Company registration details */}
+      <section className="py-10 border-t border-border/60 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="font-display text-base font-semibold text-secondary">
+              William Carey Services Pvt. Ltd.
+            </p>
+            <p className="font-display text-sm text-muted-foreground mt-1">
+              வில்லியம் கேரி சேவைகள் பிரைவேட் லிமிடெட்
+            </p>
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {language === 'ta'
+                    ? 'நிறுவன அடையாள எண் (CIN)'
+                    : 'Corporate Identity Number (CIN)'}
+                </p>
+                <p className="font-mono text-secondary mt-1 break-all">U96030TZ2026PTC039152</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {language === 'ta'
+                    ? 'சரக்கு மற்றும் சேவை வரி எண் (GSTIN)'
+                    : 'Goods and Services Tax Identification Number (GSTIN)'}
+                </p>
+                <p className="font-mono text-secondary mt-1 break-all">33AAECW4783B1ZF</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 };
