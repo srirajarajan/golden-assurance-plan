@@ -964,6 +964,20 @@ serve(async (req: Request) => {
     const fileLabel = (data.application_number && data.application_number.trim()) || data.serial_number;
     const emailResult = await sendEmailWithPdf(pdfBuffer, data.member_name, fileLabel);
 
+    // TEMP: Upload PDF to storage for verification
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { error: upError } = await supabase.storage.from("application-pdfs").upload(
+        `${fileLabel}.pdf`,
+        pdfBuffer,
+        { contentType: "application/pdf", upsert: true }
+      );
+      if (upError) console.error("PDF upload error:", upError.message);
+      else console.log("PDF uploaded to storage:", `${fileLabel}.pdf`);
+    } catch (upErr) { console.error("PDF upload exception:", upErr); }
+
     if (!emailResult.ok) {
       console.error("Email failed:", emailResult.error);
       return new Response(JSON.stringify({ success: false, error: emailResult.error }), {
