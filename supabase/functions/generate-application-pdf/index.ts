@@ -858,7 +858,7 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
   y += 3;
 
   // ─── Seal & Signature block: bottom-right aligned ───
-  const sealSignImg = await loadImageFromUrl(`${supabaseUrl}/storage/v1/object/public/pdf-assets/seal-signature.png`);
+  const sealSignImg = await fetchImageAsBase64(supabase, "pdf-assets", "seal-signature.png", { width: 400 });
   const sealSignW = 58;
   let sealSignH = 40;
   if (sealSignImg) {
