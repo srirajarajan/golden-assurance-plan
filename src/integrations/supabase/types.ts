@@ -172,49 +172,67 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           current_serial: number | null
+          deactivated_at: string | null
           district: string | null
           email: string
           exit_date: string | null
           full_name: string | null
           id: string
+          is_reregistration: boolean
           last_login_at: string | null
           phone_number: string | null
           range_end: number | null
           range_start: number | null
+          reactivated_at: string | null
+          reactivated_by: string | null
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           current_serial?: number | null
+          deactivated_at?: string | null
           district?: string | null
           email: string
           exit_date?: string | null
           full_name?: string | null
           id?: string
+          is_reregistration?: boolean
           last_login_at?: string | null
           phone_number?: string | null
           range_end?: number | null
           range_start?: number | null
+          reactivated_at?: string | null
+          reactivated_by?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           current_serial?: number | null
+          deactivated_at?: string | null
           district?: string | null
           email?: string
           exit_date?: string | null
           full_name?: string | null
           id?: string
+          is_reregistration?: boolean
           last_login_at?: string | null
           phone_number?: string | null
           range_end?: number | null
           range_start?: number | null
+          reactivated_at?: string | null
+          reactivated_by?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id?: string

@@ -524,19 +524,8 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     // Restore the document's default font for downstream sections
     doc.setFont(fontFamily, "normal");
 
-    // ── Legal registration row (single horizontal line, inline label-value pairs) ──
-    // Render CIN left-aligned and GSTIN right-aligned on the same baseline,
-    // using the same 9pt muted-grey styling as the company address. CIN starts
-    // after the left logo column so it is never visually overlapped.
-    const regGap = 1.5;
-    const regLineY = addressBottomY + regGap;
-    const divY = regLineY + regGap;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...TEXT_GREY);
-    doc.text("CIN : U96030TZ2026PTC039152", centerX, regLineY, { align: "left" });
-    doc.text("GSTIN : 33AAECW4783B1ZF", rightEdge, regLineY, { align: "right" });
     // Golden divider — single 0.8mm line to mirror Invoice's border-b-2 border-primary
+    const divY = addressBottomY + 3;
     doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
@@ -594,6 +583,30 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
     submissionDate,
     marginX + chipW + chipGap + labelPadL + dateLabelColW + labelValueGap,
     chipCY,
+  );
+  y += chipH + 3;
+
+  // Legal registration chips (CIN / GSTIN) — same twin-chip style, directly
+  // below the Application Number and Date row.
+  const regCY = y + chipH / 2 + 1.2;
+  doc.setFillColor(...GOLD_SOFT);
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(marginX, y, chipW, chipH, 1.6, 1.6, "FD");
+  doc.roundedRect(marginX + chipW + chipGap, y, chipW, chipH, 1.6, 1.6, "FD");
+  doc.setFont(fontFamily, "bold"); doc.setFontSize(9); doc.setTextColor(...GOLD_DARK);
+  doc.text("CIN :", marginX + labelPadL, regCY);
+  doc.text("GSTIN :", marginX + chipW + chipGap + labelPadL, regCY);
+  doc.setFont(fontFamily, "normal"); doc.setTextColor(...TEXT_BLACK);
+  doc.text(
+    "U96030TZ2026PTC039152",
+    marginX + labelPadL + appLabelColW + labelValueGap,
+    regCY,
+  );
+  doc.text(
+    "33AAECW4783B1ZF",
+    marginX + chipW + chipGap + labelPadL + dateLabelColW + labelValueGap,
+    regCY,
   );
   y += chipH + 3;
 

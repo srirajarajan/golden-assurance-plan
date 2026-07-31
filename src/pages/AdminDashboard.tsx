@@ -58,6 +58,7 @@ interface UserProfile {
   current_serial: number;
   exit_date: string | null;
   last_login_at: string | null;
+  is_reregistration?: boolean | null;
 }
 
 type RoleName = 'super_admin' | 'admin' | 'user';
@@ -231,9 +232,24 @@ const AdminDashboard: React.FC = () => {
   const updateUserStatus = async (userId: string, newStatus: 'active' | 'rejected' | 'terminated') => {
     setProcessingUserId(userId);
     try {
+      const now = new Date().toISOString();
+      const current = users.find((u) => u.user_id === userId);
+      const audit: Record<string, any> = { status: newStatus };
+      if (newStatus === 'active') {
+        if (current?.status === 'pending') {
+          audit.approved_at = now;
+          audit.approved_by = user?.id || null;
+        } else {
+          audit.reactivated_at = now;
+          audit.reactivated_by = user?.id || null;
+        }
+      }
+      if (newStatus === 'terminated' || newStatus === 'rejected') {
+        audit.deactivated_at = now;
+      }
       const { error } = await supabase
         .from('profiles')
-        .update({ status: newStatus })
+        .update(audit)
         .eq('user_id', userId);
       if (error) throw error;
 
@@ -309,7 +325,11 @@ const AdminDashboard: React.FC = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ status: 'terminated', exit_date: exitDate || null })
+        .update({
+          status: 'terminated',
+          exit_date: exitDate || null,
+          deactivated_at: new Date().toISOString(),
+        })
         .eq('user_id', userId);
       if (error) throw error;
       setUsers((prev) =>
@@ -524,7 +544,14 @@ const AdminDashboard: React.FC = () => {
                     {filteredUsers.map((profile) => {
                       return (
                         <tr key={profile.id} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-3">{profile.full_name || '—'}</td>
+                          <td className="py-3 px-3">
+                            {profile.full_name || '—'}
+                            {profile.status === 'pending' && profile.is_reregistration && (
+                              <span className="ml-2 inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                {language === 'ta' ? 'மறுபதிவு' : 'Re-registration'}
+                              </span>
+                            )}
+                          </td>
                           <td className="py-3 px-3 text-xs">{profile.email}</td>
                           <td className="py-3 px-3 text-xs">
                             <InlineEditCell

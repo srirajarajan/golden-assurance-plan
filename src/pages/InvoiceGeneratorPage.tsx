@@ -194,6 +194,7 @@ const InvoiceGeneratorPage: React.FC = () => {
 
   const validate = (): string | null => {
     if (!customerName.trim()) return 'Customer name is required';
+    if (!applicationNumber.trim()) return 'Application number is required';
     if (!/^\d{10}$/.test(mobile)) return 'Mobile must be exactly 10 digits';
     if (!planType) return 'Please select a plan';
     return null;
@@ -213,7 +214,7 @@ const InvoiceGeneratorPage: React.FC = () => {
         .from('invoices')
         .insert({
           invoice_number,
-          application_number: applicationNumber || null,
+          application_number: applicationNumber.trim(),
           customer_name: customerName.trim(),
           mobile,
           address: address || null,
@@ -411,6 +412,15 @@ const InvoiceGeneratorPage: React.FC = () => {
                   <div className="col-span-2">
                     <Label>Invoice Number</Label>
                     <Input value={nextNumber || 'Auto-generating…'} readOnly className="font-mono bg-muted/40" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Application Number *</Label>
+                    <Input
+                      value={applicationNumber}
+                      onChange={(e) => setApplicationNumber(e.target.value.toUpperCase().trim())}
+                      placeholder="WCF0001"
+                      className="font-mono"
+                    />
                   </div>
                   <div className="col-span-2">
                     <Label>Customer Name *</Label>

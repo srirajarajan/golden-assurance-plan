@@ -95,42 +95,45 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      // Deactivated accounts must never reach the app
-      const currentStatus = await checkUserStatus();
-      if (currentStatus === 'terminated') {
+      // Only Active accounts may enter the application.
+      // Read the status directly from the freshly authenticated session so we
+      // never depend on React state that may not have propagated yet.
+      const { data: authData } = await supabase.auth.getUser();
+      const uid = authData.user?.id;
+      const { data: profileRow } = uid
+        ? await supabase.from('profiles').select('status').eq('user_id', uid).maybeSingle()
+        : { data: null as any };
+      const status = profileRow?.status ?? (await checkUserStatus());
+      if (status !== 'active') {
         await supabase.auth.signOut();
+        const messages: Record<string, string> = {
+          pending:
+            'Your registration is pending approval. An administrator will review your account shortly.',
+          rejected:
+            'Your registration request was not approved. Please contact the Super Administrator for assistance.',
+          terminated:
+            'Your account has been deactivated. Please contact the Super Administrator for assistance.',
+        };
         toast({
           title: t.errorTitle,
           description:
-            'This account has been deactivated. Please contact the administrator.',
+            messages[status as string] ||
+            'Your account is not active. Please contact the Super Administrator for assistance.',
           variant: 'destructive',
         });
         return;
       }
 
-      // After successful sign-in, directly check role and redirect
-      const adminStatus = await checkIsAdmin();
-      if (adminStatus) {
-        navigate('/admin', { replace: true });
-        return;
-      }
-
-      const status = await checkUserStatus();
-      if (status === 'active') {
-        navigate('/apply', { replace: true });
-      } else if (status === 'pending') {
-        toast({
-          title: t.errorTitle,
-          description: t.pendingApproval,
-          variant: 'destructive',
-        });
-      } else if (status === 'rejected') {
-        toast({
-          title: t.errorTitle,
-          description: t.rejectedAccount,
-          variant: 'destructive',
-        });
-      }
+      // Active account — route by role
+      const { data: roleRows } = uid
+        ? await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', uid)
+            .in('role', ['admin', 'super_admin'])
+        : { data: [] as any[] };
+      const adminStatus = (roleRows && roleRows.length > 0) || (await checkIsAdmin());
+      navigate(adminStatus ? '/admin' : '/apply', { replace: true });
     } catch (error) {
       toast({
         title: t.errorTitle,
