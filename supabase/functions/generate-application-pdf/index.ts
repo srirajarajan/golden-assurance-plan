@@ -969,13 +969,13 @@ serve(async (req: Request) => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      const { error: upError } = await supabase.storage.from("application-pdfs").upload(
-        `${fileLabel}.pdf`,
+      const { error: upError } = await supabase.storage.from("pdf-assets").upload(
+        `temp-pdfs/${fileLabel}.pdf`,
         pdfBuffer,
         { contentType: "application/pdf", upsert: true }
       );
       if (upError) console.error("PDF upload error:", upError.message);
-      else console.log("PDF uploaded to storage:", `${fileLabel}.pdf`);
+      else console.log("PDF uploaded to storage: temp-pdfs/", `${fileLabel}.pdf`);
     } catch (upErr) { console.error("PDF upload exception:", upErr); }
 
     if (!emailResult.ok) {
