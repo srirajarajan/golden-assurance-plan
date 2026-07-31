@@ -444,7 +444,6 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
           leftX + (LOGO_BOX_W - logoDrawW) / 2,
           cyBand - logoDrawH / 2,
           logoDrawW, logoDrawH,
-          undefined, "SLOW",
         );
       } catch (e) { console.error("Logo error:", e); }
     }
