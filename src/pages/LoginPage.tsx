@@ -95,42 +95,31 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      // Deactivated accounts must never reach the app
-      const currentStatus = await checkUserStatus();
-      if (currentStatus === 'terminated') {
+      // Only Active accounts may enter the application
+      const status = await checkUserStatus();
+      if (status !== 'active') {
         await supabase.auth.signOut();
+        const messages: Record<string, string> = {
+          pending:
+            'Your registration is pending approval. An administrator will review your account shortly.',
+          rejected:
+            'Your registration request was not approved. Please contact the Super Administrator for assistance.',
+          terminated:
+            'Your account has been deactivated. Please contact the Super Administrator for assistance.',
+        };
         toast({
           title: t.errorTitle,
           description:
-            'This account has been deactivated. Please contact the administrator.',
+            messages[status as string] ||
+            'Your account is not active. Please contact the Super Administrator for assistance.',
           variant: 'destructive',
         });
         return;
       }
 
-      // After successful sign-in, directly check role and redirect
+      // Active account — route by role
       const adminStatus = await checkIsAdmin();
-      if (adminStatus) {
-        navigate('/admin', { replace: true });
-        return;
-      }
-
-      const status = await checkUserStatus();
-      if (status === 'active') {
-        navigate('/apply', { replace: true });
-      } else if (status === 'pending') {
-        toast({
-          title: t.errorTitle,
-          description: t.pendingApproval,
-          variant: 'destructive',
-        });
-      } else if (status === 'rejected') {
-        toast({
-          title: t.errorTitle,
-          description: t.rejectedAccount,
-          variant: 'destructive',
-        });
-      }
+      navigate(adminStatus ? '/admin' : '/apply', { replace: true });
     } catch (error) {
       toast({
         title: t.errorTitle,
