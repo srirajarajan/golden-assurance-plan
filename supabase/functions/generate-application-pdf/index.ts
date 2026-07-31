@@ -168,32 +168,6 @@ async function fetchImageAsBase64(supabase: any, bucket: string, path: string, t
   } catch (err) { console.error(`Error fetching image (${bucket}/${path}):`, err); return null; }
 }
 
-/**
- * Removes the flat white paper background from a scanned PNG (seal / signature)
- * so the artwork blends with the PDF page. Pure white becomes fully transparent
- * and near-white pixels are feathered, which keeps the stroke edges smooth.
- * Original colours and pixel dimensions are preserved (no crop, no downscale).
- */
-function keyOutWhiteBackground(pngBytes: Uint8Array): Uint8Array | null {
-  try {
-    const buf = pngBytes.buffer.slice(pngBytes.byteOffset, pngBytes.byteOffset + pngBytes.byteLength);
-    const img: any = UPNG.decode(buf);
-    const rgba = new Uint8Array(UPNG.toRGBA8(img)[0]);
-    const HI = 246; // >= this is treated as pure paper white → fully transparent
-    const LO = 200; // < this stays fully opaque; in between is feathered
-    for (let i = 0; i < rgba.length; i += 4) {
-      const m = Math.min(rgba[i], rgba[i + 1], rgba[i + 2]);
-      if (m >= HI) rgba[i + 3] = 0;
-      else if (m > LO) rgba[i + 3] = Math.round((rgba[i + 3] * (HI - m)) / (HI - LO));
-    }
-    const out = UPNG.encode([rgba.buffer], img.width, img.height, 0);
-    return new Uint8Array(out as ArrayBuffer);
-  } catch (err) {
-    console.error("White-key failed, using original image:", err);
-    return null;
-  }
-}
-
 async function loadImageFromUrl(url: string): Promise<{ base64: string; type: string } | null> {
   try {
     const res = await fetch(url);
