@@ -146,12 +146,7 @@ function getLanguage(data: ApplicationData): "ta" | "en" {
 }
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  const chunkSize = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
-  }
-  return btoa(binary);
+  return base64Encode(bytes);
 }
 
 async function fetchImageAsBase64(supabase: any, bucket: string, path: string, transform?: { width?: number; height?: number }): Promise<{ base64: string; type: string } | null> {
