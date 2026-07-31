@@ -114,6 +114,7 @@ export type Database = {
         Row: {
           address: string | null
           amount: number
+          application_number: string | null
           city: string | null
           created_at: string
           created_by: string | null
@@ -132,6 +133,7 @@ export type Database = {
         Insert: {
           address?: string | null
           amount?: number
+          application_number?: string | null
           city?: string | null
           created_at?: string
           created_by?: string | null
@@ -150,6 +152,7 @@ export type Database = {
         Update: {
           address?: string | null
           amount?: number
+          application_number?: string | null
           city?: string | null
           created_at?: string
           created_by?: string | null
@@ -173,8 +176,10 @@ export type Database = {
           current_serial: number | null
           district: string | null
           email: string
+          exit_date: string | null
           full_name: string | null
           id: string
+          last_login_at: string | null
           phone_number: string | null
           range_end: number | null
           range_start: number | null
@@ -187,8 +192,10 @@ export type Database = {
           current_serial?: number | null
           district?: string | null
           email: string
+          exit_date?: string | null
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           phone_number?: string | null
           range_end?: number | null
           range_start?: number | null
@@ -201,8 +208,10 @@ export type Database = {
           current_serial?: number | null
           district?: string | null
           email?: string
+          exit_date?: string | null
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           phone_number?: string | null
           range_end?: number | null
           range_start?: number | null
