@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,6 +92,19 @@ const LoginPage: React.FC = () => {
           variant: 'destructive',
         });
         setIsSubmitting(false);
+        return;
+      }
+
+      // Deactivated accounts must never reach the app
+      const currentStatus = await checkUserStatus();
+      if (currentStatus === 'terminated') {
+        await supabase.auth.signOut();
+        toast({
+          title: t.errorTitle,
+          description:
+            'This account has been deactivated. Please contact the administrator.',
+          variant: 'destructive',
+        });
         return;
       }
 

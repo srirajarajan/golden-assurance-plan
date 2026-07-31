@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 type UserStatus = 'pending' | 'active' | 'rejected' | 'terminated';
-type UserRole = 'admin' | 'user';
+type UserRole = 'admin' | 'user' | 'super_admin';
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   userStatus: UserStatus | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string, phoneNumber?: string, district?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -26,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const checkUserStatus = async (): Promise<UserStatus | null> => {
     if (!user) return null;
@@ -59,16 +61,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .in('role', ['admin', 'super_admin']);
       
       if (error) {
         console.error('Error fetching user role:', error);
         return false;
       }
       
-      const adminStatus = !!data;
+      const roles = (data || []).map((r: any) => r.role);
+      const adminStatus = roles.length > 0;
       setIsAdmin(adminStatus);
+      setIsSuperAdmin(roles.includes('super_admin'));
       return adminStatus;
     } catch (error) {
       console.error('Error checking admin status:', error);
@@ -103,9 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .from('user_roles')
                 .select('role')
                 .eq('user_id', session.user.id)
-                .eq('role', 'admin')
-                .maybeSingle();
-              if (mounted) setIsAdmin(!!roleData);
+                .in('role', ['admin', 'super_admin']);
+              if (mounted) {
+                const roles = (roleData || []).map((r: any) => r.role);
+                setIsAdmin(roles.length > 0);
+                setIsSuperAdmin(roles.includes('super_admin'));
+              }
             } catch (e) {
               console.error('Error fetching user data:', e);
             }
@@ -113,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setUserStatus(null);
           setIsAdmin(false);
+          setIsSuperAdmin(false);
         }
         
         setIsLoading(false);
@@ -128,11 +135,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         Promise.all([
           supabase.from('profiles').select('status').eq('user_id', session.user.id).single(),
-          supabase.from('user_roles').select('role').eq('user_id', session.user.id).eq('role', 'admin').maybeSingle(),
+          supabase.from('user_roles').select('role').eq('user_id', session.user.id).in('role', ['admin', 'super_admin']),
         ]).then(([statusRes, roleRes]) => {
           if (!mounted) return;
           if (statusRes.data) setUserStatus(statusRes.data.status as UserStatus);
-          setIsAdmin(!!roleRes.data);
+          const roles = ((roleRes.data as any[]) || []).map((r) => r.role);
+          setIsAdmin(roles.length > 0);
+          setIsSuperAdmin(roles.includes('super_admin'));
           setIsLoading(false);
         }).catch(() => {
           if (mounted) setIsLoading(false);
@@ -150,10 +159,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      if (!error && data.user) {
+        // Record last login for HR / audit reporting (non-blocking)
+        supabase
+          .from('profiles')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('user_id', data.user.id)
+          .then(() => {}, () => {});
+      }
       return { error: error as Error | null };
     } catch (error) {
       return { error: error as Error };
@@ -188,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setUserStatus(null);
     setIsAdmin(false);
+    setIsSuperAdmin(false);
   };
 
   return (
@@ -198,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         userStatus,
         isAdmin,
+        isSuperAdmin,
         signIn,
         signUp,
         signOut,

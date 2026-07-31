@@ -23,6 +23,7 @@ import html2canvas from 'html2canvas';
 interface InvoiceRow {
   id: string;
   invoice_number: string;
+  application_number?: string | null;
   customer_name: string;
   mobile: string;
   address: string | null;
@@ -43,6 +44,11 @@ const COMPANY = {
   email: 'wcfheadofficeslm2016@gmail.com',
   phone: '9600350889',
   address: 'RR Complex, Kannankurichi Main Road, Chinnathirupathi, Salem - 636008',
+};
+
+const LEGAL = {
+  cin: 'U96030TZ2026PTC039152',
+  gstin: '33AAECW4783B1ZF',
 };
 
 const BANK_HDFC = {
@@ -91,6 +97,7 @@ const InvoiceGeneratorPage: React.FC = () => {
   const [planType, setPlanType] = useState<PlanId | ''>('');
   const [invoiceDate, setInvoiceDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [serviceDate, setServiceDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [applicationNumber, setApplicationNumber] = useState<string>('');
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -121,6 +128,7 @@ const InvoiceGeneratorPage: React.FC = () => {
               setCity(p.city || p.taluk || '');
               setPincode(p.pincode || '');
               setPlanType(p.plan_type || p.plan_id || '');
+              setApplicationNumber(p.application_number || '');
               fetchNextNumber();
               sessionStorage.removeItem('prefill_invoice');
             }
@@ -155,6 +163,7 @@ const InvoiceGeneratorPage: React.FC = () => {
     setCustomerName(''); setMobile('');
     setAddress(''); setCity('');
     setState('Tamil Nadu'); setPincode(''); setPlanType('');
+    setApplicationNumber('');
     setInvoiceDate(new Date().toISOString().slice(0, 10));
     setServiceDate(new Date().toISOString().slice(0, 10));
     fetchNextNumber();
@@ -162,6 +171,26 @@ const InvoiceGeneratorPage: React.FC = () => {
 
   const selectedPlan = useMemo(() => (planType ? getPlanById(planType) : undefined), [planType]);
   const amount = selectedPlan?.amount ?? 0;
+
+  // Auto-link the Application Number from the matching application record so the
+  // invoice can never be generated against the wrong application.
+  useEffect(() => {
+    if (mode !== 'create' || applicationNumber || !/^\d{10}$/.test(mobile)) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('applications')
+        .select('application_number')
+        .eq('mobile_number', mobile)
+        .not('application_number', 'is', null)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled && data?.application_number) setApplicationNumber(data.application_number);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobile, mode]);
 
   const validate = (): string | null => {
     if (!customerName.trim()) return 'Customer name is required';
@@ -184,6 +213,7 @@ const InvoiceGeneratorPage: React.FC = () => {
         .from('invoices')
         .insert({
           invoice_number,
+          application_number: applicationNumber || null,
           customer_name: customerName.trim(),
           mobile,
           address: address || null,
@@ -264,6 +294,7 @@ const InvoiceGeneratorPage: React.FC = () => {
     return {
       id: 'preview',
       invoice_number: nextNumber || 'WC-XXXX',
+      application_number: applicationNumber || null,
       customer_name: customerName || '—',
       mobile: mobile || '—',
       address, city, state, pincode,
@@ -274,7 +305,7 @@ const InvoiceGeneratorPage: React.FC = () => {
       service_date: serviceDate,
       created_at: new Date().toISOString(),
     } as InvoiceRow;
-  }, [mode, selectedPlan, nextNumber, customerName, mobile, address, city, state, pincode, invoiceDate, serviceDate]);
+  }, [mode, selectedPlan, nextNumber, applicationNumber, customerName, mobile, address, city, state, pincode, invoiceDate, serviceDate]);
 
   const invoiceToRender = mode === 'view' ? viewing : previewInvoice;
 
@@ -572,8 +603,11 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
             <tbody>
               <tr><td className="font-semibold pr-2 py-0.5 w-32">Invoice No.</td><td className="font-mono">{invoice.invoice_number}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Invoice Date</td><td>{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">Application No.</td><td className="font-mono">{invoice.application_number || '—'}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Service Start Date</td><td>{invoice.service_date ? new Date(invoice.service_date).toLocaleDateString('en-IN') : '—'}</td></tr>
               <tr><td className="font-semibold pr-2 py-0.5">Plan Type</td><td className="capitalize">{invoice.plan_type}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">CIN</td><td className="font-mono">{LEGAL.cin}</td></tr>
+              <tr><td className="font-semibold pr-2 py-0.5">GSTIN</td><td className="font-mono">{LEGAL.gstin}</td></tr>
             </tbody>
           </table>
         </div>

@@ -524,6 +524,15 @@ async function buildPdfBuffer(data: ApplicationData): Promise<Uint8Array> {
 
     // Golden divider — single 2pt line to mirror Invoice's border-b-2 border-primary
     const divY = top + headerH + 4;
+    // Legal registration line: CIN left-aligned, GSTIN right-aligned, muted grey,
+    // sitting between the address/contact block and the golden divider.
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...TEXT_GREY);
+    const regY = divY - 6;
+    doc.text("CIN : U96030TZ2026PTC039152", marginX, regY);
+    doc.text("GSTIN : 33AAECW4783B1ZF", pw - marginX, regY, { align: "right" });
+    doc.setFont(fontFamily, "normal");
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
     doc.line(marginX, divY, pw - marginX, divY);
