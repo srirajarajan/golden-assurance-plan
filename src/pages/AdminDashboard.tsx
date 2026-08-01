@@ -702,7 +702,7 @@ const AdminDashboard: React.FC = () => {
                                   size="sm"
                                   variant="default"
                                   className="h-7 text-xs"
-                                  onClick={() => activateUser(profile)}
+                                  onClick={() => managePassword(profile, 'approve')}
                                   disabled={processingUserId === profile.user_id}
                                 >
                                   <RotateCcw className="mr-1 h-3 w-3" />
@@ -825,6 +825,71 @@ const AdminDashboard: React.FC = () => {
             </Button>
             <Button onClick={saveEdit} disabled={!!processingUserId}>
               {processingUserId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generated password — shown once so the Super Admin can hand it over securely */}
+      <Dialog
+        open={!!credential}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCredential(null);
+            setShowCredential(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {credential?.approved ? 'Account Approved' : 'Password Reset'}
+            </DialogTitle>
+            <DialogDescription>
+              This password is shown only once. Copy it now and share it securely with{' '}
+              {credential?.email}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Generated Password</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={credential?.password || ''}
+                type={showCredential ? 'text' : 'password'}
+                className="font-mono"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={showCredential ? 'Hide password' : 'Show password'}
+                onClick={() => setShowCredential((v) => !v)}
+              >
+                {showCredential ? <EyeOff className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Copy password"
+                onClick={() => {
+                  navigator.clipboard?.writeText(credential?.password || '');
+                  toast({ title: 'Password copied' });
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setCredential(null);
+                setShowCredential(false);
+              }}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
