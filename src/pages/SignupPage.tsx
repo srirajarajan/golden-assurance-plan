@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, UserPlus, CheckCircle, Phone, MapPin } from 'lucide-react';
+import { Loader2, Mail, User, UserPlus, CheckCircle, Phone, MapPin } from 'lucide-react';
 
 const signupTranslations = {
   en: {
@@ -21,22 +22,17 @@ const signupTranslations = {
     districtPlaceholder: 'Enter your district',
     email: 'Email Address',
     emailPlaceholder: 'Enter your email',
-    password: 'Password',
-    passwordPlaceholder: 'Create a password (min 6 characters)',
-    confirmPassword: 'Confirm Password',
-    confirmPasswordPlaceholder: 'Confirm your password',
-    signUp: 'Create Account',
+    signUp: 'Submit Registration Request',
     signingUp: 'Creating account...',
     hasAccount: 'Already have an account?',
     login: 'Login',
     errorTitle: 'Registration Failed',
-    passwordMismatch: 'Passwords do not match',
-    passwordTooShort: 'Password must be at least 6 characters',
-    emailExists: 'An account with this email already exists',
-    successTitle: 'Account Created!',
-    successMessage: 'Your account is pending admin approval. You will be notified when approved.',
+    successTitle: 'Registration Request Submitted',
+    successMessage:
+      'Your registration request has been submitted successfully. Please wait for Super Admin approval. Your login password will be assigned by the Super Admin.',
     phoneRequired: 'Phone number is required',
     districtRequired: 'District is required',
+    note: 'No password is required. Once the Super Admin approves your request, a secure password will be generated and shared with you.',
   },
   ta: {
     title: 'கணக்கை உருவாக்கு',
@@ -49,22 +45,17 @@ const signupTranslations = {
     districtPlaceholder: 'மாவட்டத்தை உள்ளிடவும்',
     email: 'மின்னஞ்சல் முகவரி',
     emailPlaceholder: 'உங்கள் மின்னஞ்சலை உள்ளிடவும்',
-    password: 'கடவுச்சொல்',
-    passwordPlaceholder: 'கடவுச்சொல்லை உருவாக்கவும் (குறைந்தபட்சம் 6 எழுத்துக்கள்)',
-    confirmPassword: 'கடவுச்சொல்லை உறுதிப்படுத்தவும்',
-    confirmPasswordPlaceholder: 'உங்கள் கடவுச்சொல்லை உறுதிப்படுத்தவும்',
-    signUp: 'கணக்கை உருவாக்கு',
+    signUp: 'பதிவு கோரிக்கையை சமர்ப்பி',
     signingUp: 'கணக்கை உருவாக்குகிறது...',
     hasAccount: 'ஏற்கனவே கணக்கு உள்ளதா?',
     login: 'உள்நுழைக',
     errorTitle: 'பதிவு தோல்வி',
-    passwordMismatch: 'கடவுச்சொற்கள் பொருந்தவில்லை',
-    passwordTooShort: 'கடவுச்சொல் குறைந்தபட்சம் 6 எழுத்துக்கள் இருக்க வேண்டும்',
-    emailExists: 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது',
-    successTitle: 'கணக்கு உருவாக்கப்பட்டது!',
-    successMessage: 'உங்கள் கணக்கு நிர்வாகி அனுமதிக்காக காத்திருக்கிறது. அனுமதிக்கப்பட்டதும் உங்களுக்கு தெரிவிக்கப்படும்.',
+    successTitle: 'பதிவு கோரிக்கை சமர்ப்பிக்கப்பட்டது',
+    successMessage:
+      'உங்கள் பதிவு கோரிக்கை வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது. சூப்பர் நிர்வாகியின் அனுமதிக்காக காத்திருக்கவும். உங்கள் கடவுச்சொல் சூப்பர் நிர்வாகியால் வழங்கப்படும்.',
     phoneRequired: 'தொலைபேசி எண் தேவை',
     districtRequired: 'மாவட்டம் தேவை',
+    note: 'கடவுச்சொல் தேவையில்லை. சூப்பர் நிர்வாகி அனுமதித்ததும் பாதுகாப்பான கடவுச்சொல் உருவாக்கி வழங்கப்படும்.',
   },
 };
 
@@ -77,8 +68,6 @@ const SignupPage: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [district, setDistrict] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -103,37 +92,22 @@ const SignupPage: React.FC = () => {
       toast({ title: t.errorTitle, description: t.districtRequired, variant: 'destructive' });
       return;
     }
-    if (password.length < 6) {
-      toast({
-        title: t.errorTitle,
-        description: t.passwordTooShort,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: t.errorTitle,
-        description: t.passwordMismatch,
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const { error } = await signUp(email, password, fullName, phoneNumber, district);
+      const { data, error } = await supabase.functions.invoke('staff-register', {
+        body: {
+          email: email.trim().toLowerCase(),
+          full_name: fullName.trim(),
+          phone_number: phoneNumber.trim(),
+          district: district.trim(),
+        },
+      });
 
-      if (error) {
-        let errorMessage = error.message;
-        if (error.message.includes('already registered')) {
-          errorMessage = t.emailExists;
-        }
+      if (error || (data as any)?.error) {
         toast({
           title: t.errorTitle,
-          description: errorMessage,
+          description: (data as any)?.error || 'An error occurred. Please try again.',
           variant: 'destructive',
         });
         return;
