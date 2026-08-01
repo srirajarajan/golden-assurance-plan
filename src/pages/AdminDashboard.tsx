@@ -501,12 +501,12 @@ const AdminDashboard: React.FC = () => {
 
         <Card className="shadow-xl border-2">
           <CardHeader className="bg-primary/5 border-b">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
                 <Shield className="h-6 w-6" />
                 {t.title}
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="default" onClick={() => navigate('/admin/invoices')}>
                   <FileText className="mr-2 h-4 w-4" />
                   {language === 'ta' ? 'விலைப்பட்டியல் உருவாக்கி' : 'Invoice Generator'}
@@ -520,7 +520,7 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="p-6">
             {/* Tabs */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6">
               <Button
                 variant={activeTab === 'pending' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('pending')}
