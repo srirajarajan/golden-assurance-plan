@@ -61,7 +61,7 @@ const signupTranslations = {
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signUp, user, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const { language } = useLanguage();
   const { toast } = useToast();
   const [fullName, setFullName] = useState('');
