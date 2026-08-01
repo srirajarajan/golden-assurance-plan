@@ -639,7 +639,7 @@ const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     variant="default"
                                     className="h-7 text-xs"
-                                    onClick={() => updateUserStatus(profile.user_id, 'active')}
+                                    onClick={() => managePassword(profile, 'approve')}
                                     disabled={processingUserId === profile.user_id}
                                   >
                                     {processingUserId === profile.user_id ? (
@@ -714,7 +714,8 @@ const AdminDashboard: React.FC = () => {
                                 size="sm"
                                 variant="outline"
                                 className="h-7 text-xs"
-                                onClick={() => sendPasswordReset(profile)}
+                                onClick={() => managePassword(profile, 'reset')}
+                                disabled={!isSuperAdmin || processingUserId === profile.user_id}
                               >
                                 <KeyRound className="mr-1 h-3 w-3" />
                                 {language === 'ta' ? 'கடவுச்சொல் மீட்டமை' : 'Reset Password'}
