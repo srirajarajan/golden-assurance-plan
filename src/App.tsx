@@ -18,8 +18,6 @@ const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const SignupPage = lazy(() => import("@/pages/SignupPage"));
-const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
-const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
 const InvoiceGeneratorPage = lazy(() => import("@/pages/InvoiceGeneratorPage"));
 const StaffDetailPage = lazy(() => import("@/pages/StaffDetailPage"));
@@ -64,8 +62,6 @@ const App = () => (
                     <Route path="/documentations" element={<DocumentationsPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/staff/:staffId" element={<StaffDetailPage />} />
                     <Route path="/admin/invoices" element={<InvoiceGeneratorPage />} />
