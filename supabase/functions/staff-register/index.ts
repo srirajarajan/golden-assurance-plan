@@ -90,9 +90,14 @@ Deno.serve(async (req) => {
       return json({ error: "Registration could not be completed. Please try again." }, 400);
     }
 
-    // The handle_new_user trigger inserts the profile; make sure the data is complete.
+    // Ensure the pending profile exists and is complete (works with or without the signup trigger).
     if (created?.user?.id) {
-      await admin.from("profiles").update(profilePayload).eq("user_id", created.user.id);
+      await admin
+        .from("profiles")
+        .upsert(
+          { user_id: created.user.id, email: normalizedEmail, ...profilePayload },
+          { onConflict: "user_id" },
+        );
     }
 
     return json({ ok: true, reregistration: false });
