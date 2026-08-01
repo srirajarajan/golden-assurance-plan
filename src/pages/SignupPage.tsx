@@ -226,38 +226,7 @@ const SignupPage: React.FC = () => {
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                {t.password}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t.passwordPlaceholder}
-                className="mt-1"
-                required
-                minLength={6}
-              />
-            </div>
-            <div>
-              <Label htmlFor="confirmPassword" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                {t.confirmPassword}
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t.confirmPasswordPlaceholder}
-                className="mt-1"
-                required
-                minLength={6}
-              />
-            </div>
+            <p className="text-xs text-muted-foreground bg-muted/40 rounded-md p-3">{t.note}</p>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
