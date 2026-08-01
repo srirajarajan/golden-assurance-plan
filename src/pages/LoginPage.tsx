@@ -190,13 +190,14 @@ const LoginPage: React.FC = () => {
                 <Lock className="h-4 w-4" />
                 {t.password}
               </Label>
+              <div className="relative mt-1">
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t.passwordPlaceholder}
-                className="mt-1 pr-10"
+                className="pr-10"
                 required
               />
                 <button
