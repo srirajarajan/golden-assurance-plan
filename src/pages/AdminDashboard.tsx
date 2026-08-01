@@ -42,6 +42,9 @@ import {
   Pencil,
   Power,
   ShieldCheck,
+  Eye as EyeIcon,
+  EyeOff,
+  Copy,
 } from 'lucide-react';
 
 interface UserProfile {
@@ -159,6 +162,8 @@ const AdminDashboard: React.FC = () => {
   const [exitDate, setExitDate] = useState('');
   const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
   const [editForm, setEditForm] = useState({ full_name: '', phone_number: '', district: '', exit_date: '' });
+  const [credential, setCredential] = useState<{ email: string; password: string; approved: boolean } | null>(null);
+  const [showCredential, setShowCredential] = useState(false);
 
   const { isSuperAdmin } = useAuth();
 
@@ -393,15 +398,44 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const sendPasswordReset = async (profile: UserProfile) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) {
-      toast({ title: t.errorTitle, description: error.message, variant: 'destructive' });
+  // Super Admin only: generate a secure password (on approval or on reset).
+  const managePassword = async (profile: UserProfile, action: 'approve' | 'reset') => {
+    if (!isSuperAdmin) {
+      toast({
+        title: t.errorTitle,
+        description: 'Only the Super Admin can approve accounts and manage passwords.',
+        variant: 'destructive',
+      });
       return;
     }
-    toast({ title: 'Password reset email sent', description: profile.email });
+    setProcessingUserId(profile.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-set-password', {
+        body: { action, user_id: profile.user_id },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || 'Request failed');
+      }
+      if (action === 'approve') {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.user_id === profile.user_id
+              ? { ...u, status: 'active', is_reregistration: false, exit_date: null }
+              : u
+          )
+        );
+      }
+      setShowCredential(false);
+      setCredential({
+        email: profile.email,
+        password: (data as any).password,
+        approved: action === 'approve',
+      });
+    } catch (e: any) {
+      toast({ title: t.errorTitle, description: e.message, variant: 'destructive' });
+    } finally {
+      setProcessingUserId(null);
+    }
   };
 
   const handleLogout = async () => {
