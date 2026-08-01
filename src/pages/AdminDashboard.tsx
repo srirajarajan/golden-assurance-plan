@@ -42,6 +42,9 @@ import {
   Pencil,
   Power,
   ShieldCheck,
+  Eye as EyeIcon,
+  EyeOff,
+  Copy,
 } from 'lucide-react';
 
 interface UserProfile {
@@ -159,6 +162,8 @@ const AdminDashboard: React.FC = () => {
   const [exitDate, setExitDate] = useState('');
   const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
   const [editForm, setEditForm] = useState({ full_name: '', phone_number: '', district: '', exit_date: '' });
+  const [credential, setCredential] = useState<{ email: string; password: string; approved: boolean } | null>(null);
+  const [showCredential, setShowCredential] = useState(false);
 
   const { isSuperAdmin } = useAuth();
 
@@ -393,15 +398,44 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const sendPasswordReset = async (profile: UserProfile) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) {
-      toast({ title: t.errorTitle, description: error.message, variant: 'destructive' });
+  // Super Admin only: generate a secure password (on approval or on reset).
+  const managePassword = async (profile: UserProfile, action: 'approve' | 'reset') => {
+    if (!isSuperAdmin) {
+      toast({
+        title: t.errorTitle,
+        description: 'Only the Super Admin can approve accounts and manage passwords.',
+        variant: 'destructive',
+      });
       return;
     }
-    toast({ title: 'Password reset email sent', description: profile.email });
+    setProcessingUserId(profile.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-set-password', {
+        body: { action, user_id: profile.user_id },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || 'Request failed');
+      }
+      if (action === 'approve') {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.user_id === profile.user_id
+              ? { ...u, status: 'active', is_reregistration: false, exit_date: null }
+              : u
+          )
+        );
+      }
+      setShowCredential(false);
+      setCredential({
+        email: profile.email,
+        password: (data as any).password,
+        approved: action === 'approve',
+      });
+    } catch (e: any) {
+      toast({ title: t.errorTitle, description: e.message, variant: 'destructive' });
+    } finally {
+      setProcessingUserId(null);
+    }
   };
 
   const handleLogout = async () => {
@@ -467,12 +501,12 @@ const AdminDashboard: React.FC = () => {
 
         <Card className="shadow-xl border-2">
           <CardHeader className="bg-primary/5 border-b">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
                 <Shield className="h-6 w-6" />
                 {t.title}
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="default" onClick={() => navigate('/admin/invoices')}>
                   <FileText className="mr-2 h-4 w-4" />
                   {language === 'ta' ? 'விலைப்பட்டியல் உருவாக்கி' : 'Invoice Generator'}
@@ -486,7 +520,7 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="p-6">
             {/* Tabs */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6">
               <Button
                 variant={activeTab === 'pending' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('pending')}
@@ -605,7 +639,7 @@ const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     variant="default"
                                     className="h-7 text-xs"
-                                    onClick={() => updateUserStatus(profile.user_id, 'active')}
+                                    onClick={() => managePassword(profile, 'approve')}
                                     disabled={processingUserId === profile.user_id}
                                   >
                                     {processingUserId === profile.user_id ? (
@@ -668,7 +702,7 @@ const AdminDashboard: React.FC = () => {
                                   size="sm"
                                   variant="default"
                                   className="h-7 text-xs"
-                                  onClick={() => activateUser(profile)}
+                                  onClick={() => managePassword(profile, 'approve')}
                                   disabled={processingUserId === profile.user_id}
                                 >
                                   <RotateCcw className="mr-1 h-3 w-3" />
@@ -680,7 +714,8 @@ const AdminDashboard: React.FC = () => {
                                 size="sm"
                                 variant="outline"
                                 className="h-7 text-xs"
-                                onClick={() => sendPasswordReset(profile)}
+                                onClick={() => managePassword(profile, 'reset')}
+                                disabled={!isSuperAdmin || processingUserId === profile.user_id}
                               >
                                 <KeyRound className="mr-1 h-3 w-3" />
                                 {language === 'ta' ? 'கடவுச்சொல் மீட்டமை' : 'Reset Password'}
@@ -790,6 +825,71 @@ const AdminDashboard: React.FC = () => {
             </Button>
             <Button onClick={saveEdit} disabled={!!processingUserId}>
               {processingUserId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generated password — shown once so the Super Admin can hand it over securely */}
+      <Dialog
+        open={!!credential}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCredential(null);
+            setShowCredential(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {credential?.approved ? 'Account Approved' : 'Password Reset'}
+            </DialogTitle>
+            <DialogDescription>
+              This password is shown only once. Copy it now and share it securely with{' '}
+              {credential?.email}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Generated Password</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={credential?.password || ''}
+                type={showCredential ? 'text' : 'password'}
+                className="font-mono"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={showCredential ? 'Hide password' : 'Show password'}
+                onClick={() => setShowCredential((v) => !v)}
+              >
+                {showCredential ? <EyeOff className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Copy password"
+                onClick={() => {
+                  navigator.clipboard?.writeText(credential?.password || '');
+                  toast({ title: 'Password copied' });
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setCredential(null);
+                setShowCredential(false);
+              }}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

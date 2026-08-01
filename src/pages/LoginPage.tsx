@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, LogIn } from 'lucide-react';
+import { Loader2, Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 
 const loginTranslations = {
   en: {
@@ -22,7 +22,9 @@ const loginTranslations = {
     loggingIn: 'Signing in...',
     noAccount: "Don't have an account?",
     signUp: 'Sign Up',
-    forgotPassword: 'Forgot Password?',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    passwordHelp: 'Passwords are issued by the Super Admin. Contact them if you need access.',
     errorTitle: 'Login Failed',
     invalidCredentials: 'Invalid email or password',
     pendingApproval: 'Your account is pending admin approval',
@@ -39,7 +41,9 @@ const loginTranslations = {
     loggingIn: 'உள்நுழைகிறது...',
     noAccount: 'கணக்கு இல்லையா?',
     signUp: 'பதிவு செய்யவும்',
-    forgotPassword: 'கடவுச்சொல் மறந்துவிட்டதா?',
+    showPassword: 'கடவுச்சொல்லைக் காட்டு',
+    hidePassword: 'கடவுச்சொல்லை மறை',
+    passwordHelp: 'கடவுச்சொல் சூப்பர் நிர்வாகியால் வழங்கப்படும். தேவைப்பட்டால் அவரைத் தொடர்பு கொள்ளவும்.',
     errorTitle: 'உள்நுழைவு தோல்வி',
     invalidCredentials: 'தவறான மின்னஞ்சல் அல்லது கடவுச்சொல்',
     pendingApproval: 'உங்கள் கணக்கு நிர்வாகி அனுமதிக்காக காத்திருக்கிறது',
@@ -55,6 +59,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const t = loginTranslations[language];
 
@@ -185,20 +190,26 @@ const LoginPage: React.FC = () => {
                 <Lock className="h-4 w-4" />
                 {t.password}
               </Label>
+              <div className="relative mt-1">
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t.passwordPlaceholder}
-                className="mt-1"
+                className="pr-10"
                 required
               />
-            </div>
-            <div className="text-right">
-              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                {t.forgotPassword}
-              </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? t.hidePassword : t.showPassword}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{t.passwordHelp}</p>
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
