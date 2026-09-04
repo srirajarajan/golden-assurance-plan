@@ -681,14 +681,7 @@ const InvoiceDocument: React.FC<{ invoice: InvoiceRow }> = ({ invoice }) => {
       <div className="grid grid-cols-2 mt-4 border border-gray-300 text-sm">
         <div className="p-3 border-r border-gray-300">
           <div className="font-semibold text-primary mb-2 border-b pb-1">Bank Details</div>
-          <table className="w-full text-xs">
-            <tbody>
-              <tr><td className="font-semibold pr-2 py-0.5 w-28">Bank Name</td><td>{BANK.name}</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">Branch</td><td>{BANK.branch}</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">A/C Number</td><td className="font-mono">{BANK.account}</td></tr>
-              <tr><td className="font-semibold pr-2 py-0.5">IFSC</td><td className="font-mono">{BANK.ifsc}</td></tr>
-            </tbody>
-          </table>
+          <div className="h-24" />
         </div>
         <div className="p-3 flex flex-col items-center justify-between">
           <div className="text-xs text-center text-muted-foreground italic w-full">

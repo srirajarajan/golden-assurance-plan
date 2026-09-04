@@ -739,9 +739,6 @@ const AdminDashboard: React.FC = () => {
       {/* Manage Documentations */}
       <ManageDocumentations language={language} />
 
-      {/* Change Password Section */}
-      <ChangePasswordSection language={language} />
-
       {/* Deactivate dialog — soft delete with optional resignation date */}
       <Dialog open={!!deactivateTarget} onOpenChange={(o) => !o && setDeactivateTarget(null)}>
         <DialogContent className="sm:max-w-md">
